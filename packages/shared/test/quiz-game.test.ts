@@ -160,6 +160,13 @@ describe('revealing', () => {
     s = nexts(s, 1);
     expect(s.phase).toBe('voting');
   });
+  it('tells everyone how many answers there are to reveal (0 while answering)', () => {
+    const s = started();
+    expect(quizViewFor(s, 'B', 1000).groupCount).toBe(0);
+    const r = answerAll(s, { A: 'Paris', B: 'paris', C: 'Lyon' });
+    expect(quizViewFor(r, 'B', 1000).groupCount).toBe(2);
+    expect(quizViewFor(r, 'B', 1000).revealed).toEqual([]);
+  });
   it('next by a non-host is ignored', () => {
     const s = answerAll(started(), { A: 'a', B: 'b', C: 'c' });
     const r = quizReduce(s, { type: 'next', by: 'B' }, ctxOf(mkRoom()));

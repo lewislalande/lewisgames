@@ -46,7 +46,8 @@ export type QuizCtx = { now: number; room: Room };
 type Result = { state: QuizState; effects: QuizEffect[] };
 
 const MAX_ANSWER_LENGTH = 100;
-const POINTS: Record<VoteValue, number> = { yes: 1, half: 0.5, no: 0 };
+/** Points an answer's authors get for its outcome. */
+export const QUIZ_POINTS: Record<VoteValue, number> = { yes: 1, half: 0.5, no: 0 };
 
 export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS): QuizState {
   return {
@@ -205,7 +206,7 @@ function onDecide(s: QuizState, groupId: unknown, vote: unknown, ctx: QuizCtx): 
 function enterResult(s: QuizState, ctx: QuizCtx): Result {
   const questionPoints: Record<string, number> = Object.fromEntries(connectedIds(ctx).map((id) => [id, 0]));
   for (const g of s.groups) {
-    const pts = POINTS[s.outcomes[g.id] ?? 'no'];
+    const pts = QUIZ_POINTS[s.outcomes[g.id] ?? 'no'];
     for (const a of g.authors) questionPoints[a] = (questionPoints[a] ?? 0) + pts;
   }
   const scores = { ...s.scores };

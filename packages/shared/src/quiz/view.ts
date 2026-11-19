@@ -12,6 +12,8 @@ export type QuizView = {
   /** PlayerIds who submitted a non-blank answer (see isBlankAnswer). */
   answered: string[];
   myAnswer: string | null;
+  /** How many answer groups the reveal goes through (0 while answering); lets the host's button say what comes next. */
+  groupCount: number;
   /** Only the groups revealed so far. */
   revealed: { groupId: string; text: string; authors: string[] }[];
   /** Only once the host showed it. */
@@ -47,6 +49,7 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
     question: current ? { theme: current.theme, text: current.question } : null,
     answered: Object.keys(s.answers).filter((id) => !isBlankAnswer(s.answers[id])),
     myAnswer: s.answers[viewerId] ?? null,
+    groupCount: s.groups.length,
     revealed: s.groups.slice(0, s.revealedCount).map((g) => ({ groupId: g.id, text: g.text, authors: g.authors })),
     correct: current && s.answerShown ? { answer: current.answer, variants: current.variants } : null,
     myVotes,
