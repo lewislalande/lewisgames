@@ -122,3 +122,102 @@ The other 103 questions are textbook facts: chemical symbols, Mario and Luigi, F
 - #19: Corsica has been a single territorial collectivity since 2018, but the 2A and 2B department codes are still official (INSEE, postal codes).
 - #99: "Traîneau" is accepted as a variant of "Luge", because the English word "sled" is translated both ways.
 - #148: Assassin's Creed has been developed since 2025 by Ubisoft's subsidiary Vantage Studios. The question asks who is "à l'origine" of the series, which is still Ubisoft.
+
+# Lot « League of Legends / Dofus / Logique & énigmes »
+
+# Fact-check, questions-extra.json
+
+## League of Legends (20)
+| Question (réponse) | Vérifié | Source |
+|---|---|---|
+| Carte 5v5 (Faille de l'invocateur) | Page officielle « Bienvenue dans la Faille » ; nom bien établi | https://www.leagueoflegends.com/fr-fr/how-to-play/ |
+| Bâtiment à détruire (Nexus) | « Le Nexus est le cœur de la base de chaque équipe », sa destruction fait gagner la partie | https://www.leagueoflegends.com/fr-fr/how-to-play/ |
+| Monstre le plus puissant (Baron Nashor) | « Le baron Nashor est le monstre le plus puissant de la jungle » ; bonus d'équipe et sbires renforcés | https://www.leagueoflegends.com/fr-fr/how-to-play/ |
+| Éclaireur de Bandle (Teemo) | Titre FR « Éclaireur de Bandle » ; ultime « Piège nocif » (les champignons) | https://leagueoflegends.com/fr-fr/champions/teemo/ |
+| Force de Demacia (Garen) | Titre FR « Force de Demacia » | https://leagueoflegends.com/fr-fr/champions/garen/ |
+| Powder → Jinx | Powder, sœur de Vi, prend ensuite le nom de Jinx | https://wikiwand.com/en/articles/Arcane_(TV_series) |
+| Studio d'Arcane (Fortiche) | Studio d'animation français Fortiche | https://wikiwand.com/en/articles/Arcane_(TV_series) |
+| Worlds 2011 (Fnatic) | Fnatic bat Against All Authority 2-1 | https://www.esports.net/wiki/tournaments/lol-worlds-winners/ |
+| Worlds 2013 (SK Telecom T1) | SKT T1 bat Royal Club 3-0 (Faker était dans l'équipe, c'est bien connu) | https://www.esports.net/wiki/tournaments/lol-worlds-winners/ |
+| Worlds 2018 (Invictus Gaming) | IG bat Fnatic 3-0 | https://www.esports.net/wiki/tournaments/lol-worlds-winners/ |
+| Demi-frère de Yasuo (Yone) | « Au cours de sa vie, Yone fut le demi-frère de Yasuo » | https://www.leagueoflegends.com/fr-fr/champions/yone/ |
+| Frère cadet de Nasus (Renekton) | « Nasus is Renekton's older brother » | https://leagueoflegends.fandom.com/wiki/Nasus |
+| Couple avec Rakan (Xayah) | « two lovers » vastaya | https://www.pcgamer.com/rakan-and-xayah-are-league-of-legends-two-new-champions |
+| Empire d'Azir (Shurima) | « mortal emperor of Shurima » | https://www.leagueoflegends.com/champions/azir |
+| Brume noire (Îles obscures) | « La Brume noire des Îles obscures se propage… » | https://support.riotgames.com/fr-fr/legends-of-runeterra/gameplay/champions-of-the-shadow-isles |
+| Partenaire de Jayce pour l'Hextech (Viktor) | Jayce crée l'Hextech avec Viktor, son partenaire de recherche | https://wikiwand.com/en/articles/Arcane_(TV_series) |
+| Cité du progrès (Piltover) | « Piltover, also known as the City of Progress » ; cité sœur de Zaun | https://wiki.leagueoflegends.com/en-us/Universe:Piltover |
+| Worlds 2014 (Samsung White) | Samsung White bat Star Horn Royal Club 3-1 | https://www.esports.net/wiki/tournaments/lol-worlds-winners/ |
+| Darkin de la faux de Kayn (Rhaast) | « sentient darkin weapon Rhaast » ; le wiki confirme que Rhaast est un Darkin | https://leagueoflegends.com/en-us/champions/kayn/ , https://wiki.leagueoflegends.com/en-us/Darkin |
+| Ordre de Shen et Kennen (Kinkou) | Ordre Kinkou dirigé par un triumvirat : Shen (Œil du crépuscule), Kennen (Cœur de la tempête) | https://leagueoflegends.fandom.com/wiki/Kinkou_Order |
+
+## Dofus / Krosmoz (20)
+| Question (réponse) | Vérifié | Source |
+|---|---|---|
+| Zone des débutants avant Astrub (Incarnam) | Zone « destinée aux joueurs débutants », suivie de la transition vers Astrub | https://dofus.jeuxonline.info/actualite/48112/mise-jour-229-refonte-incarnam |
+| Cité divine opposée à Brâkmar (Bonta) | « Divine City » ; faction opposée à Brakmar | https://wakfu.fandom.com/wiki/Bonta |
+| Siège d'Ankama (Roubaix) | Siège à Roubaix | https://www.wikiwand.com/en/articles/Ankama , https://leclaireur.fnac.com/article/106845-la-folle-et-veritable-histoire-de-dofus/ |
+| Classe des archers (Crâ) | Le nom vient du mot français pour « arc » ; spécialistes de l'arc | https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS |
+| Monnaie (Kamas) | « Kamas, the in-game currency » | https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS |
+| Héros éliatrope de Wakfu (Yugo) | « Yugo ; un éliatrope », personnage principal | https://fr.vikidia.org/wiki/Wakfu |
+| Chef des Bouftous à Astrub (Bouftou Royal) | Donjon « Cour du Bouftou Royal », boss Bouftou Royal, Astrub/Tainéla | https://dofus.jeuxonline.info/article/13271 |
+| Classe de soin (Eniripsa) | Classée « healers » ; nom tiré d'une marque d'antidouleur (aspirine à l'envers) | https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS |
+| Magie du temps (Xélor) | Nom tiré d'une marque de montres, « specialize in time magic » | https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS |
+| Classe de la chance (Ecaflip) | Nom tiré de « pile ou face » ; mise sur la chance | https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS |
+| Ogre d'Otomaï et de Dathura (Ogrest) | Ogrest, créé par Otomaï, avec la poupée Dathura ; doit réunir les six Dofus pour qu'elle devienne humaine (fiche du tome 4) | https://ankama-shop.com/en/dofus/300-ogrest-volume-1.html |
+| Nombre de Dofus primordiaux (6) | « six Dofus virent le jour : les six Dofus Primordiaux » | https://www.millenium.org/guide/289263.html |
+| Monture dragon + dinde (Dragodinde) | Dragodinde répertoriée comme monture (le nom suffit à justifier la question) | https://dofus.jeuxonline.info/article/13334/dragodindes |
+| Cofondateur « Tot » (Anthony Roux) | « Anthony Roux, alias ToT » ; cofondateurs : Camille Chafer et Emmanuel Darras, mai 2001 | https://leclaireur.fnac.com/article/106845-la-folle-et-veritable-histoire-de-dofus/ |
+| Frère jumeau dragon de Yugo (Adamaï) | « a Dragon and Yugo's long lost twin brother » | https://wakfu.fandom.com/wiki/Brotherhood_of_The_Tofu |
+| Groupe de Yugo (Confrérie du Tofu) | Page « Brotherhood of the Tofu » qui liste Yugo, Amalia, Evangelyne, Ruel, etc. | https://wakfu.fandom.com/wiki/Brotherhood_of_The_Tofu |
+| Méchant Xélor de la saison 1 (Nox) | Nox, un Xélor, moteur de l'intrigue de la saison 1 | https://krosmoz.fandom.com/wiki/Nox |
+| Horloger de Frigost (Comte Harebourg) | Disciple de Xélor, horloger, vit seul dans son château sur Frigost ; ajouté avec Frigost III | https://dofus.jeuxonline.info/article/8181/comte-harebourg |
+| Sous-titre du film de 2016 (Julith) | « Dofus, livre 1 : Julith », 2016 | https://www.wikiwand.com/en/articles/Ankama |
+| Village de Yugo avec Alibert (Emelka) | Auberge du Bouftou Croustillant à Emelka ; Alibert est son père adoptif | https://everybodywiki.com/Yugo_(Wakfu) |
+
+## Logique & énigmes (20) : chaque énigme résolue à nouveau
+- Batte et balle : b + (b+1) = 1,10, donc b = 0,05 €. Réponse unique.
+- 1,1,2,3,5,8,13 : suite de Fibonacci, donc 21.
+- « Plus j'en enlève, plus il est grand » : un trou (devinette classique).
+- 5 machines/5 objets/5 min : 1 machine fait 1 objet en 5 min, donc 5 min.
+- Nénuphar qui double chaque jour, lac couvert en 48 j : la moitié en 47 j.
+- 2,3,5,7,11,13 : nombres premiers, donc 17.
+- U,D,T,Q,C,S,S : initiales de un… sept, donc H (huit).
+- Aiguilles qui ne piquent pas : horloge ; montre, pendule et réveil acceptés en variantes (même idée).
+- À moi mais utilisé par les autres : mon prénom (et nom en variante).
+- Plein de trous mais retient l'eau : une éponge.
+- Père de Marie, cinq filles (4 nommées) : Marie.
+- Doubler le 2e : on prend sa place, donc 2e.
+- Famille : f−1 = g et f = 2(g−1), d'où g = 3, f = 4, total 7. Solution unique.
+- 3 chats, 3 souris, 3 min : 1 chat = 1 souris/3 min, soit environ 33,3 souris en 100 min ; 3 chats suffisent pour 100 souris. Réponse 3.
+- Début de « nuit », fin de « matin », deux fois dans « année » : la lettre N (vérifié lettre par lettre).
+- Se mouille en séchant : une serviette.
+- Escargot, puits de 10 m, +3/−2 : au début du jour k il est à k−1 m ; le jour 8 il part de 7 m et atteint 10 m. Réponse 8.
+- Villes sans maisons, etc. : une carte (plan accepté en variante).
+- 1, 11, 21, 1211, 111221 : suite « look-and-say », donc 312211.
+- Carrés sur un échiquier 8×8 : somme de k² pour k = 1 à 8, soit 204.
+
+## Validation automatique
+60 entrées, 20 par thème ; toutes les limites sont respectées (réponses ≤ 3 mots) ; aucun doublon de question ni de réponse après normalisation (minuscules, sans accents ni ponctuation).
+
+## Second pass (vérification indépendante, 19/11/2026)
+
+Les 60 questions ont été revérifiées : les 40 questions LoL et Dofus par recherche web et lecture de pages (site officiel Riot FR, wikis LoL, Wakfu et Krosmoz, JeuxOnLine, Millenium, Ankama Shop, Wikiwand), et les 20 énigmes résolues à nouveau sans s'appuyer sur la première passe. 56 questions sont confirmées sans changement, 4 ont été modifiées.
+
+### Éléments modifiés (ancien → nouveau)
+1. **LoL, Kinkou** : « Quel ordre ionien de ninjas compte Shen et Kennen parmi ses maîtres ? » → « Quel groupe secret de guerriers ioniens, gardien de l'équilibre, est dirigé par Shen et compte Kennen parmi ses membres ? ». Raison : Riot ne présente pas les Kinkou comme des « ninjas » (le wiki n'emploie ce mot que pour Akali) ; la nouvelle formulation reprend la biographie officielle de Shen (« chef d'un groupe secret de guerriers ioniens connu sous le nom de Kinkou », « assurer leur équilibre »). Sources : https://www.leagueoflegends.com/fr-fr/champions/shen/ , https://leagueoflegends.fandom.com/wiki/Kinkou_Order
+2. **Dofus, Bonta** : « quelle cité, surnommée « la Cité divine », s'oppose à Brâkmar ? » → « Dans Dofus, quelle cité aux couleurs blanc et bleu est la grande rivale de Brâkmar ? ». Raison : je n'ai trouvé le surnom « Cité divine » que dans le wiki anglais de Wakfu (« Divine City »), pas dans une source francophone. Les couleurs bleu et blanc et la rivalité de factions avec Brâkmar sont, elles, sûres. La réponse reste Bonta. Source : https://wakfu.fandom.com/wiki/Bonta
+3. **Dofus, Kamas** : « Quelle est la monnaie du jeu Dofus ? » → « Dans Dofus, quelle est la monnaie de base que l'on gagne en jeu, par opposition aux Ogrines achetées avec de l'argent réel ? ». Raison : le jeu a deux monnaies (Kamas et Ogrines), et « Ogrines » aurait pu être défendu comme réponse. Source : https://tvtropes.org/pmwiki/pmwiki.php/VideoGame/DOFUS (« Ogrines… can be bought with real money… Kamas, the in-game currency »)
+4. **Énigmes, batte et balle** : ajout des variantes « 5 cents » et « Cinq centimes », équivalentes à la réponse, qui manquaient.
+
+### Points vérifiés sans changement (sélection)
+- Baron Nashor : Atakhan a été retiré en 2026, le Baron reste « le monstre le plus puissant de la jungle » (page officielle « Comment jouer ») et il est le seul à renforcer les sbires. Sources : https://www.leagueoflegends.com/fr-fr/how-to-play/ , https://esports.gg/news/league-of-legends/atakhan-feats-of-strength-league-of-legends-2026
+- Titres officiels en français : « Éclaireur de Bandle » (Teemo), « Force de Demacia » (Garen), Rhaast « arme darkin » et « faux » (Kayn), Yone « demi-frère de Yasuo ». Source : pages champions de leagueoflegends.com/fr-fr
+- Worlds : 2011 Fnatic 2-1 AAA ; 2013 SKT T1 3-0 Royal Club ; 2014 Samsung White 3-1 SHRC ; 2018 IG 3-0 Fnatic. Source : https://www.esports.net/wiki/tournaments/lol-worlds-winners/
+- Arcane : studio français Fortiche, Powder devient Jinx, Viktor partenaire de recherche de Jayce pour l'Hextech. Piltover, « City of Progress », cité sœur de Zaun. Renekton : Nasus est son frère aîné.
+- Incarnam est toujours la zone de départ avant Astrub dans Dofus 3 (guide de 2026). Cour du Bouftou Royal : Astrub, niveau 30. Six Dofus primordiaux nommés (Millenium). Ogrest, créé par Otomaï, doit réunir les six Dofus pour Dathura (Ankama Shop). Harebourg : disciple de Xélor, horloger, château sur Frigost (JOL). Ankama : siège à Roubaix, fondateurs Anthony Roux alias ToT, Camille Chafer et Emmanuel Darras ; film Julith en 2016 (Wikiwand, L'Éclaireur Fnac). Yugo : Emelka, Alibert, jumeau Adamaï (dragon). Nox est un Xélor et la menace centrale de la saison 1 (Krosmoz wiki). Étymologie des classes Crâ, Eniripsa, Xélor et Ecaflip confirmée (TV Tropes).
+- Énigmes : toutes résolues à nouveau, avec la même réponse unique (famille : 4 filles et 3 garçons ; escargot : jour 8 ; chats : 3 chats attrapent 1 souris par minute ; échiquier : somme des k² = 204 ; look-and-say : 312211).
+
+### Doutes restants (mineurs)
+- « Aiguilles qui ne piquent pas » : un joueur pourrait répondre « une boussole » (qui n'a en général qu'une aiguille). La réponse attendue (horloge ou montre) reste nettement la meilleure ; c'est au vote de trancher.
+- Variante « Un plan » (énigme de la carte) et « Anthony » (Tot) conservées : elles sont un peu larges mais ne désignent rien d'autre de défendable.

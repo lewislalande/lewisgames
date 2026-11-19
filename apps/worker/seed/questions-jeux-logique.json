@@ -1,0 +1,509 @@
+{
+  "questions": [
+    {
+      "theme": "League of Legends",
+      "question": "Comment s'appelle la carte principale en 5 contre 5 de League of Legends ?",
+      "answer": "Faille de l'invocateur",
+      "variants": [
+        "La Faille de l'invocateur",
+        "Summoner's Rift",
+        "La Faille"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel bâtiment, cœur de la base de chaque équipe, faut-il détruire pour remporter une partie ?",
+      "answer": "Nexus",
+      "variants": [
+        "Le Nexus"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel monstre épique, le plus puissant de la jungle, renforce toute l'équipe et ses sbires quand on le tue ?",
+      "answer": "Baron Nashor",
+      "variants": [
+        "Nashor",
+        "Le Baron",
+        "Baron"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel champion yordle, surnommé « l'Éclaireur de Bandle », pose des champignons empoisonnés ?",
+      "answer": "Teemo",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel champion est surnommé « la Force de Demacia » ?",
+      "answer": "Garen",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Dans Arcane, quel nom prend Powder, la petite sœur de Vi ?",
+      "answer": "Jinx",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel studio d'animation français a réalisé la série Arcane ?",
+      "answer": "Fortiche",
+      "variants": [
+        "Fortiche Production",
+        "Fortiche Productions",
+        "Studio Fortiche"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle équipe européenne a remporté les tout premiers Worlds de League of Legends, en 2011 ?",
+      "answer": "Fnatic",
+      "variants": [
+        "FNC"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle équipe coréenne, emmenée par Faker, a remporté les Worlds 2013 ?",
+      "answer": "SK Telecom T1",
+      "variants": [
+        "SKT T1",
+        "SKT",
+        "T1",
+        "SK Telecom"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle équipe chinoise a remporté les Worlds 2018 en battant Fnatic en finale ?",
+      "answer": "Invictus Gaming",
+      "variants": [
+        "IG",
+        "Invictus"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel champion ionien était, de son vivant, le demi-frère de Yasuo ?",
+      "answer": "Yone",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel champion crocodile de Shurima est le frère cadet de Nasus ?",
+      "answer": "Renekton",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle championne vastaya rebelle forme un couple avec Rakan ?",
+      "answer": "Xayah",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel empire désertique de Runeterra fut jadis gouverné par l'empereur Azir ?",
+      "answer": "Shurima",
+      "variants": [
+        "L'empire de Shurima"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "De quelle région maudite de Runeterra se propage la Brume noire ?",
+      "answer": "Îles obscures",
+      "variants": [
+        "Les Îles obscures",
+        "Shadow Isles",
+        "Les Shadow Isles"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Dans Arcane, quel scientifique de Zaun est le partenaire de recherche de Jayce dans la création de l'Hextech ?",
+      "answer": "Viktor",
+      "variants": [
+        "Victor"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle cité, surnommée « la Cité du progrès », est la voisine et rivale de Zaun ?",
+      "answer": "Piltover",
+      "variants": []
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quelle équipe coréenne a remporté les Worlds 2014 ?",
+      "answer": "Samsung White",
+      "variants": [
+        "SSW",
+        "Samsung Galaxy White"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Comment s'appelle le Darkin enfermé dans la faux de Kayn ?",
+      "answer": "Rhaast",
+      "variants": [
+        "Rhast"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Quel groupe secret de guerriers ioniens, gardien de l'équilibre, est dirigé par Shen et compte Kennen parmi ses membres ?",
+      "answer": "Kinkou",
+      "variants": [
+        "L'ordre Kinkou",
+        "Les Kinkou",
+        "Ordre Kinkou"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans Dofus, quelle zone céleste réservée aux débutants précède l'arrivée à Astrub ?",
+      "answer": "Incarnam",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans Dofus, quelle cité aux couleurs blanc et bleu est la grande rivale de Brâkmar ?",
+      "answer": "Bonta",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans quelle ville du Nord se trouve le siège d'Ankama, le studio de Dofus ?",
+      "answer": "Roubaix",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quelle classe de Dofus, dont le nom vient du mot « arc », est spécialiste du tir à l'arc ?",
+      "answer": "Crâ",
+      "variants": [
+        "Cra",
+        "Les Crâs",
+        "Crâs"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans Dofus, quelle est la monnaie de base que l'on gagne en jeu, par opposition aux Ogrines achetées avec de l'argent réel ?",
+      "answer": "Kamas",
+      "variants": [
+        "Kama",
+        "Les kamas"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Comment s'appelle le jeune héros éliatrope de la série animée Wakfu ?",
+      "answer": "Yugo",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel boss, chef des Bouftous, attend au fond de sa Cour dans la zone d'Astrub ?",
+      "answer": "Bouftou Royal",
+      "variants": [
+        "Le Bouftou Royal",
+        "Bouftou roi"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quelle classe de Dofus, au nom tiré d'« aspirine » à l'envers, est la grande classe de soin ?",
+      "answer": "Eniripsa",
+      "variants": [
+        "Eni",
+        "Les Eniripsas"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quelle classe de Dofus, au nom inspiré d'une marque de montres, maîtrise la magie du temps ?",
+      "answer": "Xélor",
+      "variants": [
+        "Xelor",
+        "Les Xélors"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quelle classe féline de Dofus, au nom tiré de « pile ou face », mise tout sur la chance ?",
+      "answer": "Ecaflip",
+      "variants": [
+        "Écaflip",
+        "Les Ecaflips"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel ogre légendaire, créé par Otomaï, devait réunir les Dofus primordiaux pour la poupée Dathura ?",
+      "answer": "Ogrest",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Combien existe-t-il de Dofus primordiaux ?",
+      "answer": "6",
+      "variants": [
+        "Six"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quelle monture emblématique de Dofus porte un nom mêlant « dragon » et « dinde » ?",
+      "answer": "Dragodinde",
+      "variants": [
+        "Dragodindes",
+        "DD",
+        "Une dragodinde"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel cofondateur d'Ankama est surnommé « Tot » ?",
+      "answer": "Anthony Roux",
+      "variants": [
+        "Roux",
+        "Anthony"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans la série Wakfu, comment s'appelle le dragon qui est le frère jumeau de Yugo ?",
+      "answer": "Adamaï",
+      "variants": [
+        "Adamai"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Comment s'appelle le groupe d'aventuriers formé par Yugo et ses amis dans Wakfu ?",
+      "answer": "Confrérie du Tofu",
+      "variants": [
+        "La Confrérie du Tofu"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel Xélor est le grand méchant de la saison 1 de Wakfu ?",
+      "answer": "Nox",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel comte, horloger disciple de Xélor, vit reclus dans son château sur l'île de Frigost ?",
+      "answer": "Comte Harebourg",
+      "variants": [
+        "Harebourg",
+        "Le Comte Harebourg"
+      ]
+    },
+    {
+      "theme": "Dofus",
+      "question": "Quel est le sous-titre du film « Dofus – Livre 1 », sorti au cinéma en 2016 ?",
+      "answer": "Julith",
+      "variants": []
+    },
+    {
+      "theme": "Dofus",
+      "question": "Dans Wakfu, dans quel village Yugo a-t-il grandi auprès de son père adoptif Alibert ?",
+      "answer": "Emelka",
+      "variants": []
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Une batte et une balle coûtent 1,10 € au total. La batte coûte 1 € de plus que la balle. Combien coûte la balle ?",
+      "answer": "5 centimes",
+      "variants": [
+        "0,05 €",
+        "0,05",
+        "5 cts",
+        "0.05",
+        "5 c",
+        "5 cents",
+        "Cinq centimes"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Quel nombre vient ensuite : 1, 1, 2, 3, 5, 8, 13, … ?",
+      "answer": "21",
+      "variants": [
+        "Vingt et un",
+        "Vingt-et-un"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : plus j'en enlève, plus il est grand. Qui est-il ?",
+      "answer": "Un trou",
+      "variants": [
+        "Trou",
+        "Le trou"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "5 machines fabriquent 5 objets en 5 minutes. Combien de temps faut-il à 100 machines pour fabriquer 100 objets ?",
+      "answer": "5 minutes",
+      "variants": [
+        "5",
+        "5 min",
+        "Cinq minutes"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Un nénuphar double de surface chaque jour et couvre tout le lac en 48 jours. En combien de jours couvre-t-il la moitié du lac ?",
+      "answer": "47 jours",
+      "variants": [
+        "47",
+        "Quarante-sept"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Quel nombre vient ensuite : 2, 3, 5, 7, 11, 13, … ?",
+      "answer": "17",
+      "variants": [
+        "Dix-sept"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Quelle lettre vient ensuite : U, D, T, Q, C, S, S, … ?",
+      "answer": "H",
+      "variants": [
+        "La lettre H"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : j'ai des aiguilles mais je ne pique pas. Qui suis-je ?",
+      "answer": "Une horloge",
+      "variants": [
+        "Horloge",
+        "Une montre",
+        "Montre",
+        "Une pendule",
+        "Pendule",
+        "Un réveil"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : il est à moi, mais les autres s'en servent bien plus que moi. Qu'est-ce que c'est ?",
+      "answer": "Mon prénom",
+      "variants": [
+        "Prénom",
+        "Mon nom",
+        "Nom",
+        "Le prénom"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : je suis plein de trous, et pourtant je retiens l'eau. Qui suis-je ?",
+      "answer": "Une éponge",
+      "variants": [
+        "Éponge",
+        "Eponge"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Le père de Marie a cinq filles : Lala, Lélé, Lili et Lolo. Comment s'appelle la cinquième ?",
+      "answer": "Marie",
+      "variants": []
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Pendant une course, tu doubles le coureur en deuxième position. À quelle place es-tu maintenant ?",
+      "answer": "Deuxième",
+      "variants": [
+        "2e",
+        "2ème",
+        "Second",
+        "Seconde",
+        "2"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Dans une famille, chaque fille a autant de frères que de sœurs, et chaque garçon a deux fois plus de sœurs que de frères. Combien y a-t-il d'enfants ?",
+      "answer": "7",
+      "variants": [
+        "Sept",
+        "7 enfants"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "3 chats attrapent 3 souris en 3 minutes. Au même rythme, combien de chats faut-il pour attraper 100 souris en 100 minutes ?",
+      "answer": "3",
+      "variants": [
+        "Trois",
+        "3 chats"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : je suis au début de la nuit, à la fin du matin, et deux fois dans l'année. Qui suis-je ?",
+      "answer": "La lettre N",
+      "variants": [
+        "N",
+        "Lettre N"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : qu'est-ce qui se mouille à mesure qu'il sèche ?",
+      "answer": "Une serviette",
+      "variants": [
+        "Serviette",
+        "Une serviette de bain"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Un escargot au fond d'un puits de 10 m monte de 3 m le jour et glisse de 2 m la nuit. Le combientième jour sort-il du puits ?",
+      "answer": "8",
+      "variants": [
+        "8e jour",
+        "Huit",
+        "8 jours",
+        "Le 8e"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Devinette : j'ai des villes sans maisons, des forêts sans arbres et des rivières sans eau. Qui suis-je ?",
+      "answer": "Une carte",
+      "variants": [
+        "Carte",
+        "Une carte géographique",
+        "Un plan"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Quel terme vient ensuite : 1, 11, 21, 1211, 111221, … ?",
+      "answer": "312211",
+      "variants": []
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "Combien de carrés de toutes tailles peut-on compter sur un échiquier de 8 × 8 cases ?",
+      "answer": "204",
+      "variants": [
+        "Deux cent quatre"
+      ]
+    }
+  ]
+}
