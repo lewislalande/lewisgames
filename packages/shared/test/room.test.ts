@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  CODE_ALPHABET, generateCode, createRoom, joinRoom, disconnect, connectedPlayers,
+  CODE_ALPHABET, generateCode, isValidCode, createRoom, joinRoom, disconnect, connectedPlayers,
   type Room,
 } from '../src/room';
 
@@ -23,6 +23,14 @@ describe('generateCode', () => {
   it('handles rng edge values', () => {
     expect(generateCode(() => 0)).toBe('AAAAA');
     expect(generateCode(() => 0.999999)).toHaveLength(5);
+  });
+});
+
+describe('isValidCode', () => {
+  it('accepts exactly 5 alphabet chars', () => {
+    expect(isValidCode('ABCDE')).toBe(true);
+    expect(isValidCode(generateCode(Math.random))).toBe(true);
+    for (const bad of ['ABCD', 'ABCDEF', 'ABCDI', 'ABCDO', 'abcde', 'ABC1E', '', 'AB DE']) expect(isValidCode(bad)).toBe(false);
   });
 });
 

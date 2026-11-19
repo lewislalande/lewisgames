@@ -21,6 +21,21 @@ const ERRORS: Record<string, string> = {
   bad_message: 'Une erreur est survenue. Recharge la page.',
 };
 
+export function RoomError({ error, onChangeName }: { error: string; onChangeName?: () => void }) {
+  return (
+    <main className="narrow">
+      <div className="card">
+        <h1 className="title-sm">Oups</h1>
+        <p className="error" role="alert">{ERRORS[error] ?? ERRORS.bad_message}</p>
+        {error === 'bad_name' && onChangeName && (
+          <button className="btn" onClick={onChangeName}>Changer de pseudo</button>
+        )}
+        <a className="btn btn-primary" href="/">Retour à l'accueil</a>
+      </div>
+    </main>
+  );
+}
+
 export function PictionaryRoom({ code }: { code: string }) {
   const [name, setNameState] = useState<string | null>(getName());
   if (!name) {
@@ -68,20 +83,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   const offset = useMemo(() => (state ? state.game.serverNow - Date.now() : 0), [state]);
   const names = useMemo(() => Object.fromEntries((state?.players ?? []).map((p) => [p.id, p.name])), [state]);
 
-  if (error) {
-    return (
-      <main className="narrow">
-        <div className="card">
-          <h1 className="title-sm">Oups</h1>
-          <p className="error" role="alert">{ERRORS[error] ?? ERRORS.bad_message}</p>
-          {error === 'bad_name' && (
-            <button className="btn" onClick={onChangeName}>Changer de pseudo</button>
-          )}
-          <a className="btn btn-primary" href="/">Retour à l'accueil</a>
-        </div>
-      </main>
-    );
-  }
+  if (error) return <RoomError error={error} onChangeName={onChangeName} />;
 
   if (!state || !sock.playerId) {
     return (

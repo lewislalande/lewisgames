@@ -17,6 +17,8 @@ export type RoomSocket = {
 };
 
 const backoff = (attempt: number) => Math.min(10_000, 1000 * 2 ** attempt);
+/** After this many failed connections in a row with none ever opened, ask the API if the room exists. */
+const PROBE_AFTER = 3;
 
 export function useRoomSocket(code: string, name: string): RoomSocket {
   const [status, setStatus] = useState<Status>('connecting');
@@ -32,6 +34,9 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
     let attempt = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let fatal = false;
+    let everOpened = false;
+    let failures = 0;
+    let probing = false;
     setStatus('connecting');
     setError(null);
     setState(null);
@@ -43,6 +48,8 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
       wsRef.current = ws;
       ws.onopen = () => {
         attempt = 0;
+        everOpened = true;
+        failures = 0;
         // Committed on its own, before any state of this connection (DrawingCanvas relies on it).
         flushSync(() => setStatus('open'));
         ws.send(JSON.stringify({ t: 'hello', token: getToken(), name } satisfies ClientMsg));
@@ -71,11 +78,29 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
         if (disposed) return;
         setStatus('closed');
         if (fatal) return;
+        if (!everOpened && ++failures >= PROBE_AFTER && !probing) {
+          probing = true;
+          void probe().finally(() => { probing = false; });
+        }
         timer = setTimeout(() => {
+          if (disposed || fatal) return;
           setStatus('connecting');
           connect();
         }, backoff(attempt++));
       };
+    };
+
+    // The worker 404s the socket of a room it cannot route; the HTTP API tells "gone" apart from "down".
+    const probe = async () => {
+      try {
+        const res = await fetch(`/api/rooms/${encodeURIComponent(code)}`);
+        if (res.status !== 404 || disposed) return;
+        fatal = true;
+        clearTimeout(timer);
+        setError('not_found');
+      } catch {
+        // Offline: keep retrying.
+      }
     };
     connect();
 

@@ -28,6 +28,11 @@ export function generateCode(rng: () => number): string {
   return code;
 }
 
+/** A well-formed room code: CODE_LENGTH chars of CODE_ALPHABET (uppercase, no I/O). */
+export function isValidCode(code: string): boolean {
+  return code.length === CODE_LENGTH && [...code].every((c) => CODE_ALPHABET.includes(c));
+}
+
 export function createRoom(code: string, game: 'pictionary'): Room {
   return { code, game, hostId: null, ownerId: null, players: [], tokens: {} };
 }
