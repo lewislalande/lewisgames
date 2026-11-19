@@ -6,8 +6,8 @@
   "scripts": {
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "dev": "pnpm -r --if-present dev",
-    "deploy": "pnpm -r --if-present deploy"
+    "dev": "pnpm -r --if-present run dev",
+    "deploy": "pnpm -r --if-present run deploy"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
