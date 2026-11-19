@@ -39,6 +39,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 const qs = (params: Record<string, string | number>) =>
   new URLSearchParams(Object.entries(params).filter(([, v]) => v !== '' && v !== 0).map(([k, v]) => [k, String(v)])).toString();
 
+export type ImportSource = 'manuel' | 'généré';
+
 export const adminApi = {
   me: () => request<null>('GET', '/api/admin/me'),
   login: (password: string) => request<null>('POST', '/api/admin/login', { password }),
@@ -49,7 +51,8 @@ export const adminApi = {
   createQuestion: (q: ImportedQuestion) => request<{ id: number }>('POST', '/api/admin/questions', q),
   updateQuestion: (id: number, q: ImportedQuestion) => request<{ id: number }>('PUT', `/api/admin/questions/${id}`, q),
   deleteQuestion: (id: number) => request<null>('DELETE', `/api/admin/questions/${id}`),
-  importQuestions: (questions: ImportedQuestion[]) => request<ImportReport>('POST', '/api/admin/import', { questions }),
+  importQuestions: (questions: ImportedQuestion[], source: ImportSource = 'manuel') =>
+    request<ImportReport>('POST', '/api/admin/import', { questions, source }),
   exportQuestions: () => request<{ questions: ImportedQuestion[] }>('GET', '/api/admin/export'),
   getWords: () => request<{ words: string[] }>('GET', '/api/admin/words'),
   putWords: (words: string[]) => request<{ count: number }>('PUT', '/api/admin/words', { words }),

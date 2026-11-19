@@ -16,6 +16,8 @@ const TABS: { id: Tab; label: string }[] = [
 export function Admin() {
   const [auth, setAuth] = useState<Auth>('loading');
   const [tab, setTab] = useState<Tab>('questions');
+  // The words editor stays mounted (hidden) once opened, so unsaved edits survive tab switches.
+  const [wordsOpened, setWordsOpened] = useState(false);
   const loggedOut = useCallback(() => setAuth('login'), []);
 
   useEffect(() => {
@@ -34,7 +36,7 @@ export function Admin() {
     return <main className="narrow"><p className="error" role="alert">L'admin n'est pas configuré (ADMIN_PASSWORD / ADMIN_SECRET manquants).</p></main>;
   }
   if (auth === 'error') return <main className="narrow"><p className="error" role="alert">Impossible de joindre le serveur. Recharge la page.</p></main>;
-  if (auth === 'login') return <Login onLoggedIn={() => { setTab('questions'); setAuth('in'); }} />;
+  if (auth === 'login') return <Login onLoggedIn={() => { setTab('questions'); setWordsOpened(false); setAuth('in'); }} />;
 
   return (
     <main className="admin">
@@ -42,14 +44,14 @@ export function Admin() {
         <h1>Administration</h1>
         <nav className="adm-tabs" role="tablist" aria-label="Sections">
           {TABS.map((t) => (
-            <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} className={`adm-tab${tab === t.id ? ' on' : ''}`} onClick={() => setTab(t.id)}>{t.label}</button>
+            <button key={t.id} role="tab" type="button" aria-selected={tab === t.id} className={`adm-tab${tab === t.id ? ' on' : ''}`} onClick={() => { setTab(t.id); if (t.id === 'words') setWordsOpened(true); }}>{t.label}</button>
           ))}
         </nav>
         <button className="btn btn-sm" type="button" onClick={() => void logout()}>Se déconnecter</button>
       </header>
       {tab === 'questions' && <QuestionList onUnauthorized={loggedOut} />}
       {tab === 'import' && <ImportPanel onUnauthorized={loggedOut} />}
-      {tab === 'words' && <WordsPanel onUnauthorized={loggedOut} />}
+      {wordsOpened && <div hidden={tab !== 'words'}><WordsPanel onUnauthorized={loggedOut} /></div>}
     </main>
   );
 }

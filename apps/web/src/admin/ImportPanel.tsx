@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { parseImport, type ImportedQuestion } from '@kg/shared';
-import { adminApi, type ImportReport } from './api';
+import { adminApi, type ImportReport, type ImportSource } from './api';
 
 const MAX_IMPORT = 1000;
 const TOO_MANY = `Trop de questions : ${MAX_IMPORT} au maximum par import.`;
@@ -24,6 +24,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 export function ImportPanel({ onUnauthorized }: { onUnauthorized: () => void }) {
   const [text, setText] = useState('');
+  const [source, setSource] = useState<ImportSource>('généré');
   const [busy, setBusy] = useState(false);
   const [report, setReport] = useState<ImportReport | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
@@ -43,14 +44,16 @@ export function ImportPanel({ onUnauthorized }: { onUnauthorized: () => void }) 
   async function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = '';
-    if (file) change(await file.text());
+    if (!file) return;
+    setSource('généré');
+    change(await file.text());
   }
 
   async function run() {
     if (!parsed?.ok.length) return;
     setBusy(true);
     setFailure(null);
-    const res = await adminApi.importQuestions(parsed.ok);
+    const res = await adminApi.importQuestions(parsed.ok, source);
     setBusy(false);
     if (res.ok) return setReport(res.data);
     if (res.unauthorized) return onUnauthorized();
@@ -88,6 +91,14 @@ export function ImportPanel({ onUnauthorized }: { onUnauthorized: () => void }) 
         <div className="adm-field">
           <label htmlFor="imp-text">…ou coller le JSON</label>
           <textarea id="imp-text" rows={10} spellCheck={false} value={text} onChange={(e) => change(e.target.value)} />
+        </div>
+
+        <div className="adm-field">
+          <label htmlFor="imp-source">Source des questions</label>
+          <select id="imp-source" className="adm-select" value={source} onChange={(e) => setSource(e.target.value as ImportSource)}>
+            <option value="généré">Généré par Claude</option>
+            <option value="manuel">Manuel</option>
+          </select>
         </div>
 
         {parsed && (

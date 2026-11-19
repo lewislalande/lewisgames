@@ -95,6 +95,8 @@ with sync_playwright() as p:
     pg.get_by_label('Variantes acceptées (une par ligne)').fill('Le Mont Blanc\nMont-Blanc')
     shot(pg, '3-add-form')
     pg.get_by_role('button', name='Enregistrer').click()
+    # The seeded bank fills the first page: look at the test theme only.
+    pg.get_by_label('Thème', exact=True).first.select_option(label=f'{THEME} (1)')
     row = pg.locator('tr', has_text='plus haute montagne')
     row.wait_for()
     check('Le Mont Blanc, Mont-Blanc' in row.inner_text(), 'added question listed with variants')
@@ -168,6 +170,9 @@ with sync_playwright() as p:
     pg.get_by_text('Import terminé').wait_for()
     report = pg.locator('.adm-report').inner_text()
     check('2 ajoutées, 1 doublon ignoré, 0 erreur' in report, f'import report: {report!r}')
+    check(pg.locator('#imp-source').input_value() == 'généré', 'import source defaults to « Généré par Claude » for a file')
+    found = api.get('/api/admin/questions', params={'q': 'araignée'}).json()['items']
+    check(found and all(it['source'] == 'généré' for it in found), 'imported questions are tagged « généré »')
     shot(pg, '7-import-done')
 
     # pasted JSON + invalid + too many
