@@ -8,3 +8,5 @@ export * from './pictionary/game';
 export * from './pictionary/view';
 export * from './pictionary/words';
 export * from './protocol';
+export * from './quiz/settings';
+export * from './quiz/grouping';
