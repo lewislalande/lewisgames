@@ -123,7 +123,7 @@ function quizAdapter(db: D1Database): GameAdapter<QuizState, QuizEvent> {
         questions = await pickQuestions(db, state.settings.themes, state.settings.questionCount);
       } catch (err) {
         console.error('picking questions failed', err);
-        return { ok: true, event };
+        return { ok: false, error: 'internal' };
       }
       if (questions.length === 0) return { ok: false, error: 'no_questions' };
       return {

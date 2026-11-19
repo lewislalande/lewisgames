@@ -1,4 +1,5 @@
 import { CODE_ALPHABET, GAME_KINDS, generateCode, type GameKind } from '@kg/shared';
+import { handleAdmin } from './admin';
 import { listThemes } from './questions';
 
 export { RoomDO } from './room-do';
@@ -48,8 +49,15 @@ export default {
       return request.method === 'POST' ? createRoom(request, env) : json({ error: 'method' }, 405);
     }
     if (pathname === '/api/themes') {
-      return request.method === 'GET' ? json(await listThemes(env.DB)) : json({ error: 'method' }, 405);
+      if (request.method !== 'GET') return json({ error: 'method' }, 405);
+      try {
+        return json(await listThemes(env.DB));
+      } catch (err) {
+        console.error('listing themes failed', err);
+        return json({ error: 'internal' }, 500);
+      }
     }
+    if (pathname.startsWith('/api/admin/')) return handleAdmin(request, env);
     const match = ROOM_PATH.exec(pathname);
     if (match) {
       const stub = roomStub(env, match[1]!);

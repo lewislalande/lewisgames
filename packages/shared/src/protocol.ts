@@ -18,8 +18,8 @@ export type ClientMsg =
   | { t: 'closeVote' }
   | { t: 'decide'; groupId: string; vote: VoteValue };
 
-/** `bad_message` and `no_questions` leave the socket open; the others close it. */
-export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | 'bad_message' | 'no_questions';
+/** `bad_message`, `no_questions` and `internal` leave the socket open; the others close it. */
+export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | 'bad_message' | 'no_questions' | 'internal';
 
 export type PlayerInfo = { id: string; name: string; connected: boolean };
 

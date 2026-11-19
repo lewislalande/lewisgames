@@ -1,7 +1,9 @@
 import { SELF, env } from 'cloudflare:test';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { BASE, Client, createRoom, until } from './helpers';
 import { markUsed, pickQuestions } from '../src/questions';
+
+afterEach(() => vi.restoreAllMocks());
 
 let seq = 0;
 /** A theme no other test uses, so tests sharing the database stay independent. */
@@ -99,6 +101,22 @@ describe('quiz rooms', () => {
     const shown = await b.nextQuiz((m) => m.game.correct !== null);
     expect(shown.game.correct).toEqual({ answer: 'zzcorrectsecret', variants: ['zzvariantsecret'] });
     void bId;
+  });
+
+  it('tells the host about a D1 failure at start instead of ignoring it', async () => {
+    const { a, b } = await quizRoom(freshTheme());
+    vi.spyOn(env.DB, 'prepare').mockImplementation(() => {
+      throw new Error('d1 down');
+    });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    a.send({ t: 'start' });
+    expect(await a.next((m) => m.t === 'error')).toEqual({ t: 'error', code: 'internal' });
+    vi.restoreAllMocks();
+    // Non-fatal: the room is still in the lobby and the socket still open.
+    a.send({ t: 'settings', settings: { answerSeconds: 25 } });
+    expect((await a.nextQuiz((m) => m.game.settings.answerSeconds === 25)).game.phase).toBe('lobby');
+    expect(a.closed).toBeNull();
+    void b;
   });
 
   it('refuses to start when the chosen themes have no question, telling the host only', async () => {

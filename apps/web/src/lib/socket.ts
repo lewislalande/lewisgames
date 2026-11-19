@@ -17,7 +17,7 @@ export type RoomSocket = {
   error: string | null;
 };
 
-/** Errors after which the server closed the socket for good; the others (bad_message, no_questions) are not. */
+/** Errors after which the server closed the socket for good; the others (bad_message, no_questions, internal) are not. */
 const FATAL_ERRORS: readonly string[] = ['room_full', 'bad_name', 'bad_token', 'not_found'];
 
 const backoff = (attempt: number) => Math.min(10_000, 1000 * 2 ** attempt);
