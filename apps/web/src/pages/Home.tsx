@@ -38,6 +38,8 @@ export function Home() {
 
       <div className="games">
         <section className="card card-game">
+          <span className="ring ring-l" aria-hidden="true" />
+          <span className="ring ring-r" aria-hidden="true" />
           <h2>Pictionary</h2>
           <p>Dessine, devine, grimpe au classement. De 2 à 12 joueurs.</p>
           <button className="btn btn-primary" onClick={create} disabled={busy}>

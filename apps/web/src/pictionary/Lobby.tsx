@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, SETTING_RANGES, clampSettings } from '@kg/shared';
 import type { ClientMsg, NumericSettingKey, PictionarySettings } from '@kg/shared';
 import type { StateMsg } from '../lib/socket';
+import { avatarColor } from './Scoreboard';
 
 const SETTINGS_KEY = 'kg.pictionarySettings';
 
@@ -137,21 +138,36 @@ export function Lobby({ code, state, playerId, send }: Props) {
       </header>
 
       <div className="lobby-grid">
-        <section className="card players">
-          <h2>Joueurs ({state.players.length}/{server.maxPlayers})</h2>
-          <ul className="player-list">
-            {state.players.map((p) => (
-              <li key={p.id} className={p.connected ? '' : 'away'}>
-                <span className="player-name">
-                  {p.id === state.hostId && <span className="crown" title="Hôte" aria-label="Hôte">♛</span>}
-                  {p.name}
-                  {p.id === playerId && <span className="you"> (toi)</span>}
-                  {!p.connected && <span className="you"> (absent)</span>}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+        <div className="lobby-side">
+          <section className="card players">
+            <h2>Joueurs ({state.players.length}/{server.maxPlayers})</h2>
+            <ul className="player-list">
+              {state.players.map((p) => (
+                <li key={p.id} className={`${p.connected ? '' : 'away'}${p.id === playerId ? ' me' : ''}`}>
+                  <span className="avatar" style={{ background: avatarColor(p.id) }} aria-hidden="true">{[...p.name][0]?.toUpperCase()}</span>
+                  <span className="player-name">
+                    {p.id === state.hostId && <span className="crown" title="Hôte" aria-label="Hôte">♛</span>}
+                    {p.name}
+                    {p.id === playerId && <span className="you"> (toi)</span>}
+                    {!p.connected && <span className="you"> (absent)</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <footer className="lobby-foot">
+            {isHost ? (
+              <>
+                <button className="btn btn-primary btn-big" disabled={!canStart} onClick={() => send({ t: 'start' })}>
+                  Lancer la partie
+                </button>
+                {!canStart && <p className="muted">Il faut au moins 2 joueurs.</p>}
+              </>
+            ) : (
+              <p className="muted">En attente du lancement par l'hôte…</p>
+            )}
+          </footer>
+        </div>
 
         <section className="card settings">
           <h2>Réglages</h2>
@@ -225,18 +241,6 @@ export function Lobby({ code, state, playerId, send }: Props) {
         </section>
       </div>
 
-      <footer className="lobby-foot">
-        {isHost ? (
-          <>
-            <button className="btn btn-primary btn-big" disabled={!canStart} onClick={() => send({ t: 'start' })}>
-              Lancer la partie
-            </button>
-            {!canStart && <p className="muted">Il faut au moins 2 joueurs.</p>}
-          </>
-        ) : (
-          <p className="muted">En attente du lancement par l'hôte…</p>
-        )}
-      </footer>
     </div>
   );
 }

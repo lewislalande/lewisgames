@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { addAction, appendPoints, isValidAction, MAX_STROKE_POINTS, redo, undo } from '@kg/shared';
 import type { DrawAction, DrawingHistory, DrawOp, Point } from '@kg/shared';
 import { Renderer, renderAction } from './renderer';
@@ -76,6 +76,10 @@ type Props = {
   /** Owned by the parent so the drawer's tool settings survive the per-turn remount. */
   tools: ToolState;
   onTools: (t: ToolState) => void;
+  /** Rendered in the notebook frame above the canvas (title, word, timer). */
+  header?: ReactNode;
+  /** Rendered over the canvas (word choice, turn end). */
+  children?: ReactNode;
 };
 
 /**
@@ -84,7 +88,7 @@ type Props = {
  * Mount one instance per turn (React `key`): the drawer's copy is authoritative
  * for the whole turn.
  */
-export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, tools, onTools }: Props) {
+export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, tools, onTools, header, children }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<Renderer | null>(null);
@@ -276,20 +280,26 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
 
   return (
     <div className="drawing">
-      <div className={`canvas-wrap${canDraw ? ` can-draw tool-${tools.tool}` : ''}`}>
-        <canvas
-          ref={canvasRef}
-          className="board"
-          width={WIDTH}
-          height={HEIGHT}
-          aria-label="Zone de dessin"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerEnd}
-          onPointerCancel={onPointerEnd}
-          onLostPointerCapture={onPointerEnd}
-        />
-        <canvas ref={overlayRef} className="board-overlay" width={WIDTH} height={HEIGHT} aria-hidden="true" />
+      <div className="notebook">
+        <span className="ring ring-l" aria-hidden="true" />
+        <span className="ring ring-r" aria-hidden="true" />
+        {header}
+        <div className={`canvas-wrap${canDraw ? ` can-draw tool-${tools.tool}` : ''}`}>
+          <canvas
+            ref={canvasRef}
+            className="board"
+            width={WIDTH}
+            height={HEIGHT}
+            aria-label="Zone de dessin"
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerEnd}
+            onPointerCancel={onPointerEnd}
+            onLostPointerCapture={onPointerEnd}
+          />
+          <canvas ref={overlayRef} className="board-overlay" width={WIDTH} height={HEIGHT} aria-hidden="true" />
+          {children}
+        </div>
       </div>
       {canDraw && <Toolbar value={tools} onChange={onTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
     </div>

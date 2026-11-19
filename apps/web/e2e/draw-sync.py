@@ -74,7 +74,7 @@ def main():
         a.get_by_text('Bob').first.wait_for()
         a.get_by_text('Carol').first.wait_for()
         a.get_by_role('button', name='Lancer la partie').click()
-        a.locator('.toolbar').wait_for(timeout=15000)
+        a.locator('.toolbar').wait_for(state='attached', timeout=15000)  # display: contents, never "visible"
         b.locator('canvas.board').wait_for()
         assert b.locator('.toolbar').count() == 0, 'guesser must not see the toolbar'
 

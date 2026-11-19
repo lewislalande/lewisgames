@@ -96,39 +96,51 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   const game = state.game;
   const drawerName = game.drawerId ? names[game.drawerId] ?? null : null;
   const playing = game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd';
+  const canDraw = game.isDrawer && game.phase === 'drawing';
+  const title =
+    game.phase === 'choosing'
+      ? game.isDrawer ? 'Choisis un mot' : `${drawerName ?? 'Le dessinateur'} choisit un mot…`
+      : game.phase === 'turnEnd'
+        ? 'Fin du tour'
+        : game.isDrawer ? 'À toi de dessiner !' : 'Devine le dessin !';
   return (
-    <main className={`room${game.phase === 'lobby' ? '' : ' wide'}`}>
-      {sock.status !== 'open' && <p className="banner">Connexion perdue, nouvelle tentative…</p>}
+    <main className={`room${game.phase === 'lobby' ? '' : ' wide'}${playing ? ' play' : ''}`}>
+      {sock.status !== 'open' && <p className="banner" role="status">Connexion perdue, nouvelle tentative…</p>}
       {game.phase === 'lobby' && <Lobby code={code} state={state} playerId={sock.playerId} send={sock.send} />}
       {game.phase === 'gameOver' && <GameOver state={state} playerId={sock.playerId} send={sock.send} />}
       {playing && (
-        <>
-          <header className="topbar card">
-            <span className="round">Manche {game.round}/{game.settings.rounds}</span>
-            <WordBar game={game} drawerName={drawerName} offset={offset} send={sock.send} />
-            <Timer endsAt={game.phaseEndsAt} offset={offset} />
-          </header>
-          <div className="game-grid">
-            <Scoreboard state={state} playerId={sock.playerId} />
-            <section className="card stage">
-              <div className="stage-canvas">
-                <DrawingCanvas
-                  key={`${game.round}:${game.drawerId}`}
-                  history={game.history}
-                  canDraw={game.isDrawer && game.phase === 'drawing'}
-                  onOp={(op) => sock.send({ t: 'draw', op })}
-                  subscribe={sock.onDraw}
-                  connected={sock.status === 'open'}
-                  tools={tools}
-                  onTools={setTools}
-                />
-                {game.phase === 'choosing' && <WordChoice game={game} drawerName={drawerName} send={sock.send} />}
-                {game.phase === 'turnEnd' && <TurnEnd game={game} names={names} />}
-              </div>
-            </section>
-            <Chat game={game} names={names} send={sock.send} onNotice={sock.onNotice} />
-          </div>
-        </>
+        <div className={`game-grid${canDraw ? ' drawer-view' : ''}`}>
+          <Scoreboard state={state} playerId={sock.playerId} />
+          <DrawingCanvas
+            key={`${game.round}:${game.drawerId}`}
+            history={game.history}
+            canDraw={canDraw}
+            onOp={(op) => sock.send({ t: 'draw', op })}
+            subscribe={sock.onDraw}
+            connected={sock.status === 'open'}
+            tools={tools}
+            onTools={setTools}
+            header={
+              <header className="nb-head">
+                <span className="round" aria-label={`Manche ${game.round}/${game.settings.rounds}`}>
+                  <small aria-hidden="true">Manche</small>
+                  <span aria-hidden="true">{game.round}/{game.settings.rounds}</span>
+                </span>
+                <div className="nb-center">
+                  <h1 className="nb-title">{title}</h1>
+                  <WordBar game={game} drawerName={drawerName} offset={offset} send={sock.send} />
+                </div>
+                <div className="nb-timer">
+                  <Timer endsAt={game.phaseEndsAt} offset={offset} />
+                </div>
+              </header>
+            }
+          >
+            {game.phase === 'choosing' && <WordChoice game={game} drawerName={drawerName} send={sock.send} />}
+            {game.phase === 'turnEnd' && <TurnEnd game={game} names={names} />}
+          </DrawingCanvas>
+          <Chat game={game} names={names} send={sock.send} onNotice={sock.onNotice} />
+        </div>
       )}
     </main>
   );

@@ -30,15 +30,13 @@ type Props = {
   send: (m: ClientMsg) => void;
 };
 
-export function WordBar({ game, drawerName, offset, send }: Props) {
+export function WordBar({ game, offset, send }: Props) {
   const now = useServerNow(offset, 500);
   const { phase, word, mask, revealed } = game;
   const fresh = useFreshReveals(revealed);
 
-  if (phase === 'choosing') {
-    return <div className="wordbar"><span className="wordbar-note">{game.isDrawer ? 'Choisis un mot' : `${drawerName ?? 'Le dessinateur'} choisit un mot…`}</span></div>;
-  }
-  if (word === null && mask === null) return <div className="wordbar" />;
+  // While choosing, the notebook title says who picks the word.
+  if (phase === 'choosing' || (word === null && mask === null)) return <div className="wordbar" />;
 
   const shown = word ?? mask!.join('');
   const chars = [...shown];
