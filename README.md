@@ -19,10 +19,13 @@ pnpm install
 ## Développement
 
 ```sh
+cp apps/worker/.dev.vars.example apps/worker/.dev.vars   # une fois (mot de passe admin local)
+pnpm --filter worker run db:migrate:local                # une fois, et après chaque nouvelle migration
+pnpm --filter worker run seed:local                      # une fois : questions et mots
 pnpm dev
 ```
 
-Lance ensemble `wrangler dev` (API et WebSocket sur http://localhost:8787) et `vite` (front sur http://localhost:5173, qui relaie `/api` vers le port 8787). Ouvre http://localhost:5173.
+`pnpm dev` lance ensemble `wrangler dev` (API et WebSocket sur http://localhost:8787) et `vite` (front sur http://localhost:5173, qui relaie `/api` vers le port 8787). Ouvre http://localhost:5173.
 
 ## Tests
 
@@ -57,10 +60,12 @@ Le quiz stocke ses questions (et la liste de mots du Pictionary) dans une base C
 **Création** (une seule fois, après `wrangler login`) :
 
 ```sh
-pnpm --filter worker exec wrangler d1 create kgames
+pnpm --filter worker exec wrangler d1 create kgames --binding DB --update-config
 ```
 
-La commande affiche un `database_id` : colle-le dans `apps/worker/wrangler.jsonc` à la place de `00000000-0000-0000-0000-000000000000` (bloc `d1_databases`). Le binding (`DB`) et le nom (`kgames`) ne changent pas.
+`--update-config` remplace l'entrée existante de `apps/worker/wrangler.jsonc` (le `database_id` factice `00000000-…`) par le vrai identifiant, sans en ajouter une seconde.
+
+Si wrangler ne modifie pas le fichier (ou si tu préfères le faire à la main) : lance la même commande sans `--binding` ni `--update-config`, puis colle le `database_id` affiché dans l'entrée `d1_databases` déjà présente de `apps/worker/wrangler.jsonc`, à la place de `00000000-0000-0000-0000-000000000000`. Ne crée pas un deuxième bloc : le binding (`DB`) et le nom (`kgames`) ne changent pas.
 
 **Migrations** (à relancer après chaque mise à jour qui en ajoute) :
 
@@ -169,4 +174,6 @@ apps/web/          front React + Vite ; apps/web/e2e/ : scénarios Playwright
 
 ## Modifier la liste de mots
 
-Édite `packages/shared/src/pictionary/words-fr.json` : un simple tableau JSON de mots ou expressions (avec accents, tirets autorisés). La comparaison des réponses ignore la casse, les accents, les tirets et les espaces en trop. Redéploie ensuite avec `pnpm run deploy`.
+Depuis la page `/admin`, onglet « Mots du Pictionary » : un mot ou une expression par ligne, puis « Enregistrer » (la liste est remplacée d'un coup, sans redéploiement). La comparaison des réponses ignore la casse, les accents, les tirets et les espaces en trop.
+
+`packages/shared/src/pictionary/words-fr.json` n'est que la liste de départ (insérée par `seed:local` / `seed:remote`) et le secours si la base n'a aucun mot : ce n'est plus là qu'on modifie la liste.
