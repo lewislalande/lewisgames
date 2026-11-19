@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "node scripts/ensure-web-dist.mjs",
     "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
+    "deploy": "pnpm --filter web build && wrangler deploy",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run"
   },
