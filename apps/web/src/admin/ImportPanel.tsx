@@ -45,7 +45,6 @@ export function ImportPanel({ onUnauthorized }: { onUnauthorized: () => void }) 
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
-    setSource('généré');
     change(await file.text());
   }
 

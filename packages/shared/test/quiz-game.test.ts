@@ -396,6 +396,26 @@ describe('voting', () => {
     expect(quizViewFor(s, 'A', 1000).selfVoteGroups).toEqual([]);
     expect(quizReduce(s, { type: 'vote', by: 'A', groupId: 'x', vote: 'yes' }, ctxOf(mkRoom())).state).toBe(s);
   });
+  it('a group becomes self-vote when its only possible judges disconnect; the host decides a tie', () => {
+    let room = mkRoom();
+    let s = toVoting({ A: 'x', B: 'x', C: 'y' }, room);
+    expect(quizViewFor(s, 'A', 1000).selfVoteGroups).toEqual([]);
+    room = disconnect(room, 'C');
+    s = run(s, [{ type: 'playerLeft', playerId: 'C' }], room);
+    expect(quizViewFor(s, 'A', 1000).selfVoteGroups).toEqual(['x']);
+    expect(s.pendingVoters).toEqual(['A', 'B']);
+    s = run(s, [
+      { type: 'vote', by: 'A', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'x', vote: 'no' },
+      { type: 'vote', by: 'A', groupId: 'y', vote: 'no' },
+      { type: 'vote', by: 'B', groupId: 'y', vote: 'no' },
+    ], room);
+    expect(s.phase).toBe('deciding');
+    expect(s.outcomes).toEqual({ y: 'no' });
+    s = run(s, [{ type: 'decide', by: 'A', groupId: 'x', vote: 'yes' }], room);
+    expect(s.phase).toBe('result');
+    expect(s.scores).toMatchObject({ A: 1, B: 1, C: 0 });
+  });
   it('a player joining mid-vote is not awaited but may vote', () => {
     const room4 = mkRoom(['A', 'B', 'C', 'D']);
     let s = toVoting({ A: 'x', B: 'y', C: 'z' });

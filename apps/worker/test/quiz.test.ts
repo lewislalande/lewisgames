@@ -103,6 +103,23 @@ describe('quiz rooms', () => {
     void bId;
   });
 
+  it('never shows a final:false draft in other players\' frames, nor counts it as answered', async () => {
+    const theme = freshTheme();
+    await seed(theme, [{ question: 'Q brouillon ?', answer: 'zzcorrectdraft' }]);
+    const { a, aId, b } = await quizRoom(theme);
+    a.send({ t: 'start' });
+    await b.nextQuiz((m) => m.game.phase === 'answering');
+
+    a.send({ t: 'answer', text: 'zzdraftofa' });
+    expect((await a.nextQuiz((m) => m.game.myAnswer === 'zzdraftofa')).game.mySubmitted).toBe(false);
+    // B's own draft frame arrives after everything A's draft caused for B.
+    b.send({ t: 'answer', text: 'zzdraftofb', final: false });
+    await b.nextQuiz((m) => m.game.myAnswer === 'zzdraftofb');
+    expect(b.raw.join('\n')).not.toContain('zzdraftofa');
+    expect(b.raw.join('\n')).not.toContain('"answered":["' + aId);
+    expect(a.raw.join('\n')).not.toContain('zzdraftofb');
+  });
+
   it('tells the host about a D1 failure at start instead of ignoring it', async () => {
     const { a, b } = await quizRoom(freshTheme());
     vi.spyOn(env.DB, 'prepare').mockImplementation(() => {

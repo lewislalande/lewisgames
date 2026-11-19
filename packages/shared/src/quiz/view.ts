@@ -1,4 +1,4 @@
-import { isBlankAnswer, isSelfVoteGroup, type QuizPhase, type QuizState } from './game';
+import { isBlankAnswer, type QuizPhase, type QuizState } from './game';
 import type { QuizSettings } from './settings';
 import type { VoteValue } from './grouping';
 
@@ -67,7 +67,7 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
       }))
       : null,
     pendingVoters: s.phase === 'voting' ? s.pendingVoters : [],
-    selfVoteGroups: s.phase === 'voting' ? s.groups.filter((g) => isSelfVoteGroup(s, g)).map((g) => g.id) : [],
+    selfVoteGroups: s.phase === 'voting' ? s.selfVoteGroups : [],
     ties: s.phase === 'deciding' ? s.groups.filter((g) => s.outcomes[g.id] === undefined).map((g) => g.id) : [],
     outcomes: s.outcomes,
     questionPoints: s.questionPoints,

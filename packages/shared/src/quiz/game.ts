@@ -27,6 +27,8 @@ export type QuizState = {
   pendingVoters: string[];
   /** Players connected when the vote opened: only they are awaited (later joiners may still vote). */
   voters: string[];
+  /** GroupIds whose authors vote on them (see selfVoteGroupIds); recomputed while voting, frozen once it closes. */
+  selfVoteGroups: string[];
   questionPoints: Record<string, number>;
   scores: Record<string, number>;
   phaseEndsAt: number | null;
@@ -68,6 +70,7 @@ export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS)
     outcomes: {},
     pendingVoters: [],
     voters: [],
+    selfVoteGroups: [],
     questionPoints: {},
     scores: {},
     phaseEndsAt: null,
@@ -99,6 +102,7 @@ function beginQuestion(s: QuizState, index: number, ctx: QuizCtx): Result {
     outcomes: {},
     pendingVoters: [],
     voters: [],
+    selfVoteGroups: [],
     questionPoints: {},
     phaseEndsAt: ctx.now + s.settings.answerSeconds * 1000,
   });
@@ -154,15 +158,17 @@ function onRevealNext(s: QuizState, ctx: QuizCtx): Result {
 // ---- voting ----
 
 /**
- * A group every player present at the start of the vote authored (e.g. everybody gave the same
- * answer) has nobody to judge it: its authors vote on it, exception to the no-self-vote rule.
+ * A group with nobody left to judge it (every player present at the start of the vote and still
+ * connected authored it, e.g. everybody gave the same answer): its authors vote on it, exception
+ * to the no-self-vote rule.
  */
-export function isSelfVoteGroup(s: Pick<QuizState, 'voters'>, g: AnswerGroup): boolean {
-  return s.voters.length > 0 && s.voters.every((id) => g.authors.includes(id));
+function selfVoteGroupIds(s: QuizState, ctx: QuizCtx): string[] {
+  const present = connectedIds(ctx).filter((id) => s.voters.includes(id));
+  return s.groups.filter((g) => present.length > 0 && present.every((id) => g.authors.includes(id))).map((g) => g.id);
 }
 
 const canVoteOn = (s: QuizState, g: AnswerGroup, id: string): boolean =>
-  !g.authors.includes(id) || isSelfVoteGroup(s, g);
+  !g.authors.includes(id) || s.selfVoteGroups.includes(g.id);
 
 /** Connected players present at the start of the vote lacking a vote on a group they may vote on. */
 function pendingVotersOf(s: QuizState, ctx: QuizCtx): string[] {
@@ -172,7 +178,8 @@ function pendingVotersOf(s: QuizState, ctx: QuizCtx): string[] {
 }
 
 /** Ends the vote once nobody connected is still pending; otherwise refreshes `pendingVoters`. */
-function checkVotingDone(s: QuizState, ctx: QuizCtx): Result {
+function checkVotingDone(s0: QuizState, ctx: QuizCtx): Result {
+  const s = { ...s0, selfVoteGroups: selfVoteGroupIds(s0, ctx) };
   const pendingVoters = pendingVotersOf(s, ctx);
   if (pendingVoters.length === 0) return closeVoting(s, ctx);
   return changed({ ...s, pendingVoters });
@@ -182,7 +189,8 @@ function checkVotingDone(s: QuizState, ctx: QuizCtx): Result {
  * Resolves each group on the votes cast (including by players who left since). A tie — including a
  * group nobody voted on — goes to `deciding`, where host-authored ties become ½ (see resolveHostTies).
  */
-function closeVoting(s: QuizState, ctx: QuizCtx): Result {
+function closeVoting(s0: QuizState, ctx: QuizCtx): Result {
+  const s = { ...s0, selfVoteGroups: selfVoteGroupIds(s0, ctx) };
   const outcomes: Record<string, VoteValue> = {};
   for (const g of s.groups) {
     const v = resolveVotes(Object.values(s.votes[g.id] ?? {}));
@@ -200,7 +208,7 @@ function resolveHostTies(s: QuizState, ctx: QuizCtx): QuizState {
   const host = ctx.room.hostId;
   let outcomes = s.outcomes;
   for (const g of s.groups) {
-    if (outcomes[g.id] === undefined && host !== null && g.authors.includes(host) && !isSelfVoteGroup(s, g)) {
+    if (outcomes[g.id] === undefined && host !== null && g.authors.includes(host) && !s.selfVoteGroups.includes(g.id)) {
       outcomes = { ...outcomes, [g.id]: 'half' };
     }
   }
