@@ -71,6 +71,9 @@ const changed = (state: QuizState): Result => ({ state, effects: [{ type: 'state
 const unchanged = (state: QuizState): Result => ({ state, effects: [] });
 
 const isVoteValue = (v: unknown): v is VoteValue => v === 'yes' || v === 'half' || v === 'no';
+/** An answer with no letter or digit (blank, or punctuation only) counts as no answer. */
+export const isBlankAnswer = (text: string | undefined): boolean => !/[\p{L}\p{N}]/u.test(text ?? '');
+
 const connectedIds = (ctx: QuizCtx): string[] => connectedPlayers(ctx.room).map((p) => p.id);
 const isConnected = (ctx: QuizCtx, id: string): boolean => connectedIds(ctx).includes(id);
 
@@ -105,14 +108,15 @@ function start(s: QuizState, questions: Question[], ctx: QuizCtx): Result {
 
 const everyoneAnswered = (s: QuizState, ctx: QuizCtx): boolean => {
   const ids = connectedIds(ctx);
-  return ids.length > 0 && ids.every((id) => (s.answers[id] ?? '') !== '');
+  return ids.length > 0 && ids.every((id) => !isBlankAnswer(s.answers[id]));
 };
 
 function endAnswering(s: QuizState, ctx: QuizCtx): Result {
+  const meaningful = Object.fromEntries(Object.entries(s.answers).filter(([, text]) => !isBlankAnswer(text)));
   return changed({
     ...s,
     phase: 'revealing',
-    groups: groupAnswers(s.answers, ctx.room.players.map((p) => p.id)),
+    groups: groupAnswers(meaningful, ctx.room.players.map((p) => p.id)),
     revealedCount: 0,
     answerShown: false,
     phaseEndsAt: null,
@@ -154,18 +158,32 @@ function checkVotingDone(s: QuizState, ctx: QuizCtx): Result {
 
 /**
  * Resolves each group on the votes cast (including by players who left since). A tie — including a
- * group nobody voted on — is ½ when the host is an author, otherwise left for the host to decide.
+ * group nobody voted on — goes to `deciding`, where host-authored ties become ½ (see resolveHostTies).
  */
 function closeVoting(s: QuizState, ctx: QuizCtx): Result {
   const outcomes: Record<string, VoteValue> = {};
   for (const g of s.groups) {
     const v = resolveVotes(Object.values(s.votes[g.id] ?? {}));
     if (v !== 'tie') outcomes[g.id] = v;
-    else if (ctx.room.hostId !== null && g.authors.includes(ctx.room.hostId)) outcomes[g.id] = 'half';
   }
-  const next: QuizState = { ...s, outcomes, pendingVoters: [] };
-  if (s.groups.every((g) => outcomes[g.id] !== undefined)) return enterResult(next, ctx);
-  return changed({ ...next, phase: 'deciding' });
+  return changed(resolveHostTies({ ...s, phase: 'deciding', outcomes, pendingVoters: [] }, ctx));
+}
+
+/**
+ * In `deciding`: a tie the current host authored resolves to ½ (the host can't judge their own
+ * answer), re-checked whenever the host may have changed; with no ties left the question ends.
+ */
+function resolveHostTies(s: QuizState, ctx: QuizCtx): QuizState {
+  if (s.phase !== 'deciding') return s;
+  const host = ctx.room.hostId;
+  let outcomes = s.outcomes;
+  for (const g of s.groups) {
+    if (outcomes[g.id] === undefined && host !== null && g.authors.includes(host)) {
+      outcomes = { ...outcomes, [g.id]: 'half' };
+    }
+  }
+  const next = outcomes === s.outcomes ? s : { ...s, outcomes };
+  return s.groups.every((g) => next.outcomes[g.id] !== undefined) ? enterResult(next, ctx).state : next;
 }
 
 function onVote(s: QuizState, by: string, groupId: unknown, vote: unknown, ctx: QuizCtx): Result {
@@ -182,9 +200,7 @@ function onDecide(s: QuizState, groupId: unknown, vote: unknown, ctx: QuizCtx): 
   if (s.phase !== 'deciding' || !isVoteValue(vote)) return unchanged(s);
   const group = s.groups.find((g) => g.id === groupId);
   if (!group || s.outcomes[group.id] !== undefined) return unchanged(s);
-  const next = { ...s, outcomes: { ...s.outcomes, [group.id]: vote } };
-  if (s.groups.every((g) => next.outcomes[g.id] !== undefined)) return enterResult(next, ctx);
-  return changed(next);
+  return changed({ ...s, outcomes: { ...s.outcomes, [group.id]: vote } });
 }
 
 function enterResult(s: QuizState, ctx: QuizCtx): Result {
@@ -221,32 +237,37 @@ function onTimeout(s: QuizState, ctx: QuizCtx): Result {
   return endAnswering(s, ctx);
 }
 
+/** Join/leave always report a change: the player list the clients show has changed. */
 function onPlayerJoined(s: QuizState, playerId: string, ctx: QuizCtx): Result {
-  if (s.phase === 'lobby' || s.phase === 'gameOver') return unchanged(s);
-  let next = s.scores[playerId] === undefined ? { ...s, scores: { ...s.scores, [playerId]: 0 } } : s;
-  if (next.phase === 'voting') {
-    const pendingVoters = pendingVotersOf(next, ctx);
-    if (pendingVoters.join() !== next.pendingVoters.join()) next = { ...next, pendingVoters };
-  }
-  return next === s ? unchanged(s) : changed(next);
+  if (s.phase === 'lobby' || s.phase === 'gameOver') return changed(s);
+  const next = s.scores[playerId] === undefined ? { ...s, scores: { ...s.scores, [playerId]: 0 } } : s;
+  return next.phase === 'voting' ? checkVotingDone(next, ctx) : changed(next);
 }
 
 function onPlayerLeft(s: QuizState, ctx: QuizCtx): Result {
   if (s.phase === 'answering' && everyoneAnswered(s, ctx)) return endAnswering(s, ctx);
-  if (s.phase === 'voting') {
-    const pendingVoters = pendingVotersOf(s, ctx);
-    if (pendingVoters.join() === s.pendingVoters.join()) return unchanged(s);
-    return checkVotingDone(s, ctx);
-  }
-  return unchanged(s);
+  if (s.phase === 'voting') return checkVotingDone(s, ctx);
+  return changed(s);
 }
 
 export function quizReduce(state: QuizState, event: QuizEvent, ctx: QuizCtx): Result {
+  const r = reduceEvent(state, event, ctx);
+  // The host may have changed since the vote closed: re-apply the host-author ½ rule.
+  const resolved = resolveHostTies(r.state, ctx);
+  return resolved === r.state ? r : changed(resolved);
+}
+
+/** Merges a partial settings payload over the current settings before clamping. */
+function mergeSettings(current: QuizSettings, input: unknown): QuizSettings {
+  return clampQuizSettings(input && typeof input === 'object' ? { ...current, ...input } : current);
+}
+
+function reduceEvent(state: QuizState, event: QuizEvent, ctx: QuizCtx): Result {
   const isHost = 'by' in event && ctx.room.hostId !== null && event.by === ctx.room.hostId;
   switch (event.type) {
     case 'setSettings':
       if (!isHost || (state.phase !== 'lobby' && state.phase !== 'gameOver')) return unchanged(state);
-      return changed({ ...state, settings: clampQuizSettings(event.settings) });
+      return changed({ ...state, settings: mergeSettings(state.settings, event.settings) });
     case 'start':
       if (!isHost || state.phase !== 'lobby' || connectedPlayers(ctx.room).length < 2) return unchanged(state);
       if (!Array.isArray(event.questions) || event.questions.length < 1) return unchanged(state);

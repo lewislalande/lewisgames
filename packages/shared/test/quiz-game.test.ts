@@ -313,6 +313,57 @@ describe('voting', () => {
     expect(s.outcomes).toEqual({ same: 'half' });
     expect(s.scores).toEqual({ A: 0.5, B: 0.5 });
   });
+  it('host leaves during voting: a tie on the new host\'s group resolves to half', () => {
+    let room = mkRoom();
+    let s = run(toVoting({ A: 'x', B: 'y', C: 'z' }, room), [
+      { type: 'vote', by: 'A', groupId: 'y', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'y', vote: 'no' },
+    ], room);
+    room = disconnect(room, 'A');
+    expect(room.hostId).toBe('B');
+    s = run(s, [
+      { type: 'playerLeft', playerId: 'A' },
+      { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'z', vote: 'no' },
+    ], room);
+    expect(s.phase).toBe('result');
+    expect(s.outcomes).toEqual({ x: 'yes', y: 'half', z: 'no' });
+  });
+  it('host leaves during deciding: a pending tie on the new host\'s group resolves to half', () => {
+    let room = mkRoom();
+    let s = run(toVoting({ A: 'x', B: 'y', C: 'x' }, room), [
+      { type: 'vote', by: 'A', groupId: 'y', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'y', vote: 'no' },
+      { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
+    ], room);
+    expect(s.phase).toBe('deciding');
+    room = disconnect(room, 'A');
+    const r = quizReduce(s, { type: 'playerLeft', playerId: 'A' }, ctxOf(room));
+    expect(r.effects).toEqual([{ type: 'state' }]);
+    expect(r.state.phase).toBe('result');
+    expect(r.state.outcomes).toEqual({ x: 'yes', y: 'half' });
+    expect(r.state.questionPoints).toEqual({ A: 1, B: 0.5, C: 1 });
+  });
+  it('whitespace-only and punctuation-only answers: not answered, no group, 0 points', () => {
+    let s = run(started(), [
+      { type: 'answer', by: 'A', text: 'x' },
+      { type: 'answer', by: 'B', text: '   ' },
+      { type: 'answer', by: 'C', text: '?!' },
+    ]);
+    expect(s.phase).toBe('answering');
+    expect(quizViewFor(s, 'A', 1000).answered).toEqual(['A']);
+    expect(quizViewFor(s, 'C', 1000).myAnswer).toBe('?!');
+    s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
+    expect(s.groups.map((g) => g.id)).toEqual(['x']);
+    s = nexts(s, 3);
+    s = run(s, [
+      { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'x', vote: 'yes' },
+    ]);
+    expect(s.phase).toBe('result');
+    expect(s.questionPoints).toEqual({ A: 1, B: 0, C: 0 });
+  });
   it('empty answer gets 0 and no group', () => {
     let s = run(started(), [
       { type: 'answer', by: 'A', text: 'x' },
@@ -380,6 +431,19 @@ describe('full game', () => {
     expect(run(s, [{ type: 'setSettings', by: 'B', settings: { questionCount: 5 } }])).toBe(s);
     const playing = started();
     expect(run(playing, [{ type: 'setSettings', by: 'A', settings: { questionCount: 5 } }])).toBe(playing);
+  });
+  it('setSettings merges a partial payload over the current settings', () => {
+    let s = run(quizInitialState(), [
+      { type: 'setSettings', by: 'A', settings: { questionCount: 20, answerSeconds: 60, themes: ['Histoire'] } },
+    ]);
+    s = run(s, [{ type: 'setSettings', by: 'A', settings: { answerSeconds: 45 } }]);
+    expect(s.settings).toEqual({ questionCount: 20, answerSeconds: 45, maxPlayers: 8, themes: ['Histoire'] });
+  });
+  it('playerJoined / playerLeft always report a state change', () => {
+    const s = quizInitialState();
+    expect(quizReduce(s, { type: 'playerJoined', playerId: 'B' }, ctxOf(mkRoom())).effects).toEqual([{ type: 'state' }]);
+    const room = disconnect(mkRoom(), 'C');
+    expect(quizReduce(started(), { type: 'playerLeft', playerId: 'C' }, ctxOf(room)).effects).toEqual([{ type: 'state' }]);
   });
   it('host-only events are ignored when there is no host', () => {
     const room = { ...mkRoom(), hostId: null };
