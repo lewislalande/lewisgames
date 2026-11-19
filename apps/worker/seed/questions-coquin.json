@@ -1,0 +1,233 @@
+{
+  "questions": [
+    {
+      "theme": "Coquin",
+      "question": "Quel mot-clé a été le plus recherché sur Pornhub dans le monde en 2023 ?",
+      "answer": "Hentai",
+      "variants": []
+    },
+    {
+      "theme": "Coquin",
+      "question": "Dans quel pays le Kama-sutra a-t-il été écrit, en sanskrit, il y a environ 1 700 ans ?",
+      "answer": "Inde",
+      "variants": [
+        "L'Inde",
+        "India"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel aventurier vénitien du XVIIIe siècle, auteur des mémoires « Histoire de ma vie », est devenu synonyme de grand séducteur ?",
+      "answer": "Casanova",
+      "variants": [
+        "Giacomo Casanova",
+        "Giacomo Girolamo Casanova"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Comment s'appelle le dieu romain de l'amour, enfant ailé armé d'un arc et de flèches ?",
+      "answer": "Cupidon",
+      "variants": [
+        "Cupid",
+        "Cupido",
+        "Amor"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle chanson de Serge Gainsbourg et Jane Birkin, sortie en 1969, fut dénoncée par le Vatican et interdite sur plusieurs radios ?",
+      "answer": "Je t'aime... moi non plus",
+      "variants": [
+        "Je t'aime moi non plus",
+        "Je t'aime"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel magazine Hugh Hefner a-t-il fondé à Chicago en 1953 ?",
+      "answer": "Playboy",
+      "variants": [
+        "Play Boy"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel nom commercial porte la célèbre pilule bleue de Pfizer, autorisée aux États-Unis en 1998 contre les troubles de l'érection ?",
+      "answer": "Viagra",
+      "variants": [
+        "Le Viagra"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle actrice décroise et recroise les jambes dans la scène d'interrogatoire culte de « Basic Instinct » (Paul Verhoeven) ?",
+      "answer": "Sharon Stone",
+      "variants": [
+        "Stone"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel titre de Marvin Gaye, sorti en 1982, lui a valu un Grammy et promet une « guérison » très particulière ?",
+      "answer": "Sexual Healing",
+      "variants": [
+        "Sexual Healin'"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle expression française, qui désignait au XVIe siècle un évanouissement, sert de doux euphémisme pour l'orgasme ?",
+      "answer": "La petite mort",
+      "variants": [
+        "Petite mort"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Les Français disent « capote anglaise ». Comment les Britanniques appellent-ils familièrement le préservatif, en accusant la France ?",
+      "answer": "French letter",
+      "variants": [
+        "French letters",
+        "Lettre française"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel ingénieur français a présenté le bikini le 5 juillet 1946 à la piscine Molitor, à Paris ?",
+      "answer": "Louis Réard",
+      "variants": [
+        "Réard",
+        "Reard",
+        "Louis Reard"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel grand singe, cousin du chimpanzé, est célèbre pour apaiser ses conflits par le sexe plutôt que par la bagarre ?",
+      "answer": "Bonobo",
+      "variants": [
+        "Le bonobo",
+        "Bonobos",
+        "Chimpanzé nain",
+        "Pan paniscus"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Qui a écrit le roman épistolaire « Les Liaisons dangereuses » (1782), avec Valmont et la marquise de Merteuil ?",
+      "answer": "Choderlos de Laclos",
+      "variants": [
+        "Laclos",
+        "Pierre Choderlos de Laclos",
+        "Choderlos"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Le mot « masochisme » vient du nom de quel écrivain, auteur de « La Vénus à la fourrure » (1870) ?",
+      "answer": "Sacher-Masoch",
+      "variants": [
+        "Leopold von Sacher-Masoch",
+        "Sacher Masoch",
+        "Masoch"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "De quel roi de France Madame de Pompadour fut-elle la favorite ?",
+      "answer": "Louis XV",
+      "variants": [
+        "Louis 15",
+        "Louis quinze"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel président de la République est mort à l'Élysée en février 1899, en galante compagnie de Marguerite Steinheil ?",
+      "answer": "Félix Faure",
+      "variants": [
+        "Felix Faure",
+        "Faure"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle famille de fleurs tire son nom du grec « orkhis », qui signifie « testicule », à cause de la forme de ses tubercules ?",
+      "answer": "Orchidée",
+      "variants": [
+        "Orchidées",
+        "Orchis",
+        "Orchidacées"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle hormone, libérée lors de l'orgasme, de l'accouchement et de l'allaitement, est surnommée « l'hormone de l'amour » ?",
+      "answer": "Ocytocine",
+      "variants": [
+        "L'ocytocine",
+        "Oxytocine",
+        "Oxytocin"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle danseuse et courtisane néerlandaise fut fusillée pour espionnage à Vincennes le 15 octobre 1917 ?",
+      "answer": "Mata Hari",
+      "variants": [
+        "Margaretha Zelle",
+        "Margaretha Geertruida Zelle"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel biologiste américain a publié en 1948 « Le Comportement sexuel de l'homme », un rapport qui a fait scandale ?",
+      "answer": "Alfred Kinsey",
+      "variants": [
+        "Kinsey"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quel anatomiste italien, qui a donné son nom aux trompes utérines, a décrit au XVIe siècle un fourreau de lin contre la syphilis ?",
+      "answer": "Fallope",
+      "variants": [
+        "Gabriel Fallope",
+        "Falloppio",
+        "Gabriele Falloppio",
+        "Fallopius"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Le célèbre « point G » doit son nom à quel gynécologue allemand ?",
+      "answer": "Ernst Gräfenberg",
+      "variants": [
+        "Gräfenberg",
+        "Grafenberg",
+        "Graefenberg",
+        "Ernst Grafenberg"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "À quel sage attribue-t-on la rédaction du Kama-sutra ?",
+      "answer": "Vatsyayana",
+      "variants": [
+        "Vatsyayana Mallanaga",
+        "Vātsyāyana",
+        "Vatsayana"
+      ]
+    },
+    {
+      "theme": "Coquin",
+      "question": "Quelle loi française, promulguée le 28 décembre 1967, a autorisé la pilule contraceptive ?",
+      "answer": "Loi Neuwirth",
+      "variants": [
+        "Neuwirth",
+        "La loi Neuwirth"
+      ]
+    }
+  ]
+}
