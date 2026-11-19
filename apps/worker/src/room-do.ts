@@ -1,9 +1,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  connectedPlayers, createRoom, disconnect, initialState, joinRoom, parseClientMsg, reduce, viewFor,
+  connectedPlayers, createRoom, DEFAULT_WORDS, disconnect, initialState, joinRoom, parseClientMsg, reduce, viewFor,
   type ClientMsg, type Effect, type ErrorCode, type GameEvent, type PictionaryState, type Room, type ServerMsg,
 } from '@kg/shared';
-import words from '@kg/shared/src/pictionary/words-fr.json';
 import type { Env } from './index';
 
 type Stored = { room: Room; game: PictionaryState };
@@ -12,7 +11,7 @@ type Attachment = { playerId: string } | null;
 const STORAGE_KEY = 'state';
 /** An empty room is deleted after this long. */
 const IDLE_MS = 10 * 60 * 1000;
-const WORDS: string[] = words;
+const WORDS: string[] = [...DEFAULT_WORDS];
 
 const send = (ws: WebSocket, msg: ServerMsg): void => {
   try {
@@ -43,7 +42,21 @@ export class RoomDO extends DurableObject<Env> {
     super(ctx, env);
     ctx.blockConcurrencyWhile(async () => {
       this.data = (await ctx.storage.get<Stored>(STORAGE_KEY)) ?? null;
+      if (this.data) await this.dropGhosts();
     });
+  }
+
+  /**
+   * After a restart (deploy, eviction) sockets can vanish without `webSocketClose`: anyone stored
+   * as connected without a live socket leaves through the same path as a close.
+   */
+  private async dropGhosts(): Promise<void> {
+    const live = this.livePlayerIds();
+    for (const p of this.data!.room.players) {
+      if (!p.connected || live.has(p.id)) continue;
+      this.data!.room = disconnect(this.data!.room, p.id);
+      await this.apply({ type: 'playerLeft', playerId: p.id });
+    }
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -128,7 +141,7 @@ export class RoomDO extends DurableObject<Env> {
 
   async alarm(): Promise<void> {
     if (!this.data) return;
-    if (connectedPlayers(this.data.room).length === 0) {
+    if (this.livePlayerIds().size === 0) {
       this.data = null;
       await this.ctx.storage.deleteAll();
       return;
@@ -152,6 +165,10 @@ export class RoomDO extends DurableObject<Env> {
     if (connectedPlayers(room).length === 0) await this.ctx.storage.setAlarm(Date.now() + IDLE_MS);
     else if (game.phaseEndsAt !== null) await this.ctx.storage.setAlarm(game.phaseEndsAt);
     else await this.ctx.storage.deleteAlarm();
+  }
+
+  private livePlayerIds(): Set<string> {
+    return new Set(this.sockets().map((s) => s.playerId));
   }
 
   private sockets(): { ws: WebSocket; playerId: string }[] {

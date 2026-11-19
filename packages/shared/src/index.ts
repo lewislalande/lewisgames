@@ -6,4 +6,5 @@ export * from './pictionary/drawing';
 export * from './room';
 export * from './pictionary/game';
 export * from './pictionary/view';
+export * from './pictionary/words';
 export * from './protocol';

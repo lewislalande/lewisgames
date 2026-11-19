@@ -1,6 +1,6 @@
-import { SELF, env, runDurableObjectAlarm } from 'cloudflare:test';
+import { SELF, env, evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import type { ServerMsg } from '@kg/shared';
+import type { PictionaryState, Room, ServerMsg } from '@kg/shared';
 
 type StateMsg = Extract<ServerMsg, { t: 'state' }>;
 const BASE = 'https://kg.test';
@@ -266,5 +266,111 @@ describe('room websocket', () => {
 
     tab2.ws.close(1000, 'bye');
     await a.nextState((m) => m.players.find((p) => p.id === bId)?.connected === false);
+  });
+});
+
+type Stored = { room: Room; game: PictionaryState };
+const stubFor = (code: string) => env.ROOM.get(env.ROOM.idFromName(code));
+const readStored = (code: string) =>
+  runInDurableObject(stubFor(code), async (_i, state) => (await state.storage.get<Stored>('state'))!);
+const readAlarm = (code: string) => runInDurableObject(stubFor(code), (_i, state) => state.storage.getAlarm());
+
+async function until<T>(read: () => Promise<T>, ok: (v: T) => boolean, timeoutMs = 3000): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const v = await read();
+    if (ok(v)) return v;
+    if (Date.now() > deadline) throw new Error('condition not reached');
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+describe('alarms', () => {
+  it('sets the idle alarm when everyone leaves and keeps the room once someone is back', async () => {
+    const code = await createRoom();
+    const { c: a } = await Client.join(code, 'tok-a', 'A');
+    expect(await readAlarm(code)).toBeNull();
+
+    a.ws.close(1000, 'bye');
+    await until(() => readStored(code), (s) => !s.room.players[0]!.connected);
+    const alarm = await readAlarm(code);
+    expect(alarm).toBeGreaterThan(Date.now() + 9 * 60 * 1000);
+
+    const { c: a2 } = await Client.join(code, 'tok-a', 'A');
+    await a2.nextState();
+    expect(await readAlarm(code)).toBeNull();
+    // Even if the stale idle alarm fired now, a room with a live player survives.
+    await runInDurableObject(stubFor(code), (_i, state) => state.storage.setAlarm(Date.now() + 60 * 60 * 1000));
+    expect(await runDurableObjectAlarm(stubFor(code))).toBe(true);
+    expect((await SELF.fetch(`${BASE}/api/rooms/${code}`)).status).toBe(200);
+  });
+
+  it('decides idleness from open sockets, not from the stored connected flags', async () => {
+    const code = await createRoom();
+    const { c: a } = await Client.join(code, 'tok-a', 'A');
+    a.ws.close(1000, 'bye');
+    await until(() => readStored(code), (s) => !s.room.players[0]!.connected);
+    // A stale flag claims A is still connected, but no socket is open.
+    await runInDurableObject(stubFor(code), (instance) => {
+      const data = (instance as unknown as { data: Stored }).data;
+      data.room = { ...data.room, players: data.room.players.map((p) => ({ ...p, connected: true })) };
+    });
+    expect(await runDurableObjectAlarm(stubFor(code))).toBe(true);
+    expect((await SELF.fetch(`${BASE}/api/rooms/${code}`)).status).toBe(404);
+  });
+
+  it('advances the phase when the choosing timer fires', async () => {
+    const code = await createRoom();
+    const { c: a } = await Client.join(code, 'tok-a', 'A');
+    const { c: b } = await Client.join(code, 'tok-b', 'B');
+    a.send({ t: 'start' });
+    const choosing = await b.nextState((m) => m.game.phase === 'choosing');
+    expect(await readAlarm(code)).toBe(choosing.game.phaseEndsAt);
+
+    // Pretend the choosing time is over.
+    await runInDurableObject(stubFor(code), (instance) => {
+      (instance as unknown as { data: Stored }).data.game.phaseEndsAt = Date.now() - 1;
+    });
+    expect(await runDurableObjectAlarm(stubFor(code))).toBe(true);
+    const drawing = await b.nextState((m) => m.game.phase === 'drawing');
+    expect(drawing.game.mask).not.toBeNull();
+    expect((await a.nextState((m) => m.game.phase === 'drawing')).game.word).not.toBeNull();
+  });
+});
+
+describe('restart reconciliation', () => {
+  it('disconnects players stored as connected but without a socket, handing the host over', async () => {
+    const code = await createRoom();
+    const { c: a, playerId: aId } = await Client.join(code, 'tok-a', 'A');
+    const { c: b } = await Client.join(code, 'tok-b', 'B');
+    await b.nextState((m) => m.players.length === 2);
+
+    // A ghost host: stored as connected, joined first, but with no socket (as after a deploy).
+    await runInDurableObject(stubFor(code), async (_i, state) => {
+      const s = (await state.storage.get<Stored>('state'))!;
+      const ghost = { id: 'ghost', name: 'G', connected: true, joinedAt: 0 };
+      s.room = { ...s.room, hostId: 'ghost', players: [ghost, ...s.room.players], tokens: { ...s.room.tokens, 'tok-g': 'ghost' } };
+      await state.storage.put('state', s);
+    });
+    await evictDurableObject(stubFor(code), { webSockets: 'hibernate' });
+
+    // The next message wakes a fresh instance, which must drop the ghost before handling it.
+    a.send({ t: 'settings', settings: { rounds: 4 } });
+    const s = await a.nextState((m) => m.game.settings.rounds === 4);
+    expect(s.hostId).toBe(aId);
+    expect(s.players.find((p) => p.id === 'ghost')?.connected).toBe(false);
+    expect(s.players.filter((p) => p.connected)).toHaveLength(2);
+  });
+
+  it('lets an empty room be cleaned up after a restart', async () => {
+    const code = await createRoom();
+    const { c: a } = await Client.join(code, 'tok-a', 'A');
+    await a.nextState();
+    await evictDurableObject(stubFor(code), { webSockets: 'close' });
+    // The room is stored with A connected, but A's socket is gone.
+    expect((await readStored(code)).room.players[0]!.connected).toBe(false);
+    expect(await readAlarm(code)).toBeGreaterThan(Date.now() + 9 * 60 * 1000);
+    expect(await runDurableObjectAlarm(stubFor(code))).toBe(true);
+    expect((await SELF.fetch(`${BASE}/api/rooms/${code}`)).status).toBe(404);
   });
 });
