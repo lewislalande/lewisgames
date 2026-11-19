@@ -57,7 +57,9 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
           case 'state': setState(m); break;
           case 'draw': drawCbs.current.forEach((cb) => cb(m.op)); break;
           case 'notice': noticeCbs.current.forEach((cb) => cb(m.notice)); break;
-          case 'error': fatal = true; setError(m.code); break;
+          case 'error':
+            if (m.code !== 'bad_message') { fatal = true; setError(m.code); }
+            break;
         }
       };
       ws.onclose = () => {

@@ -32,7 +32,9 @@ export function Lobby({ code, state, playerId, send }: Props) {
   const isHost = state.hostId === playerId;
   const server = state.game.settings;
   const latest = useRef<PictionarySettings>(server);
-  latest.current = server;
+  const pending = useRef<PictionarySettings | null>(null);
+  const pendingClear = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const wasHostAtMount = useRef(isHost);
   const sentSaved = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const wordsTouched = useRef(false);
@@ -41,11 +43,12 @@ export function Lobby({ code, state, playerId, send }: Props) {
 
   // Host with saved settings: push them once on lobby entry.
   useEffect(() => {
-    if (!isHost || sentSaved.current) return;
+    // Only the host present at lobby entry pushes; a promoted player must not overwrite the room.
+    if (!isHost || !wasHostAtMount.current || sentSaved.current) return;
     sentSaved.current = true;
     const saved = loadSaved();
     if (saved) {
-      latest.current = saved;
+      markPending(saved);
       setWordsText(saved.customWords.join('\n'));
       wordsTouched.current = true;
       send({ t: 'settings', settings: saved });
@@ -57,10 +60,23 @@ export function Lobby({ code, state, playerId, send }: Props) {
     if (isHost && !wordsTouched.current) setWordsText(server.customWords.join('\n'));
   }, [isHost, server.customWords]);
 
-  useEffect(() => () => clearTimeout(timer.current), []);
+  useEffect(() => () => { clearTimeout(timer.current); clearTimeout(pendingClear.current); }, []);
+
+  // Follow the server unless a local edit has not been echoed back yet.
+  useEffect(() => {
+    if (pending.current && JSON.stringify(server) === JSON.stringify(clampSettings(pending.current))) pending.current = null;
+    if (!pending.current) latest.current = server;
+  }, [server]);
+
+  function markPending(next: PictionarySettings) {
+    latest.current = next;
+    pending.current = next;
+    clearTimeout(pendingClear.current);
+    pendingClear.current = setTimeout(() => { pending.current = null; }, 3000);
+  }
 
   function commit(next: PictionarySettings, debounce = false) {
-    latest.current = next;
+    markPending(next);
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
     clearTimeout(timer.current);
     if (debounce) timer.current = setTimeout(() => send({ t: 'settings', settings: next }), 300);

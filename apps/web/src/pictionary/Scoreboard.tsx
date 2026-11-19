@@ -14,6 +14,7 @@ export function Scoreboard({ state, playerId }: { state: StateMsg; playerId: str
               {p.id === state.hostId && <span className="crown" title="Hôte" aria-label="Hôte">♛</span>}
               {p.name}
               {p.id === playerId && <span className="you"> (toi)</span>}
+              {!p.connected && <span className="you"> (absent)</span>}
             </span>
             <span className="score">{p.score}</span>
           </li>

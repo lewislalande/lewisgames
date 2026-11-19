@@ -10,8 +10,8 @@
   --radius: 14px;
   --edge: 2.5px solid var(--ink);
   --pop: 4px 4px 0 var(--ink);
-  --display: 'Bricolage Grotesque', 'Trebuchet MS', system-ui, sans-serif;
-  --body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --display: 'Avenir Next', 'Trebuchet MS', 'Segoe UI', system-ui, sans-serif;
+  --body: system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 * { box-sizing: border-box; }
