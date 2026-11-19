@@ -12,6 +12,8 @@ export function Scoreboard({ state, playerId }: { state: StateMsg; playerId: str
           <li key={p.id} className={p.connected ? '' : 'away'}>
             <span className="player-name">
               {p.id === state.hostId && <span className="crown" title="Hôte" aria-label="Hôte">♛</span>}
+              {state.game.phase !== 'lobby' && p.id === state.game.drawerId && <span className="mark" title="Dessine" aria-label="Dessine">✎ </span>}
+              {state.game.found.includes(p.id) && <span className="mark ok" title="A trouvé" aria-label="A trouvé">✓ </span>}
               {p.name}
               {p.id === playerId && <span className="you"> (toi)</span>}
               {!p.connected && <span className="you"> (absent)</span>}

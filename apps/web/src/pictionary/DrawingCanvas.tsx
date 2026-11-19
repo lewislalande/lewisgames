@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 import { addAction, appendPoints, isValidAction, MAX_STROKE_POINTS, redo, undo } from '@kg/shared';
 import type { DrawAction, DrawingHistory, DrawOp, Point } from '@kg/shared';
 import { Renderer, renderAction } from './renderer';
-import { DEFAULT_TOOL_STATE, TOOLS, Toolbar } from './Toolbar';
+import { TOOLS, Toolbar } from './Toolbar';
 import type { Tool, ToolState } from './Toolbar';
 
 export const WIDTH = 800;
@@ -73,6 +73,9 @@ type Props = {
   subscribe: (cb: (op: DrawOp) => void) => () => void;
   /** Socket open. After a reconnect the next `history` replaces the local copy, drawer included. */
   connected: boolean;
+  /** Owned by the parent so the drawer's tool settings survive the per-turn remount. */
+  tools: ToolState;
+  onTools: (t: ToolState) => void;
 };
 
 /**
@@ -81,14 +84,15 @@ type Props = {
  * Mount one instance per turn (React `key`): the drawer's copy is authoritative
  * for the whole turn.
  */
-export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected }: Props) {
+export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, tools, onTools }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<Renderer | null>(null);
   const local = useRef<DrawingHistory>(history);
   const gesture = useRef<Gesture | null>(null);
   const flushTimer = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const [tools, setTools] = useState<ToolState>(DEFAULT_TOOL_STATE);
+  const toolsRef = useRef(tools);
+  toolsRef.current = tools;
   const onOpRef = useRef(onOp);
   onOpRef.current = onOp;
 
@@ -264,7 +268,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected }: 
       e.preventDefault();
       if (s.kind === 'undo') keyActions.current.doUndo();
       else if (s.kind === 'redo') keyActions.current.doRedo();
-      else if (!gesture.current) setTools((t) => ({ ...t, tool: s.tool }));
+      else if (!gesture.current) onTools({ ...toolsRef.current, tool: s.tool });
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -287,7 +291,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected }: 
         />
         <canvas ref={overlayRef} className="board-overlay" width={WIDTH} height={HEIGHT} aria-hidden="true" />
       </div>
-      {canDraw && <Toolbar value={tools} onChange={setTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
+      {canDraw && <Toolbar value={tools} onChange={onTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
     </div>
   );
 }

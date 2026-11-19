@@ -169,6 +169,56 @@ label { font-weight: 600; }
 .preset span { display: block; border-radius: 50%; background: var(--ink); }
 .tb-check { display: flex; align-items: center; gap: .4rem; font-size: .9rem; }
 
+/* Game screen */
+.room.wide { max-width: 1280px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem 1.2rem; margin-bottom: 1.25rem; }
+.round { font-weight: 700; color: var(--ink-soft); white-space: nowrap; }
+.wordbar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: .25rem; min-height: 3.2rem; }
+.wordbar-note { font-size: .9rem; color: var(--ink-soft); font-weight: 600; }
+.slots { display: flex; flex-wrap: wrap; justify-content: center; gap: .3rem; }
+.slot { display: inline-grid; place-items: center; min-width: 1.9rem; height: 2.4rem; padding: 0 .2rem; font: 800 1.5rem var(--display); text-transform: uppercase; border-bottom: 3px solid var(--ink); }
+.slot.sep { border-bottom-color: transparent; min-width: 1rem; }
+.slot.revealed { background: var(--sun); border-radius: 6px 6px 0 0; }
+.letter-btn { background: none; border: 0; border-bottom: 3px solid var(--ink); color: var(--ink); cursor: pointer; }
+.letter-btn:hover:not(:disabled) { background: var(--sun); }
+.letter-btn:disabled { cursor: not-allowed; }
+.letter-btn.revealed:disabled { color: var(--ink); opacity: 1; }
+.timer { font: 800 2rem var(--display); min-width: 4.5rem; text-align: center; background: var(--sun); border: var(--edge); border-radius: 999px; padding: .1rem .8rem; box-shadow: 3px 3px 0 var(--ink); }
+.timer small { font-size: .9rem; margin-left: .1rem; }
+.timer.urgent { background: var(--pink); color: #fff; }
+.game-grid { display: grid; grid-template-columns: 210px minmax(0, 1fr) 300px; gap: 1.25rem; align-items: start; }
+.stage { padding: 1rem; }
+.stage-canvas { position: relative; }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(27, 35, 64, .55); border-radius: 10px; padding: 1rem; z-index: 5; }
+.overlay-card { background: #fff; border: var(--edge); border-radius: var(--radius); box-shadow: var(--pop); padding: 1.4rem 2rem; min-width: 18rem; max-width: 100%; text-align: center; }
+.overlay-card .player-list { text-align: left; }
+.choices { display: flex; flex-wrap: wrap; gap: .75rem; justify-content: center; margin-top: 1rem; }
+.mark { color: var(--pink); font-weight: 800; }
+.mark.ok { color: var(--teal); }
+.chat { display: flex; flex-direction: column; padding: 1rem; height: 100%; }
+.chat-list { list-style: none; margin: 0 0 .75rem; padding: 0; height: 22rem; overflow-y: auto; display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; overflow-wrap: anywhere; }
+.chat-sys { color: var(--pink); font-weight: 700; }
+.chat-form { position: relative; }
+.chat-close { position: absolute; right: .4rem; bottom: 100%; margin: 0 0 .3rem; background: var(--sun); border: 2px solid var(--ink); border-radius: 999px; padding: 0 .7rem; font-weight: 700; font-size: .9rem; }
+.gameover { max-width: 560px; margin: 0 auto; text-align: center; }
+.podium { display: flex; justify-content: center; align-items: flex-end; gap: .75rem; margin: 1.5rem 0; }
+.pod { display: flex; flex-direction: column; align-items: center; width: 7rem; }
+.pod-name { font-weight: 700; overflow-wrap: anywhere; }
+.pod-score { font: 800 1.3rem var(--display); }
+.pod-step { width: 100%; display: grid; place-items: center; font: 800 1.6rem var(--display); background: #fff; border: var(--edge); border-radius: 10px 10px 0 0; margin-top: .3rem; }
+.pod-1 .pod-step { height: 6rem; background: var(--sun); }
+.pod-2 .pod-step { height: 4.5rem; }
+.pod-3 .pod-step { height: 3.4rem; }
+.final-list { list-style: none; padding: 0; margin: 0 0 1.5rem; text-align: left; }
+.final-list li { display: flex; justify-content: space-between; padding: .4rem 0; border-bottom: 1.5px dashed #b7c0d4; font-weight: 600; }
+.gameover-actions { display: flex; gap: 1rem; justify-content: center; align-items: center; flex-wrap: wrap; }
+.gameover-actions .muted { margin: 0; }
+
+@media (max-width: 1000px) {
+  .game-grid { grid-template-columns: 1fr; }
+  .topbar { flex-wrap: wrap; }
+}
+
 @media (max-width: 760px) {
   .games, .lobby-grid, .room-grid { grid-template-columns: 1fr; }
   .tile { width: 2.8rem; height: 3.5rem; font-size: 2rem; }

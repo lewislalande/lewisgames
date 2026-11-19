@@ -1,9 +1,17 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { getName, setName } from '../lib/identity';
 import { useRoomSocket } from '../lib/socket';
 import { Lobby } from '../pictionary/Lobby';
 import { Scoreboard } from '../pictionary/Scoreboard';
 import { DrawingCanvas } from '../pictionary/DrawingCanvas';
+import { DEFAULT_TOOL_STATE } from '../pictionary/Toolbar';
+import type { ToolState } from '../pictionary/Toolbar';
+import { WordBar } from '../pictionary/WordBar';
+import { Timer } from '../pictionary/Timer';
+import { Chat } from '../pictionary/Chat';
+import { WordChoice } from '../pictionary/WordChoice';
+import { TurnEnd } from '../pictionary/TurnEnd';
+import { GameOver } from '../pictionary/GameOver';
 
 const ERRORS: Record<string, string> = {
   room_full: 'Cette salle est pleine.',
@@ -54,6 +62,11 @@ function NamePrompt({ code, onSubmit }: { code: string; onSubmit: (n: string) =>
 function Connected({ code, name, onChangeName }: { code: string; name: string; onChangeName: () => void }) {
   const sock = useRoomSocket(code, name);
   const { state, error } = sock;
+  // Drawing tool settings live here so they persist across turns (the canvas remounts each turn).
+  const [tools, setTools] = useState<ToolState>(DEFAULT_TOOL_STATE);
+  // Server clock offset, re-measured on every state message.
+  const offset = useMemo(() => (state ? state.game.serverNow - Date.now() : 0), [state]);
+  const names = useMemo(() => Object.fromEntries((state?.players ?? []).map((p) => [p.id, p.name])), [state]);
 
   if (error) {
     return (
@@ -79,28 +92,41 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   }
 
   const game = state.game;
+  const drawerName = game.drawerId ? names[game.drawerId] ?? null : null;
+  const playing = game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd';
   return (
-    <main className="room">
+    <main className={`room${game.phase === 'lobby' ? '' : ' wide'}`}>
       {sock.status !== 'open' && <p className="banner">Connexion perdue, nouvelle tentative…</p>}
-      {game.phase === 'lobby' ? (
-        <Lobby code={code} state={state} playerId={sock.playerId} send={sock.send} />
-      ) : (
-        <div className="room-grid">
-          <section className="card">
-            <h1 className="title-sm">Partie en cours…</h1>
-            {(game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd') && (
-              <DrawingCanvas
-                key={`${game.round}:${game.drawerId}`}
-                history={game.history}
-                canDraw={game.isDrawer && game.phase === 'drawing'}
-                onOp={(op) => sock.send({ t: 'draw', op })}
-                subscribe={sock.onDraw}
-                connected={sock.status === 'open'}
-              />
-            )}
-          </section>
-          <Scoreboard state={state} playerId={sock.playerId} />
-        </div>
+      {game.phase === 'lobby' && <Lobby code={code} state={state} playerId={sock.playerId} send={sock.send} />}
+      {game.phase === 'gameOver' && <GameOver state={state} playerId={sock.playerId} send={sock.send} />}
+      {playing && (
+        <>
+          <header className="topbar card">
+            <span className="round">Manche {game.round}/{game.settings.rounds}</span>
+            <WordBar game={game} drawerName={drawerName} offset={offset} send={sock.send} />
+            <Timer endsAt={game.phaseEndsAt} offset={offset} />
+          </header>
+          <div className="game-grid">
+            <Scoreboard state={state} playerId={sock.playerId} />
+            <section className="card stage">
+              <div className="stage-canvas">
+                <DrawingCanvas
+                  key={`${game.round}:${game.drawerId}`}
+                  history={game.history}
+                  canDraw={game.isDrawer && game.phase === 'drawing'}
+                  onOp={(op) => sock.send({ t: 'draw', op })}
+                  subscribe={sock.onDraw}
+                  connected={sock.status === 'open'}
+                  tools={tools}
+                  onTools={setTools}
+                />
+                {game.phase === 'choosing' && <WordChoice game={game} drawerName={drawerName} send={sock.send} />}
+                {game.phase === 'turnEnd' && <TurnEnd game={game} names={names} />}
+              </div>
+            </section>
+            <Chat game={game} names={names} send={sock.send} onNotice={sock.onNotice} />
+          </div>
+        </>
       )}
     </main>
   );
