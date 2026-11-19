@@ -1,0 +1,16 @@
+{
+  "name": "kgames",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "dev": "pnpm -r --if-present dev",
+    "deploy": "pnpm -r --if-present deploy"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
