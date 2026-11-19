@@ -11,6 +11,11 @@ type Attachment = { playerId: string } | null;
 const STORAGE_KEY = 'state';
 /** An empty room is deleted after this long. */
 const IDLE_MS = 10 * 60 * 1000;
+/**
+ * Draw ops (one every ~40 ms while drawing) are relayed at once but persisted at most this often:
+ * the free plan allows 100k rows written per day. A restart loses at most this much drawing.
+ */
+const DRAW_FLUSH_MS = 2000;
 const WORDS: string[] = [...DEFAULT_WORDS];
 
 const send = (ws: WebSocket, msg: ServerMsg): void => {
@@ -37,11 +42,19 @@ function toEvent(msg: Exclude<ClientMsg, { t: 'hello' }>, by: string): GameEvent
 
 export class RoomDO extends DurableObject<Env> {
   private data: Stored | null = null;
+  /** Alarm time last written to storage (null: none), so unchanged alarms are not rewritten. */
+  private alarmAt: number | null = null;
+  /** Pending draw-only changes not yet in storage, flushed by `flushTimer`. */
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Storage write counters (state puts, alarm sets/deletes), read by tests. */
+  writes = 0;
+  alarmWrites = 0;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.blockConcurrencyWhile(async () => {
       this.data = (await ctx.storage.get<Stored>(STORAGE_KEY)) ?? null;
+      this.alarmAt = await ctx.storage.getAlarm();
       if (this.data) await this.dropGhosts();
     });
   }
@@ -140,31 +153,67 @@ export class RoomDO extends DurableObject<Env> {
   }
 
   async alarm(): Promise<void> {
+    this.alarmAt = null; // consumed
     if (!this.data) return;
     if (this.livePlayerIds().size === 0) {
+      this.cancelFlush();
       this.data = null;
       await this.ctx.storage.deleteAll();
       return;
     }
+    // Phase timeout; reduce ignores it if the phase is not over yet (e.g. a stale alarm).
     await this.apply({ type: 'timeout' });
   }
 
-  /** Runs one game event against the current room, persists, reschedules and delivers effects. */
+  /**
+   * Runs one game event against the current room and delivers its effects, then persists:
+   * at once for any non-draw event, batched (≤ DRAW_FLUSH_MS) for draw ops.
+   */
   private async apply(event: GameEvent): Promise<void> {
     const data = this.data!;
     const now = Date.now();
     const { state, effects } = reduce(data.game, event, { now, rng: Math.random, room: data.room, words: WORDS });
     data.game = state;
-    await this.persist();
+    // Deliver first: a failing storage write must not freeze the game for the players.
     for (const effect of effects) this.deliver(effect, now);
+    if (event.type === 'draw') {
+      if (effects.length > 0) this.scheduleFlush();
+      return;
+    }
+    await this.persist();
   }
 
+  private scheduleFlush(): void {
+    if (this.flushTimer !== null) return;
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      if (this.data) void this.persist();
+    }, DRAW_FLUSH_MS);
+  }
+
+  private cancelFlush(): void {
+    if (this.flushTimer === null) return;
+    clearTimeout(this.flushTimer);
+    this.flushTimer = null;
+  }
+
+  /** Writes the full state and the alarm it implies. Errors are logged, never thrown. */
   private async persist(): Promise<void> {
+    this.cancelFlush();
     const { room, game } = this.data!;
-    await this.ctx.storage.put(STORAGE_KEY, { room, game } satisfies Stored);
-    if (connectedPlayers(room).length === 0) await this.ctx.storage.setAlarm(Date.now() + IDLE_MS);
-    else if (game.phaseEndsAt !== null) await this.ctx.storage.setAlarm(game.phaseEndsAt);
-    else await this.ctx.storage.deleteAlarm();
+    try {
+      this.writes++;
+      await this.ctx.storage.put(STORAGE_KEY, { room, game } satisfies Stored);
+      const target =
+        connectedPlayers(room).length === 0 ? Date.now() + IDLE_MS : game.phaseEndsAt;
+      if (target === this.alarmAt) return;
+      this.alarmWrites++;
+      if (target === null) await this.ctx.storage.deleteAlarm();
+      else await this.ctx.storage.setAlarm(target);
+      this.alarmAt = target;
+    } catch (err) {
+      console.error('room persist failed', err);
+    }
   }
 
   private livePlayerIds(): Set<string> {

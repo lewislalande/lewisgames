@@ -374,3 +374,62 @@ describe('restart reconciliation', () => {
     expect((await SELF.fetch(`${BASE}/api/rooms/${code}`)).status).toBe(404);
   });
 });
+
+describe('storage writes', () => {
+  type Counted = { writes: number };
+  const writesOf = (code: string) => runInDurableObject(stubFor(code), (instance) => (instance as unknown as Counted).writes);
+
+  async function drawingRoom() {
+    const code = await createRoom();
+    const { c: a, playerId: aId } = await Client.join(code, 'tok-a', 'A');
+    const { c: b } = await Client.join(code, 'tok-b', 'B');
+    a.send({ t: 'start' });
+    await a.nextState((m) => m.game.phase === 'choosing');
+    a.send({ t: 'choose', index: 0 });
+    await a.nextState((m) => m.game.phase === 'drawing');
+    await b.nextState((m) => m.game.phase === 'drawing');
+    return { code, a, aId, b };
+  }
+
+  it('batches draw ops: far fewer writes than ops, and a flush survives eviction', async () => {
+    const { code, a, b } = await drawingRoom();
+    const before = await writesOf(code);
+    const N = 60;
+    a.send({ t: 'draw', op: { op: 'add', action: { id: 's1', kind: 'stroke', tool: 'pen', color: '#000000', size: 4, opacity: 1, points: [[1, 1]] } } });
+    for (let i = 0; i < N; i++) a.send({ t: 'draw', op: { op: 'append', id: 's1', points: [[i, i]] } });
+    // Every op is still relayed immediately.
+    for (let i = 0; i <= N; i++) await b.next((m) => m.t === 'draw');
+    expect((await writesOf(code)) - before).toBeLessThanOrEqual(2);
+
+    // Within ~2 s the batched strokes reach storage.
+    const stored = await until(() => readStored(code), (s) => s.game.history.actions[0]?.kind === 'stroke' && (s.game.history.actions[0] as { points: unknown[] }).points.length === N + 1, 4000);
+    expect(stored.game.phase).toBe('drawing');
+
+    await evictDurableObject(stubFor(code), { webSockets: 'hibernate' });
+    b.send({ t: 'guess', text: 'pas-le-mot-zzz' });
+    const s = await b.nextState((m) => m.game.chat.some((e) => e.text === 'pas-le-mot-zzz'));
+    const first = s.game.history.actions[0] as { points: unknown[] };
+    expect(first.points).toHaveLength(N + 1);
+  });
+
+  it('flushes pending strokes on a non-draw event', async () => {
+    const { code, a, b } = await drawingRoom();
+    a.send({ t: 'draw', op: { op: 'add', action: { id: 's1', kind: 'stroke', tool: 'pen', color: '#000000', size: 4, opacity: 1, points: [[1, 1]] } } });
+    await b.next((m) => m.t === 'draw');
+    b.send({ t: 'guess', text: 'pas-le-mot-zzz' });
+    await a.nextState((m) => m.game.chat.some((e) => e.text === 'pas-le-mot-zzz'));
+    expect((await readStored(code)).game.history.actions).toHaveLength(1);
+  });
+
+  it('does not rewrite an unchanged alarm', async () => {
+    const { code, a, b } = await drawingRoom();
+    const before = await runInDurableObject(stubFor(code), (instance) => (instance as unknown as { alarmWrites: number }).alarmWrites);
+    for (const text of ['un', 'deux', 'trois']) {
+      b.send({ t: 'guess', text: `${text}-zzz` });
+      await a.nextState((m) => m.game.chat.some((e) => e.text === `${text}-zzz`));
+    }
+    const after = await runInDurableObject(stubFor(code), (instance) => (instance as unknown as { alarmWrites: number }).alarmWrites);
+    expect(after).toBe(before);
+  });
+});
+
