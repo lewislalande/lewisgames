@@ -8,7 +8,11 @@
     "dev": "wrangler dev",
     "deploy": "pnpm --filter web build && wrangler deploy",
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:migrate:local": "wrangler d1 migrations apply kgames --local",
+    "db:migrate:remote": "wrangler d1 migrations apply kgames --remote",
+    "seed:local": "node scripts/seed.mjs --local",
+    "seed:remote": "node scripts/seed.mjs --remote"
   },
   "dependencies": {
     "@kg/shared": "workspace:*"

@@ -1,0 +1,1620 @@
+{
+ "questions": [
+  {
+   "theme": "Géographie",
+   "question": "Quelle est la capitale de l'Australie ?",
+   "answer": "Canberra",
+   "variants": []
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel est le plus long fleuve coulant entièrement en France ?",
+   "answer": "La Loire",
+   "variants": [
+    "Loire"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Dans quel pays se trouve la ville de Marrakech ?",
+   "answer": "Maroc",
+   "variants": [
+    "Le Maroc"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel océan borde la côte ouest des États-Unis ?",
+   "answer": "Océan Pacifique",
+   "variants": [
+    "Pacifique",
+    "Le Pacifique"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quelle est la capitale du Canada ?",
+   "answer": "Ottawa",
+   "variants": []
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel est le plus haut sommet des Alpes ?",
+   "answer": "Mont Blanc",
+   "variants": [
+    "Le Mont Blanc",
+    "Mont-Blanc"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Dans quelle ville se trouve la basilique de la Sagrada Família ?",
+   "answer": "Barcelone",
+   "variants": [
+    "Barcelona"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel est le plus petit État du monde par sa superficie ?",
+   "answer": "Vatican",
+   "variants": [
+    "Le Vatican",
+    "Cité du Vatican"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quelle est la capitale de la Nouvelle-Zélande ?",
+   "answer": "Wellington",
+   "variants": []
+  },
+  {
+   "theme": "Géographie",
+   "question": "Le saviez-vous : grâce à ses territoires d'outre-mer, quel pays possède le plus de fuseaux horaires au monde ?",
+   "answer": "France",
+   "variants": [
+    "La France"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel détroit sépare l'Asie de l'Amérique du Nord ?",
+   "answer": "Détroit de Béring",
+   "variants": [
+    "Béring",
+    "Bering",
+    "Detroit de Bering"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel est le plus grand désert chaud du monde ?",
+   "answer": "Sahara",
+   "variants": [
+    "Le Sahara"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quelle île française de l'océan Indien a pour chef-lieu Saint-Denis ?",
+   "answer": "La Réunion",
+   "variants": [
+    "Réunion",
+    "Île de la Réunion"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel fleuve traverse Budapest, Vienne et Belgrade ?",
+   "answer": "Danube",
+   "variants": [
+    "Le Danube"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel pays d'Afrique de l'Ouest a pour capitale Ouagadougou ?",
+   "answer": "Burkina Faso",
+   "variants": [
+    "Le Burkina Faso",
+    "Burkina"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel est le point culminant de l'Afrique ?",
+   "answer": "Kilimandjaro",
+   "variants": [
+    "Le Kilimandjaro",
+    "Kilimanjaro"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Le canal de Suez relie la mer Méditerranée à quelle autre mer ?",
+   "answer": "Mer Rouge",
+   "variants": [
+    "La mer Rouge"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel royaume est entièrement enclavé à l'intérieur de l'Afrique du Sud ?",
+   "answer": "Lesotho",
+   "variants": [
+    "Le Lesotho"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quelle est la capitale de la Mongolie ?",
+   "answer": "Oulan-Bator",
+   "variants": [
+    "Oulan Bator",
+    "Ulaanbaatar",
+    "Ulan Bator"
+   ]
+  },
+  {
+   "theme": "Géographie",
+   "question": "Quel département français porte le numéro 2A ?",
+   "answer": "Corse-du-Sud",
+   "variants": [
+    "Corse du Sud"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "En quelle année a eu lieu la prise de la Bastille ?",
+   "answer": "1789",
+   "variants": []
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel empereur français a fini sa vie en exil sur l'île de Sainte-Hélène ?",
+   "answer": "Napoléon Ier",
+   "variants": [
+    "Napoléon",
+    "Napoléon Bonaparte",
+    "Bonaparte"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "En quelle année l'homme a-t-il marché sur la Lune pour la première fois ?",
+   "answer": "1969",
+   "variants": []
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quelle reine de France, épouse de Louis XVI, fut guillotinée en 1793 ?",
+   "answer": "Marie-Antoinette",
+   "variants": [
+    "Marie Antoinette"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "En quelle année le mur de Berlin est-il tombé ?",
+   "answer": "1989",
+   "variants": []
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel paquebot réputé « insubmersible » a coulé lors de son voyage inaugural en 1912 ?",
+   "answer": "Titanic",
+   "variants": [
+    "Le Titanic"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quelle civilisation antique a bâti les pyramides de Gizeh ?",
+   "answer": "Égyptiens",
+   "variants": [
+    "Les Égyptiens",
+    "Égypte antique",
+    "Egyptiens",
+    "Anciens Égyptiens"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel roi de France était surnommé le « Roi-Soleil » ?",
+   "answer": "Louis XIV",
+   "variants": [
+    "Louis 14"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quelle héroïne de la guerre de Cent Ans fut brûlée vive à Rouen en 1431 ?",
+   "answer": "Jeanne d'Arc",
+   "variants": []
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel général carthaginois a franchi les Alpes avec des éléphants pour attaquer Rome ?",
+   "answer": "Hannibal",
+   "variants": [
+    "Hannibal Barca"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel roi des Francs fut, selon la tradition, baptisé à Reims vers 496 ?",
+   "answer": "Clovis",
+   "variants": [
+    "Clovis Ier"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Qui fut le premier président de la Ve République ?",
+   "answer": "Charles de Gaulle",
+   "variants": [
+    "De Gaulle",
+    "Général de Gaulle"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quelle bataille de 1815, en Belgique, marque la défaite définitive de Napoléon ?",
+   "answer": "Waterloo",
+   "variants": [
+    "Bataille de Waterloo"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel nom de code désignait l'ensemble de l'opération alliée d'invasion de la Normandie en 1944, dont le Débarquement du 6 juin fut la première phase ?",
+   "answer": "Overlord",
+   "variants": [
+    "Opération Overlord"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel navigateur génois a atteint l'Amérique en 1492 pour le compte de l'Espagne ?",
+   "answer": "Christophe Colomb",
+   "variants": [
+    "Colomb"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Le saviez-vous : quelle guerre entre la France et l'Angleterre a en réalité duré 116 ans (1337-1453) ?",
+   "answer": "Guerre de Cent Ans",
+   "variants": [
+    "La guerre de Cent Ans",
+    "Cent Ans"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel roi de France a signé l'édit de Nantes en 1598 ?",
+   "answer": "Henri IV",
+   "variants": [
+    "Henri 4"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "De quel pharaon Howard Carter a-t-il découvert la tombe presque intacte en 1922 ?",
+   "answer": "Toutankhamon",
+   "variants": [
+    "Toutânkhamon",
+    "Tutankhamon"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Contre quel sultanat le Royaume-Uni a-t-il mené en 1896 la guerre la plus courte de l'histoire, qui dura moins d'une heure (38 à 45 minutes selon les sources) ?",
+   "answer": "Zanzibar",
+   "variants": [
+    "Sultanat de Zanzibar"
+   ]
+  },
+  {
+   "theme": "Histoire",
+   "question": "Quel traité de 843 a partagé l'empire de Charlemagne entre ses trois petits-fils ?",
+   "answer": "Traité de Verdun",
+   "variants": [
+    "Verdun"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel est le symbole chimique de l'or ?",
+   "answer": "Au",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle planète est surnommée la « planète rouge » ?",
+   "answer": "Mars",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel gaz les plantes absorbent-elles pour réaliser la photosynthèse ?",
+   "answer": "Dioxyde de carbone",
+   "variants": [
+    "CO2",
+    "Gaz carbonique",
+    "Dioxyde de carbone (CO2)"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Combien d'os compte en général le squelette d'un adulte humain ?",
+   "answer": "206",
+   "variants": [
+    "206 os"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle est la plus grande planète du Système solaire ?",
+   "answer": "Jupiter",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "À quelle température, en degrés Celsius, l'eau bout-elle au niveau de la mer ?",
+   "answer": "100 °C",
+   "variants": [
+    "100",
+    "100 degrés"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel organe pompe le sang dans tout le corps ?",
+   "answer": "Le cœur",
+   "variants": [
+    "Cœur",
+    "Coeur",
+    "Le coeur"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel physicien a formulé la théorie de la relativité ?",
+   "answer": "Albert Einstein",
+   "variants": [
+    "Einstein"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel est l'élément chimique le plus abondant dans l'Univers ?",
+   "answer": "Hydrogène",
+   "variants": [
+    "L'hydrogène",
+    "H"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle scientifique est la seule personne à avoir reçu un prix Nobel dans deux disciplines scientifiques différentes ?",
+   "answer": "Marie Curie",
+   "variants": [
+    "Curie",
+    "Maria Skłodowska-Curie"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel est le symbole chimique du potassium ?",
+   "answer": "K",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle planète tourne quasiment « couchée », avec un axe incliné d'environ 98° ?",
+   "answer": "Uranus",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel gaz noble donne leur lumière rouge-orangé aux célèbres enseignes lumineuses ?",
+   "answer": "Néon",
+   "variants": [
+    "Le néon",
+    "Neon"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel savant anglais a énoncé la loi de la gravitation universelle ?",
+   "answer": "Isaac Newton",
+   "variants": [
+    "Newton"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle unité mesure la résistance électrique ?",
+   "answer": "Ohm",
+   "variants": [
+    "L'ohm",
+    "Ω"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle est la planète la plus proche du Soleil ?",
+   "answer": "Mercure",
+   "variants": []
+  },
+  {
+   "theme": "Sciences",
+   "question": "Le saviez-vous : quel est le plus petit os du corps humain, situé dans l'oreille ?",
+   "answer": "L'étrier",
+   "variants": [
+    "Étrier",
+    "Etrier",
+    "Stapes"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle particule, prédite dans les années 1960, a été découverte au CERN en 2012 ?",
+   "answer": "Boson de Higgs",
+   "variants": [
+    "Le boson de Higgs",
+    "Higgs"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quelle est la valeur du zéro absolu en degrés Celsius ?",
+   "answer": "−273,15 °C",
+   "variants": [
+    "-273,15",
+    "-273.15",
+    "-273,15 °C",
+    "Moins 273,15"
+   ]
+  },
+  {
+   "theme": "Sciences",
+   "question": "Quel physicien danois a proposé en 1913 un modèle de l'atome avec des électrons sur des orbites ?",
+   "answer": "Niels Bohr",
+   "variants": [
+    "Bohr"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel est le plus grand animal ayant jamais vécu sur Terre ?",
+   "answer": "Baleine bleue",
+   "variants": [
+    "Rorqual bleu",
+    "La baleine bleue"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Comment appelle-t-on le petit de la vache ?",
+   "answer": "Veau",
+   "variants": [
+    "Le veau"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel est l'animal terrestre le plus rapide ?",
+   "answer": "Guépard",
+   "variants": [
+    "Le guépard",
+    "Guepard"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Combien de pattes possède une araignée ?",
+   "answer": "8",
+   "variants": [
+    "Huit",
+    "8 pattes"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "De quoi se nourrit presque exclusivement le panda géant ?",
+   "answer": "Bambou",
+   "variants": [
+    "Du bambou",
+    "Le bambou"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel est le seul mammifère capable de voler activement ?",
+   "answer": "Chauve-souris",
+   "variants": [
+    "La chauve-souris"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel oiseau est l'emblème traditionnel de la France ?",
+   "answer": "Coq",
+   "variants": [
+    "Le coq",
+    "Coq gaulois"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Combien de cœurs possède une pieuvre ?",
+   "answer": "3",
+   "variants": [
+    "Trois",
+    "3 cœurs"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel est le plus grand félin du monde ?",
+   "answer": "Tigre",
+   "variants": [
+    "Le tigre"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Comment appelle-t-on la larve de la grenouille ?",
+   "answer": "Têtard",
+   "variants": [
+    "Le têtard",
+    "Tetard"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel arbre produit les glands ?",
+   "answer": "Chêne",
+   "variants": [
+    "Le chêne",
+    "Chene"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Le saviez-vous : quel marsupial a des empreintes digitales quasiment impossibles à distinguer de celles des humains ?",
+   "answer": "Koala",
+   "variants": [
+    "Le koala"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel cétacé à longue défense torsadée est surnommé la « licorne des mers » ?",
+   "answer": "Narval",
+   "variants": [
+    "Le narval"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel est le plus grand oiseau du monde ?",
+   "answer": "Autruche",
+   "variants": [
+    "L'autruche"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel insecte produit le miel ?",
+   "answer": "Abeille",
+   "variants": [
+    "L'abeille",
+    "Abeilles"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "De quelle couleur est la peau de l'ours polaire, sous sa fourrure ?",
+   "answer": "Noire",
+   "variants": [
+    "Noir"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel arbre aux feuilles en éventail est surnommé « l'arbre aux quarante écus » et considéré comme un fossile vivant ?",
+   "answer": "Ginkgo",
+   "variants": [
+    "Ginkgo biloba",
+    "Gingko"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel mammifère australien pond des œufs et possède un bec de canard ?",
+   "answer": "Ornithorynque",
+   "variants": [
+    "L'ornithorynque"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Quel animal microscopique, surnommé « ourson d'eau », a survécu à une exposition au vide spatial ?",
+   "answer": "Tardigrade",
+   "variants": [
+    "Le tardigrade",
+    "Tardigrades"
+   ]
+  },
+  {
+   "theme": "Nature & animaux",
+   "question": "Comment appelle-t-on le cri du cerf en période de rut ?",
+   "answer": "Brame",
+   "variants": [
+    "Le brame",
+    "Brâme"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel réalisateur a signé « E.T. l'extra-terrestre » et « Jurassic Park » ?",
+   "answer": "Steven Spielberg",
+   "variants": [
+    "Spielberg"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quelle série de HBO adapte la saga « Le Trône de fer » de George R. R. Martin ?",
+   "answer": "Game of Thrones",
+   "variants": [
+    "GOT",
+    "GoT"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans « Star Wars », quel personnage révèle à Luke Skywalker qu'il est son père ?",
+   "answer": "Dark Vador",
+   "variants": [
+    "Darth Vader",
+    "Vador",
+    "Anakin Skywalker"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel acteur incarne Obélix dans « Astérix et Obélix contre César » (1999) ?",
+   "answer": "Gérard Depardieu",
+   "variants": [
+    "Depardieu"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel film Pixar raconte l'histoire de Rémy, un rat qui rêve de devenir chef à Paris ?",
+   "answer": "Ratatouille",
+   "variants": []
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans « Le Roi lion », comment s'appelle le père de Simba ?",
+   "answer": "Mufasa",
+   "variants": []
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quelle série raconte la transformation d'un professeur de chimie en fabricant de méthamphétamine ?",
+   "answer": "Breaking Bad",
+   "variants": []
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel film de 2011 réunit Omar Sy et François Cluzet dans une amitié improbable ?",
+   "answer": "Intouchables",
+   "variants": [
+    "Les Intouchables"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans quel quartier de Paris se déroule « Le Fabuleux Destin d'Amélie Poulain » ?",
+   "answer": "Montmartre",
+   "variants": []
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel réalisateur a tourné « Pulp Fiction » et « Kill Bill » ?",
+   "answer": "Quentin Tarantino",
+   "variants": [
+    "Tarantino"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quelle série espagnole met en scène le braquage de la Fabrique nationale de la monnaie et du timbre ?",
+   "answer": "La casa de papel",
+   "variants": [
+    "Casa de papel",
+    "Money Heist"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans « Retour vers le futur », quel modèle de voiture sert de machine à voyager dans le temps ?",
+   "answer": "DeLorean",
+   "variants": [
+    "DeLorean DMC-12",
+    "Delorean"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel acteur incarne le capitaine Jack Sparrow dans « Pirates des Caraïbes » ?",
+   "answer": "Johnny Depp",
+   "variants": [
+    "Depp"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel est le premier long métrage d'animation des studios Disney, sorti en 1937 ?",
+   "answer": "Blanche-Neige et les Sept Nains",
+   "variants": [
+    "Blanche-Neige",
+    "Blanche Neige"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quelle série culte suit six amis new-yorkais, dont Ross, Rachel et Joey ?",
+   "answer": "Friends",
+   "variants": []
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans quel film de 1966, Bourvil et Louis de Funès aident-ils des aviateurs anglais à traverser la France occupée ?",
+   "answer": "La Grande Vadrouille",
+   "variants": [
+    "Grande Vadrouille"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans la série « Kaamelott », quel roi est interprété par Alexandre Astier ?",
+   "answer": "Arthur",
+   "variants": [
+    "Le roi Arthur",
+    "Arthur Pendragon"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel cinéaste et illusionniste a réalisé « Le Voyage dans la Lune » en 1902 ?",
+   "answer": "Georges Méliès",
+   "variants": [
+    "Méliès",
+    "Melies"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Quel dialoguiste a écrit les répliques cultes des « Tontons flingueurs » ?",
+   "answer": "Michel Audiard",
+   "variants": [
+    "Audiard"
+   ]
+  },
+  {
+   "theme": "Cinéma & séries",
+   "question": "Dans « Citizen Kane », quel objet d'enfance désigne le mystérieux mot « Rosebud » ?",
+   "answer": "Une luge",
+   "variants": [
+    "Luge",
+    "Traîneau",
+    "Un traîneau"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel groupe britannique réunissait John, Paul, George et Ringo ?",
+   "answer": "The Beatles",
+   "variants": [
+    "Beatles",
+    "Les Beatles"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quelle chanteuse française a écrit les paroles de « La Vie en rose » et l'a rendue célèbre dans le monde entier ?",
+   "answer": "Édith Piaf",
+   "variants": [
+    "Piaf",
+    "Edith Piaf"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel chanteur américain est surnommé « le King » du rock 'n' roll ?",
+   "answer": "Elvis Presley",
+   "variants": [
+    "Elvis",
+    "Presley"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Combien de cordes compte une guitare classique standard ?",
+   "answer": "6",
+   "variants": [
+    "Six",
+    "6 cordes"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel compositeur allemand a écrit sa 9e symphonie alors qu'il était devenu sourd ?",
+   "answer": "Beethoven",
+   "variants": [
+    "Ludwig van Beethoven"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel duo français de musique électronique se produisait avec des casques de robots ?",
+   "answer": "Daft Punk",
+   "variants": []
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel chanteur belge a écrit et interprété « Ne me quitte pas » ?",
+   "answer": "Jacques Brel",
+   "variants": [
+    "Brel"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel compositeur italien a écrit « Les Quatre Saisons » ?",
+   "answer": "Vivaldi",
+   "variants": [
+    "Antonio Vivaldi"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quelle chanteuse britannique a interprété « Rolling in the Deep » et « Hello » ?",
+   "answer": "Adele",
+   "variants": [
+    "Adèle"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel groupe marseillais a sorti l'album « L'École du micro d'argent » en 1997 ?",
+   "answer": "IAM",
+   "variants": []
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel chanteur français interprète « Allumer le feu » ?",
+   "answer": "Johnny Hallyday",
+   "variants": [
+    "Johnny",
+    "Hallyday"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "De quel instrument joue le célèbre musicien Yo-Yo Ma ?",
+   "answer": "Violoncelle",
+   "variants": [
+    "Le violoncelle"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel est le vrai prénom de Stromae ?",
+   "answer": "Paul",
+   "variants": []
+  },
+  {
+   "theme": "Musique",
+   "question": "Le saviez-vous : quel compositeur a écrit sa première symphonie à seulement 8 ans ?",
+   "answer": "Mozart",
+   "variants": [
+    "Wolfgang Amadeus Mozart"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel groupe de rock a sorti « Bohemian Rhapsody » en 1975 ?",
+   "answer": "Queen",
+   "variants": []
+  },
+  {
+   "theme": "Musique",
+   "question": "Quelle chanson de Serge Gainsbourg et Jane Birkin a fait scandale en 1969 ?",
+   "answer": "Je t'aime… moi non plus",
+   "variants": [
+    "Je t'aime moi non plus",
+    "Je t'aime... moi non plus"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Combien de touches compte un piano standard moderne ?",
+   "answer": "88",
+   "variants": [
+    "88 touches"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Qui a composé « La Marseillaise » en 1792 ?",
+   "answer": "Rouget de Lisle",
+   "variants": [
+    "Claude Joseph Rouget de Lisle",
+    "Rouget de l'Isle"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel compositeur français a écrit le « Boléro » (1928) ?",
+   "answer": "Maurice Ravel",
+   "variants": [
+    "Ravel"
+   ]
+  },
+  {
+   "theme": "Musique",
+   "question": "Quel compositeur français excentrique a écrit les « Gymnopédies » ?",
+   "answer": "Erik Satie",
+   "variants": [
+    "Satie"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Combien de joueurs une équipe de football aligne-t-elle sur le terrain ?",
+   "answer": "11",
+   "variants": [
+    "Onze",
+    "11 joueurs"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Dans quel sport utilise-t-on un volant ?",
+   "answer": "Badminton",
+   "variants": [
+    "Le badminton"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Sur quelle surface se joue le tournoi de Roland-Garros ?",
+   "answer": "Terre battue",
+   "variants": [
+    "La terre battue"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Tous les combien d'années ont lieu les Jeux olympiques d'été ?",
+   "answer": "4 ans",
+   "variants": [
+    "4",
+    "Quatre ans",
+    "Quatre"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel sport pratique Teddy Riner ?",
+   "answer": "Judo",
+   "variants": [
+    "Le judo"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel sport pratique Antoine Dupont ?",
+   "answer": "Rugby",
+   "variants": [
+    "Le rugby",
+    "Rugby à XV"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Combien de trous compte un parcours de golf standard ?",
+   "answer": "18",
+   "variants": [
+    "Dix-huit",
+    "18 trous"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "En quelle année la France a-t-elle remporté sa première Coupe du monde de football ?",
+   "answer": "1998",
+   "variants": []
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel sprinteur jamaïcain a remporté l'or olympique du 100 m en 2008, 2012 et 2016 ?",
+   "answer": "Usain Bolt",
+   "variants": [
+    "Bolt"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Combien de minutes dure un match de rugby à XV, hors prolongations ?",
+   "answer": "80",
+   "variants": [
+    "80 minutes"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Dans quelle ville ont eu lieu les premiers Jeux olympiques modernes, en 1896 ?",
+   "answer": "Athènes",
+   "variants": [
+    "Athenes"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel Français est à l'origine de la rénovation des Jeux olympiques modernes ?",
+   "answer": "Pierre de Coubertin",
+   "variants": [
+    "Coubertin",
+    "Baron de Coubertin"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Le saviez-vous : quel joueur de tennis a remporté Roland-Garros à 14 reprises ?",
+   "answer": "Rafael Nadal",
+   "variants": [
+    "Nadal",
+    "Rafa Nadal"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Dans quel sport parle-t-on de « strike » et de « spare » ?",
+   "answer": "Bowling",
+   "variants": [
+    "Le bowling"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quelle est la couleur du maillot porté par le leader du classement général du Tour de France ?",
+   "answer": "Jaune",
+   "variants": [
+    "Maillot jaune"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Au tennis, comment appelle-t-on un service gagnant que l'adversaire ne touche pas ?",
+   "answer": "Ace",
+   "variants": [
+    "Un ace"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel nageur américain a remporté 23 médailles d'or olympiques au cours de sa carrière ?",
+   "answer": "Michael Phelps",
+   "variants": [
+    "Phelps"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quelle est la distance officielle d'un marathon ?",
+   "answer": "42,195 km",
+   "variants": [
+    "42,195",
+    "42.195",
+    "42,195 kilomètres",
+    "42 km 195"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel sport basque se joue avec un gant en osier appelé « chistera » ?",
+   "answer": "Pelote basque",
+   "variants": [
+    "La pelote basque",
+    "Pelote",
+    "Cesta punta"
+   ]
+  },
+  {
+   "theme": "Sport",
+   "question": "Quel footballeur anglais a reçu le tout premier Ballon d'or, en 1956 ?",
+   "answer": "Stanley Matthews",
+   "variants": [
+    "Matthews",
+    "Sir Stanley Matthews"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel plombier moustachu est la mascotte de Nintendo ?",
+   "answer": "Mario",
+   "variants": [
+    "Super Mario"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel hérisson bleu est la mascotte de Sega ?",
+   "answer": "Sonic",
+   "variants": [
+    "Sonic the Hedgehog"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel jeu de Mojang permet de construire dans un monde fait de cubes ?",
+   "answer": "Minecraft",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel jeu de 1980 met en scène une boule jaune qui mange des pac-gommes en fuyant des fantômes ?",
+   "answer": "Pac-Man",
+   "variants": [
+    "Pacman",
+    "Pac Man"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel jeu soviétique consiste à empiler des pièces géométriques qui tombent ?",
+   "answer": "Tetris",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel Pokémon jaune de type Électrik est la mascotte de la franchise ?",
+   "answer": "Pikachu",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Le saviez-vous : comment s'appelle le héros que l'on incarne dans « The Legend of Zelda » ?",
+   "answer": "Link",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quelle entreprise japonaise fabrique les consoles PlayStation ?",
+   "answer": "Sony",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel éditeur français est à l'origine des séries « Assassin's Creed » et « Rayman » ?",
+   "answer": "Ubisoft",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Dans quelle ville fictive, inspirée de Los Angeles, se déroule « GTA V » ?",
+   "answer": "Los Santos",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Comment s'appelle le frère de Mario, vêtu de vert ?",
+   "answer": "Luigi",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel gorille était l'adversaire de Mario dans le jeu d'arcade de 1981 où il apparaît pour la première fois ?",
+   "answer": "Donkey Kong",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel jeu de Riot Games oppose des « champions » sur la Faille de l'invocateur ?",
+   "answer": "League of Legends",
+   "variants": [
+    "LoL",
+    "LOL"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quelle console portable de Nintendo, sortie en 1989, était livrée en Occident avec Tetris ?",
+   "answer": "Game Boy",
+   "variants": [
+    "Gameboy"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quelle archéologue aventurière est l'héroïne de « Tomb Raider » ?",
+   "answer": "Lara Croft",
+   "variants": [
+    "Lara"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel battle royale d'Epic Games est célèbre pour ses danses de victoire ?",
+   "answer": "Fortnite",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quelle boule rose de Nintendo aspire ses ennemis pour copier leurs pouvoirs ?",
+   "answer": "Kirby",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel jeu Atari de 1972, simulant le tennis de table, est l'un des premiers grands succès commerciaux du jeu vidéo ?",
+   "answer": "Pong",
+   "variants": []
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel créateur japonais est le père de Mario et de « The Legend of Zelda » ?",
+   "answer": "Shigeru Miyamoto",
+   "variants": [
+    "Miyamoto"
+   ]
+  },
+  {
+   "theme": "Jeux vidéo",
+   "question": "Quel studio montpelliérain a développé « Clair Obscur: Expedition 33 » ?",
+   "answer": "Sandfall Interactive",
+   "variants": [
+    "Sandfall"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Qui a écrit « Les Misérables » ?",
+   "answer": "Victor Hugo",
+   "variants": [
+    "Hugo"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel petit Gaulois vit dans un village qui résiste encore et toujours à l'envahisseur ?",
+   "answer": "Astérix",
+   "variants": [
+    "Asterix"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel reporter belge à la houppe voyage avec son chien Milou ?",
+   "answer": "Tintin",
+   "variants": []
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Qui a écrit « Le Petit Prince » ?",
+   "answer": "Antoine de Saint-Exupéry",
+   "variants": [
+    "Saint-Exupéry",
+    "Saint Exupéry",
+    "Saint-Exupery"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Comment s'appelle l'école de sorcellerie fréquentée par Harry Potter ?",
+   "answer": "Poudlard",
+   "variants": [
+    "Hogwarts"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel détective créé par Arthur Conan Doyle habite au 221B Baker Street ?",
+   "answer": "Sherlock Holmes",
+   "variants": [
+    "Sherlock",
+    "Holmes"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Qui a écrit « Le Tour du monde en quatre-vingts jours » ?",
+   "answer": "Jules Verne",
+   "variants": [
+    "Verne"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Comment s'appelle le capitaine bourru, grand ami de Tintin ?",
+   "answer": "Haddock",
+   "variants": [
+    "Capitaine Haddock"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel poète a publié « Les Fleurs du mal » en 1857 ?",
+   "answer": "Charles Baudelaire",
+   "variants": [
+    "Baudelaire"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel poète a écrit « Le Dormeur du val » en 1870, encore adolescent ?",
+   "answer": "Arthur Rimbaud",
+   "variants": [
+    "Rimbaud"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel écrivain de la Renaissance a créé les géants Gargantua et Pantagruel ?",
+   "answer": "François Rabelais",
+   "variants": [
+    "Rabelais"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Comment s'appelle le petit chien d'Obélix ?",
+   "answer": "Idéfix",
+   "variants": [
+    "Idefix"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Dans « Les Trois Mousquetaires », quel jeune Gascon rejoint Athos, Porthos et Aramis ?",
+   "answer": "D'Artagnan",
+   "variants": [
+    "Artagnan",
+    "Dartagnan"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel cow-boy de BD « tire plus vite que son ombre » ?",
+   "answer": "Lucky Luke",
+   "variants": []
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Le saviez-vous : quel écrivain a rédigé « La Disparition », un roman entier sans la lettre « e » ?",
+   "answer": "Georges Perec",
+   "variants": [
+    "Perec"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel auteur britannique a écrit « 1984 » et « La Ferme des animaux » ?",
+   "answer": "George Orwell",
+   "variants": [
+    "Orwell"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel dramaturge a écrit « Le Misanthrope » et « Tartuffe » ?",
+   "answer": "Molière",
+   "variants": [
+    "Moliere",
+    "Jean-Baptiste Poquelin"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel manga d'Eiichiro Oda suit Luffy et son équipage de pirates ?",
+   "answer": "One Piece",
+   "variants": []
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quel est le vrai nom d'Hergé, le créateur de Tintin ?",
+   "answer": "Georges Remi",
+   "variants": [
+    "Georges Rémi"
+   ]
+  },
+  {
+   "theme": "Littérature & BD",
+   "question": "Quelle romancière anglaise a publié « Frankenstein » en 1818 ?",
+   "answer": "Mary Shelley",
+   "variants": [
+    "Shelley",
+    "Mary Wollstonecraft Shelley"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel fromage savoyard est indispensable à une vraie tartiflette ?",
+   "answer": "Reblochon",
+   "variants": [
+    "Le reblochon"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "De quel pays la pizza est-elle originaire ?",
+   "answer": "Italie",
+   "variants": [
+    "L'Italie"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel fruit est l'ingrédient principal du guacamole ?",
+   "answer": "Avocat",
+   "variants": [
+    "L'avocat"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle viennoiserie est appelée « chocolatine » dans le Sud-Ouest ?",
+   "answer": "Pain au chocolat",
+   "variants": [
+    "Un pain au chocolat"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle soupe froide espagnole est à base de tomates ?",
+   "answer": "Gazpacho",
+   "variants": [
+    "Le gazpacho",
+    "Gaspacho"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "De quelle région française la choucroute est-elle la grande spécialité ?",
+   "answer": "Alsace",
+   "variants": [
+    "L'Alsace"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel plat japonais associe riz vinaigré et poisson cru ?",
+   "answer": "Sushi",
+   "variants": [
+    "Sushis",
+    "Les sushis"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle épice, la plus chère du monde, provient des stigmates d'une fleur de crocus ?",
+   "answer": "Safran",
+   "variants": [
+    "Le safran"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle sauce froide émulsionnée est à base de jaune d'œuf, de moutarde et d'huile ?",
+   "answer": "Mayonnaise",
+   "variants": [
+    "La mayonnaise",
+    "Mayo"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel cocktail cubain associe rhum, menthe, citron vert, sucre et eau gazeuse ?",
+   "answer": "Mojito",
+   "variants": [
+    "Le mojito"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Le saviez-vous : quelle tarte aux pommes renversée doit son nom à deux sœurs hôtelières de Sologne ?",
+   "answer": "Tarte Tatin",
+   "variants": [
+    "Tatin",
+    "La tarte Tatin"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle ville bourguignonne a donné son nom à une célèbre moutarde ?",
+   "answer": "Dijon",
+   "variants": []
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel fromage italien crémeux entre dans la recette du tiramisu ?",
+   "answer": "Mascarpone",
+   "variants": [
+    "Le mascarpone"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle légumineuse est la base du houmous ?",
+   "answer": "Pois chiche",
+   "variants": [
+    "Pois chiches",
+    "Les pois chiches"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel dessert est une crème recouverte d'une fine couche de sucre caramélisé ?",
+   "answer": "Crème brûlée",
+   "variants": [
+    "La crème brûlée",
+    "Creme brulee"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle pâte sert à préparer les éclairs, les chouquettes et les profiteroles ?",
+   "answer": "Pâte à choux",
+   "variants": [
+    "La pâte à choux",
+    "Pate a choux"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel champignon très recherché est surnommé le « diamant noir » ?",
+   "answer": "Truffe",
+   "variants": [
+    "Truffe noire",
+    "La truffe",
+    "Truffe du Périgord"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel fromage AOP normand est traditionnellement moulé en forme de cœur ?",
+   "answer": "Neufchâtel",
+   "variants": [
+    "Le neufchâtel",
+    "Neufchatel"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quelle sauce dérivée de la hollandaise est parfumée à l'estragon et à l'échalote ?",
+   "answer": "Béarnaise",
+   "variants": [
+    "Sauce béarnaise",
+    "Bearnaise"
+   ]
+  },
+  {
+   "theme": "Cuisine & gastronomie",
+   "question": "Quel fromage au lait de brebis est affiné dans les caves du Combalou, en Aveyron ?",
+   "answer": "Roquefort",
+   "variants": [
+    "Le roquefort"
+   ]
+  }
+ ]
+}
