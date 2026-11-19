@@ -1,0 +1,59 @@
+import { maskWord } from './hints';
+import type { DrawingHistory } from './drawing';
+import type { ChatEntry, Phase, PictionaryState } from './game';
+import type { PictionarySettings } from './settings';
+
+export type PictionaryView = {
+  phase: Phase;
+  settings: PictionarySettings;
+  round: number;
+  drawerId: string | null;
+  isDrawer: boolean;
+  hasFound: boolean;
+  /** Only for the drawer, players who found it, and everyone at turnEnd / gameOver. */
+  word: string | null;
+  mask: string[] | null;
+  revealed: number[];
+  hintsLeft: number;
+  /** Drawer only, during choosing. */
+  wordChoices: string[] | null;
+  phaseEndsAt: number | null;
+  drawStartedAt: number | null;
+  serverNow: number;
+  found: string[];
+  scores: Record<string, number>;
+  turnPoints: Record<string, number>;
+  history: DrawingHistory;
+  chat: ChatEntry[];
+  turnOrder: string[];
+};
+
+export function viewFor(state: PictionaryState, viewerId: string, now: number): PictionaryView {
+  const isDrawer = state.drawerId !== null && state.drawerId === viewerId;
+  const hasFound = state.found.some((f) => f.playerId === viewerId);
+  const ended = state.phase === 'turnEnd' || state.phase === 'gameOver';
+  const canSeeWord = ended || (state.phase === 'drawing' && (isDrawer || hasFound));
+  const showMask = (state.phase === 'drawing' || state.phase === 'turnEnd') && state.word !== null;
+  return {
+    phase: state.phase,
+    settings: state.settings,
+    round: state.round,
+    drawerId: state.drawerId,
+    isDrawer,
+    hasFound,
+    word: canSeeWord ? state.word : null,
+    mask: showMask ? maskWord(state.word!, state.revealed) : null,
+    revealed: state.revealed,
+    hintsLeft: Math.max(0, state.settings.maxHints - state.revealed.length),
+    wordChoices: state.phase === 'choosing' && isDrawer ? state.wordChoices : null,
+    phaseEndsAt: state.phaseEndsAt,
+    drawStartedAt: state.drawStartedAt,
+    serverNow: now,
+    found: state.found.map((f) => f.playerId),
+    scores: state.scores,
+    turnPoints: state.turnPoints,
+    history: state.history,
+    chat: state.chat,
+    turnOrder: state.turnOrder,
+  };
+}

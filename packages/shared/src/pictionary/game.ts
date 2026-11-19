@@ -1,7 +1,12 @@
 import { connectedPlayers, type Room } from '../room';
 import { clampSettings, DEFAULT_SETTINGS, type PictionarySettings } from './settings';
-import { drawerPoints } from './scoring';
-import { emptyHistory, type DrawAction, type DrawingHistory, type Point } from './drawing';
+import { drawerPoints, guesserPoints } from './scoring';
+import { hintsUnlocked, isLetterIndex } from './hints';
+import { classifyGuess } from '../text';
+import {
+  addAction, appendPoints, emptyHistory, isValidAction, MAX_STROKE_POINTS, redo, undo,
+  type DrawAction, type DrawingHistory, type Point,
+} from './drawing';
 
 export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameOver';
 export type ChatEntry = { id: number; kind: 'guess' | 'system'; playerId?: string; text: string };
@@ -78,18 +83,32 @@ export function initialState(settings: PictionarySettings = DEFAULT_SETTINGS): P
   };
 }
 
-const STATE: Effect[] = [{ type: 'state' }];
-const changed = (state: PictionaryState): Result => ({ state, effects: STATE });
+const changed = (state: PictionaryState): Result => ({ state, effects: [{ type: 'state' }] });
 const unchanged = (state: PictionaryState): Result => ({ state, effects: [] });
 
 const isConnected = (room: Room, id: string): boolean =>
   room.players.some((p) => p.id === id && p.connected);
 
-const addSystemChat = (s: PictionaryState, text: string): PictionaryState => ({
+const MAX_CHAT = 100;
+const MAX_GUESS_LENGTH = 100;
+const MAX_APPEND_POINTS = 200;
+
+const addChat = (s: PictionaryState, entry: Omit<ChatEntry, 'id'>): PictionaryState => ({
   ...s,
-  chat: [...s.chat, { id: s.nextChatId, kind: 'system', text }],
+  chat: [...s.chat, { id: s.nextChatId, ...entry }].slice(-MAX_CHAT),
   nextChatId: s.nextChatId + 1,
 });
+
+const addSystemChat = (s: PictionaryState, text: string): PictionaryState =>
+  addChat(s, { kind: 'system', text });
+
+const playerName = (room: Room, id: string): string => room.players.find((p) => p.id === id)?.name ?? id;
+
+/** Every connected player except the drawer has found the word (and there is at least one). */
+function allFound(s: PictionaryState, ctx: Ctx): boolean {
+  const guessers = connectedPlayers(ctx.room).filter((p) => p.id !== s.drawerId);
+  return guessers.length > 0 && guessers.every((p) => s.found.some((f) => f.playerId === p.id));
+}
 
 /** Pick `count` distinct words at random (partial Fisher-Yates). */
 function sample(pool: string[], count: number, rng: () => number): string[] {
@@ -187,6 +206,7 @@ function endTurn(s: PictionaryState, ctx: Ctx): Result {
   let next: PictionaryState = {
     ...s,
     phase: 'turnEnd',
+    wordChoices: [],
     scores: { ...s.scores, [drawer]: (s.scores[drawer] ?? 0) + pts },
     turnPoints: { ...s.turnPoints, [drawer]: (s.turnPoints[drawer] ?? 0) + pts },
     phaseEndsAt: ctx.now + TURN_END_MS,
@@ -232,7 +252,97 @@ function onPlayerLeft(s: PictionaryState, playerId: string, ctx: Ctx): Result {
   if (s.phase === 'lobby' || s.phase === 'gameOver') return changed(s);
   if (connectedPlayers(ctx.room).length < 2) return gameOver(s);
   if ((s.phase === 'choosing' || s.phase === 'drawing') && playerId === s.drawerId) return endTurn(s, ctx);
+  if (s.phase === 'drawing' && allFound(s, ctx)) return endTurn(s, ctx);
   return changed(s);
+}
+
+function onGuess(s: PictionaryState, by: string, text: unknown, ctx: Ctx): Result {
+  if (s.phase !== 'drawing' || s.word === null || typeof text !== 'string') return unchanged(s);
+  if (by === s.drawerId || !isConnected(ctx.room, by) || s.found.some((f) => f.playerId === by)) {
+    return unchanged(s);
+  }
+  const guess = text.trim();
+  if (guess.length < 1 || guess.length > MAX_GUESS_LENGTH) return unchanged(s);
+  const verdict = classifyGuess(guess, s.word, s.settings.closeDetection);
+  if (verdict === 'close') return { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] };
+  if (verdict === 'wrong') return changed(addChat(s, { kind: 'guess', playerId: by, text: guess }));
+  const elapsed = ctx.now - (s.drawStartedAt ?? ctx.now);
+  const pts = guesserPoints(elapsed, s.settings.drawSeconds * 1000, s.found.length === 0);
+  let next: PictionaryState = {
+    ...s,
+    found: [...s.found, { playerId: by, at: ctx.now }],
+    scores: { ...s.scores, [by]: (s.scores[by] ?? 0) + pts },
+    turnPoints: { ...s.turnPoints, [by]: (s.turnPoints[by] ?? 0) + pts },
+  };
+  next = addSystemChat(next, `« ${playerName(ctx.room, by)} a trouvé ! »`);
+  const effects: Effect[] = [{ type: 'state' }, { type: 'private', to: by, notice: 'correct' }];
+  if (allFound(next, ctx)) return { state: endTurn(next, ctx).state, effects };
+  return { state: next, effects };
+}
+
+function onRevealLetter(s: PictionaryState, by: string, index: unknown, ctx: Ctx): Result {
+  if (s.phase !== 'drawing' || by !== s.drawerId || s.word === null || s.drawStartedAt === null) return unchanged(s);
+  if (!Number.isInteger(index) || s.revealed.length >= s.settings.maxHints) return unchanged(s);
+  const i = index as number;
+  if (!isLetterIndex(s.word, i) || s.revealed.includes(i)) return unchanged(s);
+  if (!hintsUnlocked(ctx.now - s.drawStartedAt, s.settings.drawSeconds * 1000, s.settings.hintUnlockPct)) {
+    return unchanged(s);
+  }
+  return changed({ ...s, revealed: [...s.revealed, i] });
+}
+
+const isPoint = (p: unknown): p is Point =>
+  Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n));
+
+/** Rebuild a validated action from known fields only. */
+function sanitizeAction(a: DrawAction): DrawAction {
+  const pt = (p: Point): Point => [p[0], p[1]];
+  switch (a.kind) {
+    case 'clear':
+      return { id: a.id, kind: 'clear' };
+    case 'fill':
+      return { id: a.id, kind: 'fill', color: a.color, opacity: a.opacity, at: pt(a.at) };
+    case 'stroke':
+      return {
+        id: a.id, kind: 'stroke', tool: a.tool, color: a.color, size: a.size,
+        opacity: a.opacity, points: a.points.map(pt),
+      };
+    default:
+      return {
+        id: a.id, kind: a.kind, color: a.color, size: a.size, opacity: a.opacity,
+        filled: a.filled, from: pt(a.from), to: pt(a.to),
+      };
+  }
+}
+
+function onDraw(s: PictionaryState, by: string, op: DrawOp | undefined): Result {
+  if (s.phase !== 'drawing' || by !== s.drawerId || typeof op !== 'object' || op === null) return unchanged(s);
+  const withHistory = (history: DrawingHistory, sent: DrawOp): Result =>
+    history === s.history ? unchanged(s) : { state: { ...s, history }, effects: [{ type: 'draw', op: sent }] };
+  switch (op.op) {
+    case 'add': {
+      if (!isValidAction(op.action)) return unchanged(s);
+      const action = sanitizeAction(op.action);
+      return withHistory(addAction(s.history, action), { op: 'add', action });
+    }
+    case 'append': {
+      const last = s.history.actions[s.history.actions.length - 1];
+      if (!last || last.kind !== 'stroke' || last.id !== op.id) return unchanged(s);
+      if (!Array.isArray(op.points) || op.points.length < 1 || op.points.length > MAX_APPEND_POINTS) {
+        return unchanged(s);
+      }
+      if (!op.points.every(isPoint)) return unchanged(s);
+      if (last.points.length + op.points.length > MAX_STROKE_POINTS) return unchanged(s);
+      const points = op.points.map((p): Point => [p[0], p[1]]);
+      return withHistory(appendPoints(s.history, op.id, points), { op: 'append', id: op.id, points });
+    }
+    case 'undo':
+      return withHistory(undo(s.history), { op: 'undo' });
+    case 'redo':
+      return withHistory(redo(s.history), { op: 'redo' });
+    default:
+      return unchanged(s);
+  }
 }
 
 export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Result {
@@ -259,8 +369,13 @@ export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Resu
       return onPlayerJoined(state, event.playerId);
     case 'playerLeft':
       return onPlayerLeft(state, event.playerId, ctx);
+    case 'guess':
+      return onGuess(state, event.by, event.text, ctx);
+    case 'revealLetter':
+      return onRevealLetter(state, event.by, event.index, ctx);
+    case 'draw':
+      return onDraw(state, event.by, event.op);
     default:
-      // guess / revealLetter / draw: Task 6
       return unchanged(state);
   }
 }
