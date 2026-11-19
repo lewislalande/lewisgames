@@ -12,7 +12,8 @@ export type ClientMsg =
   | { t: 'guess'; text: string }
   | { t: 'reveal'; index: number }
   | { t: 'draw'; op: DrawOp }
-  | { t: 'answer'; text: string }
+  /** `final`: submitted (Enter / Envoyer). false: a draft (autosend) or a withdrawn submission (Modifier). */
+  | { t: 'answer'; text: string; final: boolean }
   | { t: 'next' }
   | { t: 'vote'; groupId: string; vote: VoteValue }
   | { t: 'closeVote' }
@@ -63,8 +64,11 @@ export function parseClientMsg(raw: string): ClientMsg | null {
     case 'reveal':
       return typeof m.index === 'number' ? { t: m.t, index: m.index } : null;
     case 'guess':
+      return typeof m.text === 'string' ? { t: 'guess', text: m.text } : null;
     case 'answer':
-      return typeof m.text === 'string' ? { t: m.t, text: m.text } : null;
+      if (typeof m.text !== 'string') return null;
+      if (m.final !== undefined && typeof m.final !== 'boolean') return null;
+      return { t: 'answer', text: m.text, final: m.final === true };
     case 'vote':
     case 'decide':
       return typeof m.groupId === 'string' && isVoteValue(m.vote) ? { t: m.t, groupId: m.groupId, vote: m.vote } : null;

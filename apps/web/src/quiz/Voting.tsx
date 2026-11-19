@@ -25,7 +25,8 @@ export function Voting({ game, names, playerId, isHost, hostName, send }: Props)
         )}
         <ul className="qz-answers">
           {groups.map((g, i) => {
-            const mine = g.authors.includes(playerId);
+            const selfVote = game.selfVoteGroups.includes(g.groupId);
+            const mine = g.authors.includes(playerId) && !selfVote;
             return (
               <AnswerCard key={g.groupId} text={g.text} authors={g.authors} names={names} index={i} className={mine && !deciding ? 'mine' : ''}>
                 {deciding ? (
@@ -36,7 +37,10 @@ export function Voting({ game, names, playerId, isHost, hostName, send }: Props)
                 ) : mine ? (
                   <span className="qz-mine">Ta réponse</span>
                 ) : (
-                  <VoteButtons value={game.myVotes[g.groupId]} onVote={(vote) => send({ t: 'vote', groupId: g.groupId, vote })} />
+                  <div className="qz-vote-col">
+                    {selfVote && <span className="qz-hint">Tout le monde a répondu pareil : votez quand même</span>}
+                    <VoteButtons value={game.myVotes[g.groupId]} onVote={(vote) => send({ t: 'vote', groupId: g.groupId, vote })} />
+                  </div>
                 )}
               </AnswerCard>
             );

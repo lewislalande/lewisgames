@@ -78,14 +78,14 @@ describe('quiz rooms', () => {
     a.send({ t: 'start' });
     await b.nextQuiz((m) => m.game.phase === 'answering');
 
-    a.send({ t: 'answer', text: 'zzanswerofa' });
+    a.send({ t: 'answer', text: 'zzanswerofa', final: true });
     const afterA = await b.nextQuiz((m) => m.game.answered.includes(aId));
     expect(afterA.game.myAnswer).toBeNull();
     // A sees their own answer.
     expect((await a.nextQuiz((m) => m.game.answered.includes(aId))).game.myAnswer).toBe('zzanswerofa');
     expect(b.raw.join('\n')).not.toContain('zzanswerofa');
 
-    b.send({ t: 'answer', text: 'zzanswerofb' });
+    b.send({ t: 'answer', text: 'zzanswerofb', final: true });
     await a.nextQuiz((m) => m.game.phase === 'revealing');
     await b.nextQuiz((m) => m.game.phase === 'revealing');
     // Reveal both answers: still no correct answer anywhere.
@@ -186,7 +186,7 @@ describe('pictionary words', () => {
   it('rejects a quiz message in a pictionary room with bad_message', async () => {
     const code = await createRoom('pictionary');
     const { c: a } = await Client.join(code, 'tok-a', 'A');
-    a.send({ t: 'answer', text: 'x' });
+    a.send({ t: 'answer', text: 'x', final: true });
     expect(await a.next((m) => m.t === 'error')).toEqual({ t: 'error', code: 'bad_message' });
     expect(a.closed).toBeNull();
   });

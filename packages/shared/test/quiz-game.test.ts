@@ -28,7 +28,7 @@ const started = (room = mkRoom(), questions = [q(1), q(2)]) =>
   run(quizInitialState(), [{ type: 'start', by: 'A', questions }], room);
 
 const answerAll = (s: QuizState, texts: Record<string, string>, room = mkRoom()) =>
-  run(s, Object.entries(texts).map(([by, text]) => ({ type: 'answer', by, text }) as QuizEvent), room);
+  run(s, Object.entries(texts).map(([by, text]) => ({ type: 'answer', by, text, final: true }) as QuizEvent), room);
 
 const nexts = (s: QuizState, n: number, room = mkRoom()) =>
   run(s, Array.from({ length: n }, () => ({ type: 'next', by: 'A' }) as QuizEvent), room);
@@ -72,12 +72,12 @@ describe('start', () => {
 describe('answering', () => {
   it('replaces trimmed answers and ignores over-long ones', () => {
     let s = run(started(), [
-      { type: 'answer', by: 'B', text: '  foo ' },
-      { type: 'answer', by: 'B', text: 'bar' },
-      { type: 'answer', by: 'C', text: 'x'.repeat(101) },
+      { type: 'answer', by: 'B', text: '  foo ', final: true },
+      { type: 'answer', by: 'B', text: 'bar', final: true },
+      { type: 'answer', by: 'C', text: 'x'.repeat(101), final: true },
     ]);
     expect(s.answers).toEqual({ B: 'bar' });
-    s = run(s, [{ type: 'answer', by: 'C', text: 'y'.repeat(100) }]);
+    s = run(s, [{ type: 'answer', by: 'C', text: 'y'.repeat(100), final: true }]);
     expect(s.answers.C).toHaveLength(100);
   });
   it('ends early when every connected player answered', () => {
@@ -105,32 +105,85 @@ describe('answering', () => {
   });
   it('answer survives reconnect', () => {
     let room = mkRoom();
-    let s = run(started(room), [{ type: 'answer', by: 'B', text: 'paris' }], room);
+    let s = run(started(room), [{ type: 'answer', by: 'B', text: 'paris', final: true }], room);
     room = disconnect(room, 'B');
     s = run(s, [{ type: 'playerLeft', playerId: 'B' }], room);
     room = reconnect(room, 'B');
     s = run(s, [{ type: 'playerJoined', playerId: 'B' }], room);
     expect(s.phase).toBe('answering');
     expect(quizViewFor(s, 'B', 1000).myAnswer).toBe('paris');
-    s = run(s, [{ type: 'answer', by: 'B', text: 'lyon' }], room);
+    s = run(s, [{ type: 'answer', by: 'B', text: 'lyon', final: true }], room);
     expect(quizViewFor(s, 'B', 1000).myAnswer).toBe('lyon');
     expect(s.scores.B).toBe(0);
   });
-  it('a player leaving can complete the answering phase', () => {
+  it('a player leaving does not end answering (they may just be refreshing)', () => {
     let room = mkRoom();
-    const s = answerAll(started(room), { A: 'a', B: 'b' }, room);
+    let s = answerAll(started(room), { A: 'a', B: 'b' }, room);
     room = disconnect(room, 'C');
-    expect(run(s, [{ type: 'playerLeft', playerId: 'C' }], room).phase).toBe('revealing');
+    s = run(s, [{ type: 'playerLeft', playerId: 'C' }], room);
+    expect(s.phase).toBe('answering');
+    // The reconnecting player can still answer before the timer, which ends the phase.
+    room = reconnect(room, 'C');
+    s = run(s, [{ type: 'playerJoined', playerId: 'C' }, { type: 'answer', by: 'C', text: 'c', final: true }], room);
+    expect(s.phase).toBe('revealing');
+  });
+  it('only connected players\' submissions are counted', () => {
+    let room = mkRoom();
+    let s = answerAll(started(room), { A: 'a' }, room);
+    room = disconnect(room, 'C');
+    s = run(s, [{ type: 'playerLeft', playerId: 'C' }, { type: 'answer', by: 'B', text: 'b', final: true }], room);
+    expect(s.phase).toBe('revealing');
+    expect(s.groups.map((g) => g.id)).toEqual(['a', 'b']);
+  });
+  it('drafts do not end the phase, and the timeout uses drafts', () => {
+    let s = run(started(), [
+      { type: 'answer', by: 'A', text: 'a', final: false },
+      { type: 'answer', by: 'B', text: 'b', final: false },
+      { type: 'answer', by: 'C', text: 'c', final: false },
+    ]);
+    expect(s.phase).toBe('answering');
+    expect(quizViewFor(s, 'A', 1000).answered).toEqual([]);
+    s = run(s, [{ type: 'answer', by: 'A', text: 'a2', final: true }]);
+    expect(quizViewFor(s, 'B', 1000).answered).toEqual(['A']);
+    s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
+    expect(s.phase).toBe('revealing');
+    expect(s.groups.map((g) => g.text)).toEqual(['a2', 'b', 'c']);
+  });
+  it('a draft for the last missing player does not end it; submitting does', () => {
+    let s = answerAll(started(), { A: 'a', B: 'b' });
+    s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: false }]);
+    expect(s.phase).toBe('answering');
+    s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: true }]);
+    expect(s.phase).toBe('revealing');
+  });
+  it('Modifier (final:false) withdraws the submission; mySubmitted follows', () => {
+    let s = run(started(), [{ type: 'answer', by: 'A', text: 'a', final: true }]);
+    expect(quizViewFor(s, 'A', 1000).mySubmitted).toBe(true);
+    expect(quizViewFor(s, 'B', 1000).mySubmitted).toBe(false);
+    s = run(s, [{ type: 'answer', by: 'A', text: 'a', final: false }]);
+    const v = quizViewFor(s, 'A', 1000);
+    expect(v.mySubmitted).toBe(false);
+    expect(v.myAnswer).toBe('a');
+    expect(v.answered).toEqual([]);
+    // With the others submitted, A's withdrawn answer keeps the phase open.
+    s = run(s, [{ type: 'answer', by: 'B', text: 'b', final: true }, { type: 'answer', by: 'C', text: 'c', final: true }]);
+    expect(s.phase).toBe('answering');
+    s = run(s, [{ type: 'answer', by: 'A', text: 'a', final: true }]);
+    expect(s.phase).toBe('revealing');
+  });
+  it('a blank final answer is not a submission', () => {
+    const s = run(started(), [{ type: 'answer', by: 'A', text: '  ', final: true }]);
+    expect(quizViewFor(s, 'A', 1000).mySubmitted).toBe(false);
   });
   it('a player joining mid-game gets score 0 and can answer', () => {
     const room = mkRoom(['A', 'B', 'C', 'D']);
     let s = started(mkRoom());
-    s = run(s, [{ type: 'playerJoined', playerId: 'D' }, { type: 'answer', by: 'D', text: 'd' }], room);
+    s = run(s, [{ type: 'playerJoined', playerId: 'D' }, { type: 'answer', by: 'D', text: 'd', final: true }], room);
     expect(s.scores.D).toBe(0);
     expect(s.answers.D).toBe('d');
   });
   it('views hide other answers and the correct answer', () => {
-    const s = run(started(), [{ type: 'answer', by: 'B', text: 'secretanswer' }]);
+    const s = run(started(), [{ type: 'answer', by: 'B', text: 'secretanswer', final: true }]);
     const a = quizViewFor(s, 'A', 1000);
     expect(JSON.stringify(a)).not.toContain('secretanswer');
     expect(JSON.stringify(a)).not.toContain('R1');
@@ -313,12 +366,53 @@ describe('voting', () => {
     expect(s.phase).toBe('result');
     expect(s.outcomes).toEqual({ x: 'yes', y: 'no', z: 'half' });
   });
-  it('a group nobody can vote on is a tie, half when the host is an author', () => {
+  it('a group everybody authored (same answer): its authors vote on it, each gets the points', () => {
+    const s = run(toVoting({ A: 'same', B: 'Same', C: ' SAME ' }), [
+      { type: 'vote', by: 'A', groupId: 'same', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'same', vote: 'yes' },
+    ]);
+    expect(s.phase).toBe('voting');
+    expect(s.pendingVoters).toEqual(['C']);
+    expect(quizViewFor(s, 'A', 1000).selfVoteGroups).toEqual(['same']);
+    const done = run(s, [{ type: 'vote', by: 'C', groupId: 'same', vote: 'yes' }]);
+    expect(done.phase).toBe('result');
+    expect(done.outcomes).toEqual({ same: 'yes' });
+    expect(done.questionPoints).toEqual({ A: 1, B: 1, C: 1 });
+  });
+  it('a self-vote group split into a tie goes to the host, even when the host is an author', () => {
     const room = mkRoom(['A', 'B']);
-    const s = toVoting({ A: 'same', B: 'Same' }, room);
+    let s = run(toVoting({ A: 'same', B: 'same' }, room), [
+      { type: 'vote', by: 'A', groupId: 'same', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'same', vote: 'no' },
+    ], room);
+    expect(s.phase).toBe('deciding');
+    expect(quizViewFor(s, 'A', 1000).ties).toEqual(['same']);
+    s = run(s, [{ type: 'decide', by: 'A', groupId: 'same', vote: 'yes' }], room);
     expect(s.phase).toBe('result');
-    expect(s.outcomes).toEqual({ same: 'half' });
-    expect(s.scores).toEqual({ A: 0.5, B: 0.5 });
+    expect(s.scores).toEqual({ A: 1, B: 1 });
+  });
+  it('only groups nobody else can judge are self-vote; others keep the no-self-vote rule', () => {
+    const s = toVoting({ A: 'x', B: 'x', C: 'y' });
+    expect(quizViewFor(s, 'A', 1000).selfVoteGroups).toEqual([]);
+    expect(quizReduce(s, { type: 'vote', by: 'A', groupId: 'x', vote: 'yes' }, ctxOf(mkRoom())).state).toBe(s);
+  });
+  it('a player joining mid-vote is not awaited but may vote', () => {
+    const room4 = mkRoom(['A', 'B', 'C', 'D']);
+    let s = toVoting({ A: 'x', B: 'y', C: 'z' });
+    s = run(s, [{ type: 'playerJoined', playerId: 'D' }], room4);
+    expect(s.pendingVoters).not.toContain('D');
+    s = run(s, [{ type: 'vote', by: 'D', groupId: 'x', vote: 'yes' }], room4);
+    expect(s.phase).toBe('voting');
+    s = run(s, [
+      { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'x', vote: 'yes' },
+      { type: 'vote', by: 'A', groupId: 'y', vote: 'yes' },
+      { type: 'vote', by: 'C', groupId: 'y', vote: 'yes' },
+      { type: 'vote', by: 'A', groupId: 'z', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'z', vote: 'yes' },
+    ], room4);
+    expect(s.phase).toBe('result');
+    expect(s.outcomes).toEqual({ x: 'yes', y: 'yes', z: 'yes' });
   });
   it('host leaves during voting: a tie on the new host\'s group resolves to half', () => {
     let room = mkRoom();
@@ -354,9 +448,9 @@ describe('voting', () => {
   });
   it('whitespace-only and punctuation-only answers: not answered, no group, 0 points', () => {
     let s = run(started(), [
-      { type: 'answer', by: 'A', text: 'x' },
-      { type: 'answer', by: 'B', text: '   ' },
-      { type: 'answer', by: 'C', text: '?!' },
+      { type: 'answer', by: 'A', text: 'x', final: true },
+      { type: 'answer', by: 'B', text: '   ', final: true },
+      { type: 'answer', by: 'C', text: '?!', final: true },
     ]);
     expect(s.phase).toBe('answering');
     expect(quizViewFor(s, 'A', 1000).answered).toEqual(['A']);
@@ -373,8 +467,8 @@ describe('voting', () => {
   });
   it('empty answer gets 0 and no group', () => {
     let s = run(started(), [
-      { type: 'answer', by: 'A', text: 'x' },
-      { type: 'answer', by: 'B', text: 'y' },
+      { type: 'answer', by: 'A', text: 'x', final: true },
+      { type: 'answer', by: 'B', text: 'y', final: true },
       { type: 'timeout' },
     ], mkRoom(), 10 ** 9);
     expect(s.groups.map((g) => g.id)).toEqual(['x', 'y']);
@@ -414,7 +508,7 @@ describe('full game', () => {
     expect(s.answerShown).toBe(false);
     expect(quizViewFor(s, 'A', 1000).question).toEqual({ theme: 'T2', text: 'Q2?' });
     // Q2: only C answers (half).
-    s = run(s, [{ type: 'answer', by: 'C', text: 'c' }, { type: 'timeout' }], mkRoom(), 10 ** 9);
+    s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: true }, { type: 'timeout' }], mkRoom(), 10 ** 9);
     s = nexts(s, 3);
     s = run(s, [
       { type: 'vote', by: 'A', groupId: 'c', vote: 'half' },

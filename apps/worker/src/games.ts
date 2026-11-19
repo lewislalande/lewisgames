@@ -105,7 +105,7 @@ function quizAdapter(db: D1Database): GameAdapter<QuizState, QuizEvent> {
         // Questions are filled in by prepare().
         case 'start': return { type: 'start', by, questions: [] };
         case 'restart': return { type: 'restart', by };
-        case 'answer': return { type: 'answer', by, text: msg.text };
+        case 'answer': return { type: 'answer', by, text: msg.text, final: msg.final };
         case 'next': return { type: 'next', by };
         case 'vote': return { type: 'vote', by, groupId: msg.groupId, vote: msg.vote };
         case 'closeVote': return { type: 'closeVote', by };

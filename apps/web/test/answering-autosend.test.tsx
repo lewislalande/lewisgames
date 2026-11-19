@@ -7,7 +7,7 @@ import { Answering } from '../src/quiz/Answering';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const game = { question: { text: 'Quelle est la capitale ?' }, answered: [], myAnswer: null } as unknown as QuizView;
+const baseGame = { question: { text: 'Quelle est la capitale ?' }, answered: [], myAnswer: null, mySubmitted: false } as unknown as QuizView;
 
 let host: HTMLDivElement;
 let root: Root;
@@ -23,7 +23,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-function render(send: (m: unknown) => boolean, online = true) {
+function render(send: (m: unknown) => boolean, online = true, game: QuizView = baseGame) {
   act(() => root.render(createElement(Answering, { game, connectedIds: ['a'], send: send as never, online })));
 }
 function type(text: string) {
@@ -44,7 +44,7 @@ describe('Answering autosend', () => {
     expect(send).not.toHaveBeenCalled();
     advance(1);
     expect(send).toHaveBeenCalledTimes(1);
-    expect(send).toHaveBeenCalledWith({ t: 'answer', text: 'Paris' });
+    expect(send).toHaveBeenCalledWith({ t: 'answer', text: 'Paris', final: false });
     advance(5000);
     expect(send).toHaveBeenCalledTimes(1);
   });
@@ -56,8 +56,33 @@ describe('Answering autosend', () => {
     advance(300);
     act(() => { host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
     expect(send).toHaveBeenCalledTimes(1);
+    expect(send).toHaveBeenCalledWith({ t: 'answer', text: 'Paris', final: true });
     advance(5000);
     expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it('Modifier withdraws the submission (final: false) and reopens the input', () => {
+    const send = vi.fn(() => true);
+    render(send);
+    type('Paris');
+    act(() => { host.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+    expect(host.textContent).toContain('Réponse envoyée ✓');
+    act(() => { [...host.querySelectorAll('button')].find((b) => b.textContent === 'Modifier')!.click(); });
+    expect(send).toHaveBeenLastCalledWith({ t: 'answer', text: 'Paris', final: false });
+    expect(host.querySelector('input')!.value).toBe('Paris');
+    expect(host.textContent).not.toContain('Réponse envoyée');
+  });
+
+  it('after a refresh a draft is shown as a draft, a submission as sent', () => {
+    const send = vi.fn(() => true);
+    render(send, true, { ...baseGame, myAnswer: 'Lyon', mySubmitted: false } as QuizView);
+    expect(host.querySelector('input')!.value).toBe('Lyon');
+    expect(host.textContent).not.toContain('Réponse envoyée');
+    act(() => root.unmount());
+    root = createRoot(host);
+    render(send, true, { ...baseGame, myAnswer: 'Lyon', mySubmitted: true } as QuizView);
+    expect(host.textContent).toContain('Réponse envoyée ✓');
+    expect(host.querySelector('input')).toBeNull();
   });
 
   it('unmounting cancels the pending autosend', () => {

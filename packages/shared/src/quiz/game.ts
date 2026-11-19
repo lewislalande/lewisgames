@@ -14,6 +14,8 @@ export type QuizState = {
   index: number;
   /** Current question's answers, by playerId (trimmed; may be empty). */
   answers: Record<string, string>;
+  /** playerId → true once the player submitted (Enter / Envoyer); drafts (autosend) are in `answers` only. */
+  submitted: Record<string, boolean>;
   groups: AnswerGroup[];
   revealedCount: number;
   answerShown: boolean;
@@ -23,6 +25,8 @@ export type QuizState = {
   outcomes: Record<string, VoteValue>;
   /** Connected players who still have a group to vote on (voting only); kept here since views do not see the room. */
   pendingVoters: string[];
+  /** Players connected when the vote opened: only they are awaited (later joiners may still vote). */
+  voters: string[];
   questionPoints: Record<string, number>;
   scores: Record<string, number>;
   phaseEndsAt: number | null;
@@ -31,7 +35,7 @@ export type QuizState = {
 export type QuizEvent =
   | { type: 'setSettings'; by: string; settings: unknown }
   | { type: 'start'; by: string; questions: Question[] }
-  | { type: 'answer'; by: string; text: string }
+  | { type: 'answer'; by: string; text: string; final: boolean }
   | { type: 'next'; by: string }
   | { type: 'vote'; by: string; groupId: string; vote: VoteValue }
   | { type: 'closeVote'; by: string }
@@ -56,12 +60,14 @@ export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS)
     questions: [],
     index: 0,
     answers: {},
+    submitted: {},
     groups: [],
     revealedCount: 0,
     answerShown: false,
     votes: {},
     outcomes: {},
     pendingVoters: [],
+    voters: [],
     questionPoints: {},
     scores: {},
     phaseEndsAt: null,
@@ -85,12 +91,14 @@ function beginQuestion(s: QuizState, index: number, ctx: QuizCtx): Result {
     phase: 'answering',
     index,
     answers: {},
+    submitted: {},
     groups: [],
     revealedCount: 0,
     answerShown: false,
     votes: {},
     outcomes: {},
     pendingVoters: [],
+    voters: [],
     questionPoints: {},
     phaseEndsAt: ctx.now + s.settings.answerSeconds * 1000,
   });
@@ -106,9 +114,10 @@ function start(s: QuizState, questions: Question[], ctx: QuizCtx): Result {
   return beginQuestion(fresh, 0, ctx);
 }
 
+/** Only submitted answers count (drafts do not end the phase); every connected player must have submitted. */
 const everyoneAnswered = (s: QuizState, ctx: QuizCtx): boolean => {
   const ids = connectedIds(ctx);
-  return ids.length > 0 && ids.every((id) => !isBlankAnswer(s.answers[id]));
+  return ids.length > 0 && ids.every((id) => s.submitted[id] === true && !isBlankAnswer(s.answers[id]));
 };
 
 function endAnswering(s: QuizState, ctx: QuizCtx): Result {
@@ -123,11 +132,13 @@ function endAnswering(s: QuizState, ctx: QuizCtx): Result {
   });
 }
 
-function onAnswer(s: QuizState, by: string, text: unknown, ctx: QuizCtx): Result {
+function onAnswer(s: QuizState, by: string, text: unknown, final: unknown, ctx: QuizCtx): Result {
   if (s.phase !== 'answering' || typeof text !== 'string' || !isConnected(ctx, by)) return unchanged(s);
   const clean = text.trim();
-  if (clean.length > MAX_ANSWER_LENGTH || s.answers[by] === clean) return unchanged(s);
-  const next = { ...s, answers: { ...s.answers, [by]: clean } };
+  if (clean.length > MAX_ANSWER_LENGTH) return unchanged(s);
+  const submitted = final === true && !isBlankAnswer(clean);
+  if (s.answers[by] === clean && (s.submitted[by] === true) === submitted) return unchanged(s);
+  const next = { ...s, answers: { ...s.answers, [by]: clean }, submitted: { ...s.submitted, [by]: submitted } };
   return everyoneAnswered(next, ctx) ? endAnswering(next, ctx) : changed(next);
 }
 
@@ -137,15 +148,26 @@ function onRevealNext(s: QuizState, ctx: QuizCtx): Result {
   if (s.revealedCount < s.groups.length) return changed({ ...s, revealedCount: s.revealedCount + 1 });
   if (!s.answerShown) return changed({ ...s, answerShown: true });
   if (s.groups.length === 0) return enterResult(s, ctx);
-  return checkVotingDone({ ...s, phase: 'voting', votes: {}, outcomes: {} }, ctx);
+  return checkVotingDone({ ...s, phase: 'voting', votes: {}, outcomes: {}, voters: connectedIds(ctx) }, ctx);
 }
 
 // ---- voting ----
 
-/** Connected players lacking a vote on a group they did not author. */
+/**
+ * A group every player present at the start of the vote authored (e.g. everybody gave the same
+ * answer) has nobody to judge it: its authors vote on it, exception to the no-self-vote rule.
+ */
+export function isSelfVoteGroup(s: Pick<QuizState, 'voters'>, g: AnswerGroup): boolean {
+  return s.voters.length > 0 && s.voters.every((id) => g.authors.includes(id));
+}
+
+const canVoteOn = (s: QuizState, g: AnswerGroup, id: string): boolean =>
+  !g.authors.includes(id) || isSelfVoteGroup(s, g);
+
+/** Connected players present at the start of the vote lacking a vote on a group they may vote on. */
 function pendingVotersOf(s: QuizState, ctx: QuizCtx): string[] {
   return connectedIds(ctx).filter((id) =>
-    s.groups.some((g) => !g.authors.includes(id) && s.votes[g.id]?.[id] === undefined),
+    s.voters.includes(id) && s.groups.some((g) => canVoteOn(s, g, id) && s.votes[g.id]?.[id] === undefined),
   );
 }
 
@@ -171,14 +193,14 @@ function closeVoting(s: QuizState, ctx: QuizCtx): Result {
 
 /**
  * In `deciding`: a tie the current host authored resolves to ½ (the host can't judge their own
- * answer), re-checked whenever the host may have changed; with no ties left the question ends.
+ * answer; not for a self-vote group, where the host decides), re-checked whenever the host may have changed; with no ties left the question ends.
  */
 function resolveHostTies(s: QuizState, ctx: QuizCtx): QuizState {
   if (s.phase !== 'deciding') return s;
   const host = ctx.room.hostId;
   let outcomes = s.outcomes;
   for (const g of s.groups) {
-    if (outcomes[g.id] === undefined && host !== null && g.authors.includes(host)) {
+    if (outcomes[g.id] === undefined && host !== null && g.authors.includes(host) && !isSelfVoteGroup(s, g)) {
       outcomes = { ...outcomes, [g.id]: 'half' };
     }
   }
@@ -189,7 +211,7 @@ function resolveHostTies(s: QuizState, ctx: QuizCtx): QuizState {
 function onVote(s: QuizState, by: string, groupId: unknown, vote: unknown, ctx: QuizCtx): Result {
   if (s.phase !== 'voting' || !isVoteValue(vote) || !isConnected(ctx, by)) return unchanged(s);
   const group = s.groups.find((g) => g.id === groupId);
-  if (!group || group.authors.includes(by) || s.votes[group.id]?.[by] === vote) return unchanged(s);
+  if (!group || !canVoteOn(s, group, by) || s.votes[group.id]?.[by] === vote) return unchanged(s);
   const votes = { ...s.votes, [group.id]: { ...s.votes[group.id], [by]: vote } };
   return checkVotingDone({ ...s, votes }, ctx);
 }
@@ -245,7 +267,7 @@ function onPlayerJoined(s: QuizState, playerId: string, ctx: QuizCtx): Result {
 }
 
 function onPlayerLeft(s: QuizState, ctx: QuizCtx): Result {
-  if (s.phase === 'answering' && everyoneAnswered(s, ctx)) return endAnswering(s, ctx);
+  // Answering: a leaver may just be refreshing, so only submissions or the timer end the phase.
   if (s.phase === 'voting') return checkVotingDone(s, ctx);
   return changed(s);
 }
@@ -282,7 +304,7 @@ function reduceEvent(state: QuizState, event: QuizEvent, ctx: QuizCtx): Result {
     case 'decide':
       return isHost ? onDecide(state, event.groupId, event.vote, ctx) : unchanged(state);
     case 'answer':
-      return onAnswer(state, event.by, event.text, ctx);
+      return onAnswer(state, event.by, event.text, event.final, ctx);
     case 'vote':
       return onVote(state, event.by, event.groupId, event.vote, ctx);
     case 'timeout':

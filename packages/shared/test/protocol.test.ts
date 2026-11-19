@@ -14,7 +14,9 @@ describe('parseClientMsg', () => {
   });
 
   it('parses the quiz messages', () => {
-    expect(parseClientMsg('{"t":"answer","text":"Paris"}')).toEqual({ t: 'answer', text: 'Paris' });
+    expect(parseClientMsg('{"t":"answer","text":"Paris"}')).toEqual({ t: 'answer', text: 'Paris', final: false });
+    expect(parseClientMsg('{"t":"answer","text":"Paris","final":true}')).toEqual({ t: 'answer', text: 'Paris', final: true });
+    expect(parseClientMsg('{"t":"answer","text":"Paris","final":"yes"}')).toBeNull();
     expect(parseClientMsg('{"t":"next"}')).toEqual({ t: 'next' });
     expect(parseClientMsg('{"t":"closeVote"}')).toEqual({ t: 'closeVote' });
     expect(parseClientMsg('{"t":"vote","groupId":"paris","vote":"half"}')).toEqual({ t: 'vote', groupId: 'paris', vote: 'half' });

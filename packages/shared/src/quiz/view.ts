@@ -1,4 +1,4 @@
-import { isBlankAnswer, type QuizPhase, type QuizState } from './game';
+import { isBlankAnswer, isSelfVoteGroup, type QuizPhase, type QuizState } from './game';
 import type { QuizSettings } from './settings';
 import type { VoteValue } from './grouping';
 
@@ -9,9 +9,12 @@ export type QuizView = {
   questionNumber: number;
   questionCount: number;
   question: { theme: string; text: string } | null;
-  /** PlayerIds who submitted a non-blank answer (see isBlankAnswer). */
+  /** PlayerIds who submitted (not just drafted) a non-blank answer (see isBlankAnswer). */
   answered: string[];
+  /** The viewer's latest text (draft or submitted). */
   myAnswer: string | null;
+  /** True once the viewer submitted; false while their text is only a draft. */
+  mySubmitted: boolean;
   /** How many answer groups the reveal goes through (0 while answering); lets the host's button say what comes next. */
   groupCount: number;
   /** Only the groups revealed so far. */
@@ -22,6 +25,8 @@ export type QuizView = {
   /** Only in deciding / result. */
   voteCounts: Record<string, Record<VoteValue, number>> | null;
   pendingVoters: string[];
+  /** GroupIds whose authors vote on them too (everybody present authored them); voting only. */
+  selfVoteGroups: string[];
   /** GroupIds awaiting the host's decision (deciding). */
   ties: string[];
   outcomes: Record<string, VoteValue>;
@@ -47,8 +52,9 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
     questionNumber: s.phase === 'lobby' ? 0 : s.index + 1,
     questionCount: s.questions.length,
     question: current ? { theme: current.theme, text: current.question } : null,
-    answered: Object.keys(s.answers).filter((id) => !isBlankAnswer(s.answers[id])),
+    answered: Object.keys(s.answers).filter((id) => s.submitted[id] === true && !isBlankAnswer(s.answers[id])),
     myAnswer: s.answers[viewerId] ?? null,
+    mySubmitted: s.submitted[viewerId] === true && !isBlankAnswer(s.answers[viewerId]),
     groupCount: s.groups.length,
     revealed: s.groups.slice(0, s.revealedCount).map((g) => ({ groupId: g.id, text: g.text, authors: g.authors })),
     correct: current && s.answerShown ? { answer: current.answer, variants: current.variants } : null,
@@ -61,6 +67,7 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
       }))
       : null,
     pendingVoters: s.phase === 'voting' ? s.pendingVoters : [],
+    selfVoteGroups: s.phase === 'voting' ? s.groups.filter((g) => isSelfVoteGroup(s, g)).map((g) => g.id) : [],
     ties: s.phase === 'deciding' ? s.groups.filter((g) => s.outcomes[g.id] === undefined).map((g) => g.id) : [],
     outcomes: s.outcomes,
     questionPoints: s.questionPoints,

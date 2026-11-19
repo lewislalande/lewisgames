@@ -669,6 +669,8 @@ input[type='range']::-moz-range-thumb {
 .qz-votes:has([aria-pressed='true']) .vote-btn:not([aria-pressed='true']) { opacity: .45; }
 .qz-votes:has([aria-pressed='true']) .vote-btn:not([aria-pressed='true']):hover { opacity: 1; }
 .qz-mine { flex: none; font-size: .85rem; font-weight: 900; color: #fff; background: var(--ink); border-radius: 999px; padding: .2rem .8rem; }
+.qz-vote-col { flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: .35rem; }
+.qz-hint { font-size: .8rem; font-weight: 800; color: var(--ink); max-width: 16rem; text-align: right; }
 .qz-banner {
   display: table; margin: 0 auto 1rem; text-align: center;
   font-size: 1.15rem; font-weight: 900;

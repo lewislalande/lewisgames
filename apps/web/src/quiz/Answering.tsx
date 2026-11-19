@@ -17,9 +17,9 @@ type Props = {
 
 /** Mounted once per question (keyed by the question number). */
 export function Answering({ game, connectedIds, send, online = true }: Props) {
-  const hasAnswer = !isBlankAnswer(game.myAnswer ?? '');
+  // « Envoyée » only when the server has it as submitted: after a refresh a draft is shown as a draft.
   const [text, setText] = useState(game.myAnswer ?? '');
-  const [editing, setEditing] = useState(!hasAnswer);
+  const [editing, setEditing] = useState(!game.mySubmitted);
   // What this page last sent: shown at once, before the server echoes it in myAnswer.
   const [sent, setSent] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -29,13 +29,13 @@ export function Answering({ game, connectedIds, send, online = true }: Props) {
     if (editing) input.current?.focus();
   }, [editing]);
 
-  // Text typed but not submitted must not be lost when the timer ends.
+  // Text typed but not submitted is sent as a draft: the server uses it if the timer ends, but it does not count as answered.
   useEffect(() => {
     const clean = text.trim();
     if (!online || !editing || isBlankAnswer(text) || clean === lastSent.current) return;
     const id = setTimeout(() => {
       // A dropped message (socket not open) is retried when the socket comes back (`online`).
-      if (send({ t: 'answer', text: clean })) lastSent.current = clean;
+      if (send({ t: 'answer', text: clean, final: false })) lastSent.current = clean;
     }, AUTOSEND_MS);
     return () => clearTimeout(id);
   }, [text, editing, send, online]);
@@ -45,10 +45,18 @@ export function Answering({ game, connectedIds, send, online = true }: Props) {
     if (isBlankAnswer(text)) return;
     const clean = text.trim();
     // Offline: stay in the form, the text is sent as soon as the connection is back.
-    if (!send({ t: 'answer', text: clean })) return;
+    if (!send({ t: 'answer', text: clean, final: true })) return;
     lastSent.current = clean;
     setSent(clean);
     setEditing(false);
+  }
+
+  // « Modifier » withdraws the submission (the text stays as a draft); if the message is lost the autosend repeats it.
+  function modify() {
+    const shown = sent ?? game.myAnswer ?? '';
+    lastSent.current = send({ t: 'answer', text: shown, final: false }) ? shown.trim() : '';
+    setText(shown);
+    setEditing(true);
   }
 
   // Only players still connected count, so the figure never exceeds the total.
@@ -77,7 +85,7 @@ export function Answering({ game, connectedIds, send, online = true }: Props) {
           <div className="qz-sent">
             <p className="qz-sent-title">Réponse envoyée ✓</p>
             <p className="qz-sent-text">{sent ?? game.myAnswer}</p>
-            <button className="btn" type="button" onClick={() => { setText(sent ?? game.myAnswer ?? ''); setEditing(true); }}>Modifier</button>
+            <button className="btn" type="button" onClick={modify}>Modifier</button>
           </div>
         )}
       </div>
