@@ -93,7 +93,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
               </div>
             </header>
             {game.phase === 'answering' && (
-              <Answering key={game.questionNumber} game={game} connected={state.players.filter((p) => p.connected).length} send={sock.send} />
+              <Answering key={game.questionNumber} game={game} connectedIds={state.players.filter((p) => p.connected).map((p) => p.id)} send={sock.send} />
             )}
             {game.phase === 'revealing' && <Reveal game={game} names={names} isHost={isHost} hostName={hostName} send={sock.send} />}
             {(game.phase === 'voting' || game.phase === 'deciding') && (

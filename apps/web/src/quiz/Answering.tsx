@@ -3,30 +3,48 @@ import { isBlankAnswer, type ClientMsg, type QuizView } from '@kg/shared';
 import { QuizFoot } from './cards';
 
 const MAX_ANSWER = 100;
+/** Typing pause after which the text is sent without pressing Enter (the server accepts changes until the timer ends). */
+const AUTOSEND_MS = 600;
 
-type Props = { game: QuizView; connected: number; send: (m: ClientMsg) => void };
+type Props = { game: QuizView; connectedIds: string[]; send: (m: ClientMsg) => void };
 
 /** Mounted once per question (keyed by the question number). */
-export function Answering({ game, connected, send }: Props) {
+export function Answering({ game, connectedIds, send }: Props) {
   const hasAnswer = !isBlankAnswer(game.myAnswer ?? '');
   const [text, setText] = useState(game.myAnswer ?? '');
   const [editing, setEditing] = useState(!hasAnswer);
   // What this page last sent: shown at once, before the server echoes it in myAnswer.
   const [sent, setSent] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const lastSent = useRef(game.myAnswer?.trim() ?? '');
 
   useEffect(() => {
     if (editing) input.current?.focus();
   }, [editing]);
 
+  // Text typed but not submitted must not be lost when the timer ends.
+  useEffect(() => {
+    const clean = text.trim();
+    if (!editing || isBlankAnswer(text) || clean === lastSent.current) return;
+    const id = setTimeout(() => {
+      lastSent.current = clean;
+      send({ t: 'answer', text: clean });
+    }, AUTOSEND_MS);
+    return () => clearTimeout(id);
+  }, [text, editing, send]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (isBlankAnswer(text)) return;
     const clean = text.trim();
+    lastSent.current = clean;
     send({ t: 'answer', text: clean });
     setSent(clean);
     setEditing(false);
   }
+
+  // Only players still connected count, so the figure never exceeds the total.
+  const answeredNow = game.answered.filter((id) => connectedIds.includes(id)).length;
 
   return (
     <>
@@ -56,7 +74,7 @@ export function Answering({ game, connected, send }: Props) {
         )}
       </div>
       <QuizFoot>
-        {game.answered.length}/{connected} {game.answered.length > 1 ? 'ont répondu' : 'a répondu'}
+        {answeredNow}/{connectedIds.length} {answeredNow > 1 ? 'ont répondu' : 'a répondu'}
       </QuizFoot>
     </>
   );
