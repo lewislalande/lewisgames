@@ -4,10 +4,11 @@ import type { Env } from './index';
 const COOKIE = 'kg_admin';
 const SESSION_SECONDS = 30 * 24 * 60 * 60;
 const PAGE_SIZE = 50;
+const FAILED_LOGIN_DELAY_MS = 500;
 const MAX_IMPORT = 1000;
 const MAX_WORDS = 5000;
 const MAX_WORD_LENGTH = 30;
-/** Statements per D1 batch() call. */
+/** Bound parameters allowed per D1 statement. */
 const CHUNK = 100;
 const SOURCES = ['manuel', 'généré'] as const;
 type Source = (typeof SOURCES)[number];
@@ -59,6 +60,7 @@ async function login(request: Request, env: Env): Promise<Response> {
   const body = await readJson(request);
   const password = (body as { password?: unknown } | null)?.password;
   if (typeof password !== 'string' || !(await safeEqual(password, env.ADMIN_PASSWORD, env.ADMIN_SECRET))) {
+    await new Promise((resolve) => setTimeout(resolve, FAILED_LOGIN_DELAY_MS));
     return json({ error: 'unauthorized' }, 401);
   }
   const exp = String(Date.now() + SESSION_SECONDS * 1000);
@@ -105,20 +107,24 @@ const insertQuestion = (db: D1Database, q: ImportedQuestion, source: Source, now
 async function listQuestions(url: URL, db: D1Database): Promise<Response> {
   const theme = url.searchParams.get('theme') ?? '';
   const needle = (url.searchParams.get('q') ?? '').trim().toLowerCase();
-  const page = Math.max(1, Math.floor(Number(url.searchParams.get('page'))) || 1);
+  const requested = Math.max(1, Math.floor(Number(url.searchParams.get('page'))) || 1);
+  const clamp = (total: number) => Math.min(requested, Math.ceil(total / PAGE_SIZE) + 1);
   const where = theme ? 'WHERE theme = ?' : '';
   const binds = theme ? [theme] : [];
   let rows: Row[];
   let total: number;
+  let page: number;
   if (needle) {
     // SQLite's LIKE only folds ASCII case; the bank is small, so filter here to fold accents' case too.
     const { results } = await db.prepare(`SELECT * FROM questions ${where} ORDER BY id`).bind(...binds).all<Row>();
     const hits = results.filter((r) => r.question.toLowerCase().includes(needle) || r.answer.toLowerCase().includes(needle));
     total = hits.length;
+    page = clamp(total);
     rows = hits.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   } else {
     const count = await db.prepare(`SELECT COUNT(*) AS n FROM questions ${where}`).bind(...binds).first<{ n: number }>();
     total = count?.n ?? 0;
+    page = clamp(total);
     rows = (await db.prepare(`SELECT * FROM questions ${where} ORDER BY id LIMIT ? OFFSET ?`).bind(...binds, PAGE_SIZE, (page - 1) * PAGE_SIZE).all<Row>()).results;
   }
   const items = rows.map((r) => ({
@@ -145,10 +151,16 @@ async function updateQuestion(request: Request, db: D1Database, id: number): Pro
   if (await db.prepare('SELECT id FROM questions WHERE question_key = ? AND id != ?').bind(key, id).first()) {
     return json({ error: 'duplicate' }, 409);
   }
-  await db
-    .prepare('UPDATE questions SET theme = ?, question = ?, question_key = ?, answer = ?, variants = ? WHERE id = ?')
-    .bind(q.theme, q.question, key, q.answer, JSON.stringify(q.variants), id)
-    .run();
+  try {
+    await db
+      .prepare('UPDATE questions SET theme = ?, question = ?, question_key = ?, answer = ?, variants = ? WHERE id = ?')
+      .bind(q.theme, q.question, key, q.answer, JSON.stringify(q.variants), id)
+      .run();
+  } catch (err) {
+    // A concurrent write took the key between the check above and this update.
+    if (/UNIQUE/i.test(String(err))) return json({ error: 'duplicate' }, 409);
+    throw err;
+  }
   return json({ id });
 }
 
@@ -166,11 +178,8 @@ async function importQuestions(request: Request, db: D1Database): Promise<Respon
   const { ok, errors } = parseImport(body);
   if (errors.some((e) => e.index === -1)) return json({ error: 'invalid', reason: errors[0]!.reason }, 400);
   const now = Date.now();
-  let inserted = 0;
-  for (let i = 0; i < ok.length; i += CHUNK) {
-    const results = await db.batch(ok.slice(i, i + CHUNK).map((q) => insertQuestion(db, q, source as Source, now)));
-    inserted += results.reduce((n, r) => n + r.meta.changes, 0);
-  }
+  const results = ok.length > 0 ? await db.batch(ok.map((q) => insertQuestion(db, q, source as Source, now))) : [];
+  const inserted = results.reduce((n, r) => n + r.meta.changes, 0);
   return json({ inserted, duplicates: ok.length - inserted, errors });
 }
 
@@ -198,10 +207,14 @@ async function putWords(request: Request, db: D1Database): Promise<Response> {
   }
   const words = [...byKey.values()];
   if (words.length > MAX_WORDS) return json({ error: 'invalid', reason: `plus de ${MAX_WORDS} mots` }, 400);
-  const insert = (w: string) => db.prepare('INSERT OR IGNORE INTO words (word) VALUES (?)').bind(w);
-  const first = [db.prepare('DELETE FROM words'), ...words.slice(0, CHUNK - 1).map(insert)];
-  await db.batch(first);
-  for (let i = CHUNK - 1; i < words.length; i += CHUNK) await db.batch(words.slice(i, i + CHUNK).map(insert));
+  // One batch = one atomic D1 query: the old list is never left half replaced (and the free plan
+  // caps queries per invocation). Multi-row inserts stay within D1's 100 bound parameters.
+  const statements = [db.prepare('DELETE FROM words')];
+  for (let i = 0; i < words.length; i += CHUNK) {
+    const part = words.slice(i, i + CHUNK);
+    statements.push(db.prepare(`INSERT INTO words (word) VALUES ${part.map(() => '(?)').join(', ')}`).bind(...part));
+  }
+  await db.batch(statements);
   return json({ count: words.length });
 }
 

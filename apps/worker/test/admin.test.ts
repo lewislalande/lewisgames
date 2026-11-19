@@ -36,6 +36,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('admin auth', () => {
   it('rejects every route without a cookie and writes nothing', async () => {
+    await env.DB.prepare('DELETE FROM words').run();
     const before = await count();
     const theme = freshTheme();
     const routes: [string, string, unknown?][] = [
@@ -202,6 +203,13 @@ describe('admin questions', () => {
     expect((await get(`theme=${encodeURIComponent(other)}&q=ZÉBULON`)).total).toBe(1);
     expect((await get(`theme=${encodeURIComponent(theme)}&q=zébulon`)).total).toBe(0);
     expect((await get(`theme=${encodeURIComponent(theme)}&q=50%25`)).total).toBe(0);
+    // page is clamped to ceil(total / 50) + 1
+    const far = await get(`theme=${encodeURIComponent(theme)}&page=9999`);
+    expect(far.page).toBe(3);
+    expect(far.items).toEqual([]);
+    expect((await get(`theme=${encodeURIComponent(theme)}&page=-4`)).page).toBe(1);
+    expect((await get(`theme=${encodeURIComponent(theme)}&page=abc`)).page).toBe(1);
+    expect((await get(`theme=${encodeURIComponent(theme)}&q=numéro&page=9999`)).page).toBe(3);
     expect((await get(`theme=${encodeURIComponent(theme)}&q=${encodeURIComponent('numéro 5')}`)).total).toBe(6);
   });
 });
@@ -243,11 +251,13 @@ describe('admin import / export', () => {
     expect((await call('/import', cookie, 'POST', { nope: 1 })).status).toBe(400);
   });
 
-  it('imports a large batch in chunks', async () => {
+  it('imports a large batch in a single D1 batch', async () => {
     const cookie = await login();
     const theme = freshTheme();
+    const batch = vi.spyOn(env.DB, 'batch');
     const body = (await (await call('/import', cookie, 'POST', { questions: Array.from({ length: 1000 }, (_, i) => q(theme, `Gros ${i} ?`, 'r', ['v'])) })).json()) as { inserted: number };
     expect(body.inserted).toBe(1000);
+    expect(batch).toHaveBeenCalledTimes(1);
   });
 
   it('export round-trips through import (nothing inserted, all duplicates)', async () => {
@@ -276,6 +286,16 @@ describe('admin words', () => {
     expect(((await (await call('/words', cookie)).json()) as { words: string[] }).words).toEqual([]);
   });
 
+  it('keeps the old list when the replacement fails', async () => {
+    const cookie = await login();
+    await call('/words', cookie, 'PUT', { words: ['ancien'] });
+    vi.spyOn(env.DB, 'batch').mockRejectedValue(new Error('d1 down'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    expect((await call('/words', cookie, 'PUT', { words: ['nouveau'] })).status).toBe(500);
+    vi.restoreAllMocks();
+    expect(((await (await call('/words', cookie)).json()) as { words: string[] }).words).toEqual(['ancien']);
+  });
+
   it('rejects too long words, too many words and bad bodies, keeping the old list', async () => {
     const cookie = await login();
     await call('/words', cookie, 'PUT', { words: ['garde'] });
@@ -284,8 +304,11 @@ describe('admin words', () => {
     expect((await call('/words', cookie, 'PUT', { words: [1] })).status).toBe(400);
     expect((await call('/words', cookie, 'PUT', {})).status).toBe(400);
     expect(((await (await call('/words', cookie)).json()) as { words: string[] }).words).toEqual(['garde']);
+    const batch = vi.spyOn(env.DB, 'batch');
     const many = (await call('/words', cookie, 'PUT', { words: Array.from({ length: 5000 }, (_, i) => `mot${i}`) }));
     expect(many.status).toBe(200);
+    expect(batch).toHaveBeenCalledTimes(1);
+    batch.mockRestore();
     expect(((await (await call('/words', cookie)).json()) as { words: string[] }).words).toHaveLength(5000);
   });
 });
