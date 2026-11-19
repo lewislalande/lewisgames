@@ -15,7 +15,7 @@ export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | '
 
 export type ServerMsg =
   | { t: 'welcome'; playerId: string }
-  | { t: 'state'; players: { id: string; name: string; connected: boolean }[]; hostId: string | null; game: PictionaryView }
+  | { t: 'state'; players: { id: string; name: string; connected: boolean }[]; hostId: string | null; ownerId: string | null; game: PictionaryView }
   | { t: 'draw'; op: DrawOp }
   | { t: 'notice'; notice: 'close' | 'correct' }
   | { t: 'error'; code: ErrorCode };

@@ -114,6 +114,34 @@ describe('joinRoom', () => {
     expect(ok.ok && ok.room.players[0].name).toBe('x'.repeat(20));
   });
 
+  it('records the first joiner as owner', () => {
+    const nid = counter();
+    expect(createRoom('ABCDE', 'pictionary').ownerId).toBeNull();
+    const a = join(createRoom('ABCDE', 'pictionary'), 't1', 'Alice', 1, 8, nid);
+    const b = join(a.room, 't2', 'Bob', 2, 8, nid);
+    expect(b.room.ownerId).toBe(a.playerId);
+    expect(disconnect(b.room, a.playerId).ownerId).toBe(a.playerId);
+  });
+
+  it('owner rejoining takes host back', () => {
+    const nid = counter();
+    const a = join(createRoom('ABCDE', 'pictionary'), 't1', 'Alice', 1, 8, nid);
+    const b = join(a.room, 't2', 'Bob', 2, 8, nid);
+    const c = join(b.room, 't3', 'Cleo', 3, 8, nid);
+    const left = disconnect(c.room, a.playerId);
+    expect(left.hostId).toBe(b.playerId);
+    const back = join(left, 't1', 'Alice', 4, 8, nid);
+    expect(back.room.hostId).toBe(a.playerId);
+    // A non-owner rejoining does not take host.
+    const bGone = disconnect(back.room, b.playerId);
+    expect(join(bGone, 't2', 'Bob', 5, 8, nid).room.hostId).toBe(a.playerId);
+  });
+
+  it('a legacy room without ownerId adopts the next joiner as owner', () => {
+    const legacy = { code: 'ABCDE', game: 'pictionary', hostId: null, players: [], tokens: {} } as unknown as Room;
+    expect(join(legacy, 't1', 'A', 1, 8, counter()).room.ownerId).toBe('id1');
+  });
+
   it('rejects bad tokens', () => {
     const room = createRoom('ABCDE', 'pictionary');
     expect(joinRoom(room, '', 'A', 1, 8)).toEqual({ ok: false, error: 'bad_token' });

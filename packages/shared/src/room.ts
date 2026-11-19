@@ -3,6 +3,8 @@ export type Room = {
   code: string;
   game: 'pictionary';
   hostId: string | null;
+  /** The room's creator (first joiner). Takes host back on rejoin; only they see the custom words. */
+  ownerId: string | null;
   players: Player[];
   /** token → playerId, server-only */
   tokens: Record<string, string>;
@@ -27,7 +29,7 @@ export function generateCode(rng: () => number): string {
 }
 
 export function createRoom(code: string, game: 'pictionary'): Room {
-  return { code, game, hostId: null, players: [], tokens: {} };
+  return { code, game, hostId: null, ownerId: null, players: [], tokens: {} };
 }
 
 // `crypto` is a global in Node 22 and Workers; declared here since the shared lib config has no DOM/node types.
@@ -55,7 +57,12 @@ export function joinRoom(
     );
     return {
       ok: true,
-      room: { ...room, players, hostId: room.hostId ?? known.id },
+      room: {
+        ...room,
+        players,
+        ownerId: room.ownerId ?? null,
+        hostId: known.id === room.ownerId ? known.id : room.hostId ?? known.id,
+      },
       playerId: known.id,
       rejoined: true,
     };
@@ -71,6 +78,7 @@ export function joinRoom(
       players: [...room.players, player],
       tokens: { ...room.tokens, [token]: id },
       hostId: room.hostId ?? id,
+      ownerId: room.ownerId ?? id,
     },
     playerId: id,
     rejoined: false,

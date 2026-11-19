@@ -7,7 +7,7 @@ import { disconnect, type Room } from '../src/room';
 import words from '../src/pictionary/words-fr.json';
 
 const mkRoom = (): Room => ({
-  code: 'ABCDE', game: 'pictionary', hostId: 'A', tokens: {},
+  code: 'ABCDE', game: 'pictionary', hostId: 'A', ownerId: 'A', tokens: {},
   players: ['A', 'B', 'C'].map((id, i) => ({ id, name: id, connected: true, joinedAt: i })),
 });
 
@@ -235,6 +235,15 @@ describe('settings and restart', () => {
     expect(l2.settings.rounds).toBe(5);
     const s = run(l2, { type: 'start', by: 'A' }, ctx);
     expect(run(s, { type: 'setSettings', by: 'A', settings: { rounds: 7 } }, ctx).settings.rounds).toBe(5);
+  });
+  it('settings without customWords keep the current list (promoted host edits)', () => {
+    const room = { ...mkRoom(), hostId: 'B' };
+    const ctx = mkCtx(room);
+    let s = run(initialState(), { type: 'setSettings', by: 'B', settings: { customWords: ['zorglub'] } }, ctx);
+    s = run(s, { type: 'setSettings', by: 'B', settings: { rounds: 4 } }, ctx);
+    expect(s.settings).toMatchObject({ rounds: 4, customWords: ['zorglub'] });
+    s = run(s, { type: 'setSettings', by: 'B', settings: { rounds: 4, customWords: ['plouf'] } }, ctx);
+    expect(s.settings.customWords).toEqual(['plouf']);
   });
   it('settings persist into restart; restart only from gameOver by host', () => {
     const room = mkRoom();

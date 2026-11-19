@@ -30,6 +30,8 @@ type Props = { code: string; state: StateMsg; playerId: string; send: (m: Client
 
 export function Lobby({ code, state, playerId, send }: Props) {
   const isHost = state.hostId === playerId;
+  // Only the room's creator sees (and edits) the custom word list; a promoted host can replace it.
+  const isOwner = state.ownerId === playerId;
   const server = state.game.settings;
   const latest = useRef<PictionarySettings>(server);
   const pending = useRef<PictionarySettings | null>(null);
@@ -39,12 +41,13 @@ export function Lobby({ code, state, playerId, send }: Props) {
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const wordsTouched = useRef(false);
   const [wordsText, setWordsText] = useState('');
+  const [replaceText, setReplaceText] = useState('');
   const [copied, setCopied] = useState(false);
 
   // Host with saved settings: push them once on lobby entry.
   useEffect(() => {
-    // Only the host present at lobby entry pushes; a promoted player must not overwrite the room.
-    if (!isHost || !wasHostAtMount.current || sentSaved.current) return;
+    // Only the owner, host at lobby entry, pushes; a promoted player must not overwrite the room.
+    if (!isHost || !isOwner || !wasHostAtMount.current || sentSaved.current) return;
     sentSaved.current = true;
     const saved = loadSaved();
     if (saved) {
@@ -53,12 +56,12 @@ export function Lobby({ code, state, playerId, send }: Props) {
       wordsTouched.current = true;
       send({ t: 'settings', settings: saved });
     }
-  }, [isHost, send]);
+  }, [isHost, isOwner, send]);
 
   // Show the server's custom words until the host edits the box.
   useEffect(() => {
-    if (isHost && !wordsTouched.current) setWordsText(server.customWords.join('\n'));
-  }, [isHost, server.customWords]);
+    if (isHost && isOwner && !wordsTouched.current) setWordsText(server.customWords.join('\n'));
+  }, [isHost, isOwner, server.customWords]);
 
   useEffect(() => () => { clearTimeout(timer.current); clearTimeout(pendingClear.current); }, []);
 
@@ -77,10 +80,20 @@ export function Lobby({ code, state, playerId, send }: Props) {
 
   function commit(next: PictionarySettings, debounce = false) {
     markPending(next);
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(next));
+    // A non-owner never holds the real list: keep their own saved words, and send no list so the
+    // server keeps the owner's.
+    const saved = isOwner ? next : { ...next, customWords: loadSaved()?.customWords ?? [] };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
+    const wire: Partial<PictionarySettings> = isOwner ? next : { ...next, customWords: undefined };
     clearTimeout(timer.current);
-    if (debounce) timer.current = setTimeout(() => send({ t: 'settings', settings: next }), 300);
-    else send({ t: 'settings', settings: next });
+    if (debounce) timer.current = setTimeout(() => send({ t: 'settings', settings: wire }), 300);
+    else send({ t: 'settings', settings: wire });
+  }
+
+  function replaceWords() {
+    clearTimeout(timer.current);
+    send({ t: 'settings', settings: { ...latest.current, customWords: splitWords(replaceText) } });
+    setReplaceText('');
   }
 
   function patch(p: Partial<PictionarySettings>) {
@@ -105,6 +118,8 @@ export function Lobby({ code, state, playerId, send }: Props) {
   }
 
   const connected = state.players.filter((p) => p.connected).length;
+  // Mirrors pickChoices: 'only' with fewer words than choices falls back to the default list.
+  const tooFewCustom = server.customWordsMode === 'only' && state.game.customWordsCount < server.wordChoices;
   const canStart = isHost && connected >= 2;
 
   return (
@@ -159,30 +174,46 @@ export function Lobby({ code, state, playerId, send }: Props) {
 
             <div className="words">
               <span className="field-label">Mots personnalisés</span>
-              {isHost ? (
-                <>
-                  <textarea
-                    value={wordsText}
-                    onChange={(e) => onWords(e.target.value)}
-                    rows={4}
-                    placeholder="Un mot par ligne, ou séparés par des virgules"
-                  />
-                  <div className="radios" role="radiogroup" aria-label="Utilisation des mots personnalisés">
-                    <label>
-                      <input type="radio" name="mode" checked={server.customWordsMode === 'mixed'} onChange={() => patch({ customWordsMode: 'mixed' })} />
-                      Mélangés aux mots du jeu
-                    </label>
-                    <label>
-                      <input type="radio" name="mode" checked={server.customWordsMode === 'only'} onChange={() => patch({ customWordsMode: 'only' })} />
-                      Uniquement mes mots
-                    </label>
-                  </div>
-                </>
+              {isHost && isOwner ? (
+                <textarea
+                  value={wordsText}
+                  onChange={(e) => onWords(e.target.value)}
+                  rows={4}
+                  placeholder="Un mot par ligne, ou séparés par des virgules"
+                />
               ) : (
                 <p>
                   {state.game.customWordsCount} mots perso
                   {state.game.customWordsCount > 0 && (server.customWordsMode === 'only' ? ' (uniquement ceux-là)' : ' (mélangés aux mots du jeu)')}
                 </p>
+              )}
+              {isHost && !isOwner && (
+                <>
+                  <label className="field-label" htmlFor="replace-words">Remplacer les mots perso</label>
+                  <textarea
+                    id="replace-words"
+                    value={replaceText}
+                    onChange={(e) => setReplaceText(e.target.value)}
+                    rows={4}
+                    placeholder="Nouvelle liste : un mot par ligne, ou séparés par des virgules"
+                  />
+                  <button type="button" className="btn" onClick={replaceWords}>Remplacer les mots perso</button>
+                </>
+              )}
+              {isHost && (
+                <div className="radios" role="radiogroup" aria-label="Utilisation des mots personnalisés">
+                  <label>
+                    <input type="radio" name="mode" checked={server.customWordsMode === 'mixed'} onChange={() => patch({ customWordsMode: 'mixed' })} />
+                    Mélangés aux mots du jeu
+                  </label>
+                  <label>
+                    <input type="radio" name="mode" checked={server.customWordsMode === 'only'} onChange={() => patch({ customWordsMode: 'only' })} />
+                    Uniquement mes mots
+                  </label>
+                </div>
+              )}
+              {tooFewCustom && (
+                <p className="muted" role="note">Pas assez de mots perso : la liste par défaut sera utilisée</p>
               )}
             </div>
           </fieldset>

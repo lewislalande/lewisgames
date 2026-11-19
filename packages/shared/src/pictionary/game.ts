@@ -362,12 +362,22 @@ function onDraw(s: PictionaryState, by: string, op: DrawOp | undefined): Result 
   }
 }
 
+/**
+ * A settings message without `customWords` keeps the current list: a promoted host never sees the
+ * owner's words, so their edits must not wipe them. Sending a list replaces it.
+ */
+function applySettings(current: PictionarySettings, input: unknown): PictionarySettings {
+  const next = clampSettings(input);
+  const hasWords = typeof input === 'object' && input !== null && (input as Record<string, unknown>).customWords !== undefined;
+  return hasWords ? next : { ...next, customWords: current.customWords };
+}
+
 export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Result {
   const isHost = 'by' in event && event.by === ctx.room.hostId;
   switch (event.type) {
     case 'setSettings':
       if (!isHost || (state.phase !== 'lobby' && state.phase !== 'gameOver')) return unchanged(state);
-      return changed({ ...state, settings: clampSettings(event.settings) });
+      return changed({ ...state, settings: applySettings(state.settings, event.settings) });
     case 'start':
       if (!isHost || state.phase !== 'lobby' || connectedPlayers(ctx.room).length < 2) return unchanged(state);
       return start(state, ctx);

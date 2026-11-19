@@ -5,7 +5,7 @@ import type { PictionarySettings } from './settings';
 
 export type PictionaryView = {
   phase: Phase;
-  /** `customWords` is emptied for everyone but the host (see `customWordsCount`). */
+  /** `customWords` is emptied for everyone but the room owner (see `customWordsCount`). */
   settings: PictionarySettings;
   customWordsCount: number;
   round: number;
@@ -30,7 +30,8 @@ export type PictionaryView = {
   turnOrder: string[];
 };
 
-export function viewFor(state: PictionaryState, viewerId: string, now: number, hostId: string | null): PictionaryView {
+/** `ownerId` is the room creator: the only player allowed to read the custom word list. */
+export function viewFor(state: PictionaryState, viewerId: string, now: number, ownerId: string | null): PictionaryView {
   const isDrawer = state.drawerId !== null && state.drawerId === viewerId;
   const hasFound = state.found.some((f) => f.playerId === viewerId);
   const ended = state.phase === 'turnEnd' || state.phase === 'gameOver';
@@ -38,7 +39,7 @@ export function viewFor(state: PictionaryState, viewerId: string, now: number, h
   const showMask = (state.phase === 'drawing' || state.phase === 'turnEnd') && state.word !== null;
   return {
     phase: state.phase,
-    settings: viewerId === hostId ? state.settings : { ...state.settings, customWords: [] },
+    settings: ownerId !== null && viewerId === ownerId ? state.settings : { ...state.settings, customWords: [] },
     customWordsCount: state.settings.customWords.length,
     round: state.round,
     drawerId: state.drawerId,

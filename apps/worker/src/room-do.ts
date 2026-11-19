@@ -233,7 +233,7 @@ export class RoomDO extends DurableObject<Env> {
       case 'state': {
         const players = room.players.map(({ id, name, connected }) => ({ id, name, connected }));
         for (const { ws, playerId } of this.sockets()) {
-          send(ws, { t: 'state', players, hostId: room.hostId, game: viewFor(game, playerId, now, room.hostId) });
+          send(ws, { t: 'state', players, hostId: room.hostId, ownerId: room.ownerId ?? null, game: viewFor(game, playerId, now, room.ownerId ?? null) });
         }
         return;
       }

@@ -8,7 +8,7 @@ import { disconnect, type Room } from '../src/room';
 import words from '../src/pictionary/words-fr.json';
 
 const mkRoom = (): Room => ({
-  code: 'ABCDE', game: 'pictionary', hostId: 'A', tokens: {},
+  code: 'ABCDE', game: 'pictionary', hostId: 'A', ownerId: 'A', tokens: {},
   players: ['A', 'B', 'C'].map((id, i) => ({ id, name: `Nom${id}`, connected: true, joinedAt: i })),
 });
 
@@ -250,7 +250,15 @@ describe('endTurn and effects', () => {
 });
 
 describe('viewFor', () => {
-  it('only the host sees customWords; everyone gets the count', () => {
+  it('only the owner sees customWords, even when someone else is host', () => {
+    const s = drawing();
+    const withWords = { ...s, settings: { ...s.settings, customWords: ['zorglub', 'plouf'] } };
+    // Owner A is away, B was promoted host: B must not see the secret list.
+    const promoted = viewFor(withWords, 'B', 0, 'A');
+    expect(JSON.stringify(promoted)).not.toContain('zorglub');
+    expect(promoted.customWordsCount).toBe(2);
+  });
+  it('only the owner sees customWords; everyone gets the count', () => {
     const s = drawing();
     const withWords = { ...s, settings: { ...s.settings, customWords: ['zorglub', 'plouf'] } };
     expect(viewFor(withWords, 'A', 0, 'A').settings.customWords).toEqual(['zorglub', 'plouf']);

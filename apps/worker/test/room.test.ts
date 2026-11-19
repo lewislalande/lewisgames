@@ -433,3 +433,24 @@ describe('storage writes', () => {
   });
 });
 
+describe('owner and custom words', () => {
+  it('a promoted host never sees the custom words, and the owner takes host back', async () => {
+    const code = await createRoom();
+    const { c: a, playerId: aId } = await Client.join(code, 'tok-a', 'A');
+    const { c: b, playerId: bId } = await Client.join(code, 'tok-b', 'B');
+    a.send({ t: 'settings', settings: { customWords: ['zorglub', 'plouf'], customWordsMode: 'only' } });
+    expect((await a.nextState((m) => m.game.customWordsCount === 2)).ownerId).toBe(aId);
+    a.ws.close(1000, 'bye');
+    const promoted = await b.nextState((m) => m.hostId === bId);
+    expect(promoted.game.settings.customWords).toEqual([]);
+    // The promoted host edits a setting: the owner's words survive.
+    b.send({ t: 'settings', settings: { ...promoted.game.settings, customWords: undefined, rounds: 5 } });
+    await b.nextState((m) => m.game.settings.rounds === 5);
+    expect(b.raw.join('')).not.toContain('zorglub');
+
+    const { c: a2 } = await Client.join(code, 'tok-a', 'A');
+    const back = await a2.nextState();
+    expect(back.hostId).toBe(aId);
+    expect(back.game.settings.customWords).toEqual(['zorglub', 'plouf']);
+  });
+});
