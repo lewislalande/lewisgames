@@ -4,28 +4,37 @@ import { groupAnswers, isVoteValue, resolveVotes, type AnswerGroup, type VoteVal
 
 export type Question = { id: number; theme: string; question: string; answer: string; variants: string[] };
 
-export type QuizPhase = 'lobby' | 'answering' | 'revealing' | 'voting' | 'deciding' | 'result' | 'gameOver';
+/**
+ * Every question is answered in a row (with a short `transition` between two), then each is
+ * reviewed in turn: `voting` → (`deciding`) → `result`, the host moving to the next review.
+ */
+export type QuizPhase = 'lobby' | 'answering' | 'transition' | 'voting' | 'deciding' | 'result' | 'gameOver';
 
 export type QuizState = {
   phase: QuizPhase;
   settings: QuizSettings;
   questions: Question[];
-  /** Index into `questions` of the current question. */
+  /** Index into `questions` of the question being answered. */
   index: number;
-  /** Current question's answers, by playerId (trimmed; may be empty). */
+  /** Current question's answers, by playerId (trimmed; may be empty); emptied once answering ends. */
   answers: Record<string, string>;
   /** playerId → true once the player submitted (Enter / Envoyer); drafts (autosend) are in `answers` only. */
   submitted: Record<string, boolean>;
+  /** Per question index: playerId → final answer text (non-blank only), stored when its answering ends. */
+  allAnswers: Record<string, string>[];
+  /** Index into `questions` of the question under review (voting / deciding / result). */
+  reviewIndex: number;
+  /** Answering speed (see retime); 1 outside answering. */
+  timeRate: number;
+  /** The reviewed question's answer groups. */
   groups: AnswerGroup[];
-  revealedCount: number;
-  answerShown: boolean;
   /** groupId → voterId → vote */
   votes: Record<string, Record<string, VoteValue>>;
   /** groupId → resolved value (tied groups are missing until the host decides) */
   outcomes: Record<string, VoteValue>;
   /** Connected players who still have a group to vote on (voting only); kept here since views do not see the room. */
   pendingVoters: string[];
-  /** Players connected when the vote opened: only they are awaited (later joiners may still vote). */
+  /** Players connected when the review opened: only they are awaited (later joiners may still vote). */
   voters: string[];
   /** GroupIds whose authors vote on them (see selfVoteGroupIds); recomputed while voting, frozen once it closes. */
   selfVoteGroups: string[];
@@ -52,6 +61,8 @@ export type QuizCtx = { now: number; room: Room };
 type Result = { state: QuizState; effects: QuizEffect[] };
 
 const MAX_ANSWER_LENGTH = 100;
+/** Pause between two questions. */
+export const TRANSITION_MS = 1000;
 /** Points an answer's authors get for its outcome. */
 export const QUIZ_POINTS: Record<VoteValue, number> = { yes: 1, half: 0.5, no: 0 };
 
@@ -63,9 +74,10 @@ export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS)
     index: 0,
     answers: {},
     submitted: {},
+    allAnswers: [],
+    reviewIndex: 0,
+    timeRate: 1,
     groups: [],
-    revealedCount: 0,
-    answerShown: false,
     votes: {},
     outcomes: {},
     pendingVoters: [],
@@ -95,15 +107,7 @@ function beginQuestion(s: QuizState, index: number, ctx: QuizCtx): Result {
     index,
     answers: {},
     submitted: {},
-    groups: [],
-    revealedCount: 0,
-    answerShown: false,
-    votes: {},
-    outcomes: {},
-    pendingVoters: [],
-    voters: [],
-    selfVoteGroups: [],
-    questionPoints: {},
+    timeRate: 1,
     phaseEndsAt: ctx.now + s.settings.answerSeconds * 1000,
   });
 }
@@ -124,16 +128,32 @@ const everyoneAnswered = (s: QuizState, ctx: QuizCtx): boolean => {
   return ids.length > 0 && ids.every((id) => s.submitted[id] === true && !isBlankAnswer(s.answers[id]));
 };
 
+/** Stores the answers (drafts included, blanks dropped), then pauses before the next question or starts the review. */
 function endAnswering(s: QuizState, ctx: QuizCtx): Result {
   const meaningful = Object.fromEntries(Object.entries(s.answers).filter(([, text]) => !isBlankAnswer(text)));
-  return changed({
-    ...s,
-    phase: 'revealing',
-    groups: groupAnswers(meaningful, ctx.room.players.map((p) => p.id)),
-    revealedCount: 0,
-    answerShown: false,
-    phaseEndsAt: null,
-  });
+  const allAnswers = [...s.allAnswers];
+  allAnswers[s.index] = meaningful;
+  const next: QuizState = { ...s, allAnswers, answers: {}, submitted: {}, timeRate: 1, phaseEndsAt: null };
+  if (s.index + 1 < s.questions.length) {
+    return changed({ ...next, phase: 'transition', phaseEndsAt: ctx.now + TRANSITION_MS });
+  }
+  return enterReview(next, 0, ctx);
+}
+
+/**
+ * Speeds the answering timer up as players submit: rate = 1 + 2 × submitted / connected, never
+ * lower than before within the question (kept as is with nobody connected). The remaining time is
+ * rescaled so that the virtual time left, (phaseEndsAt − now) × rate, is unchanged.
+ */
+function retime(s: QuizState, ctx: QuizCtx): QuizState {
+  if (s.phase !== 'answering' || s.phaseEndsAt === null) return s;
+  const ids = connectedIds(ctx);
+  if (ids.length === 0) return s;
+  const submitted = ids.filter((id) => s.submitted[id] === true).length;
+  const rate = Math.max(s.timeRate, 1 + (2 * submitted) / ids.length);
+  if (rate === s.timeRate) return s;
+  const remainingVirtual = Math.max(0, s.phaseEndsAt - ctx.now) * s.timeRate;
+  return { ...s, timeRate: rate, phaseEndsAt: ctx.now + remainingVirtual / rate };
 }
 
 function onAnswer(s: QuizState, by: string, text: unknown, final: unknown, ctx: QuizCtx): Result {
@@ -143,16 +163,32 @@ function onAnswer(s: QuizState, by: string, text: unknown, final: unknown, ctx: 
   const submitted = final === true && !isBlankAnswer(clean);
   if (s.answers[by] === clean && (s.submitted[by] === true) === submitted) return unchanged(s);
   const next = { ...s, answers: { ...s.answers, [by]: clean }, submitted: { ...s.submitted, [by]: submitted } };
-  return everyoneAnswered(next, ctx) ? endAnswering(next, ctx) : changed(next);
+  return everyoneAnswered(next, ctx) ? endAnswering(next, ctx) : changed(retime(next, ctx));
 }
 
-// ---- revealing ----
+// ---- review ----
 
-function onRevealNext(s: QuizState, ctx: QuizCtx): Result {
-  if (s.revealedCount < s.groups.length) return changed({ ...s, revealedCount: s.revealedCount + 1 });
-  if (!s.answerShown) return changed({ ...s, answerShown: true });
-  if (s.groups.length === 0) return enterResult(s, ctx);
-  return checkVotingDone({ ...s, phase: 'voting', votes: {}, outcomes: {}, voters: connectedIds(ctx) }, ctx);
+/**
+ * Opens the review of question `reviewIndex`: its answers are grouped and voted on by the players
+ * connected now; with no answer at all it goes straight to the result.
+ */
+function enterReview(s: QuizState, reviewIndex: number, ctx: QuizCtx): Result {
+  const groups = groupAnswers(s.allAnswers[reviewIndex] ?? {}, ctx.room.players.map((p) => p.id));
+  const next: QuizState = {
+    ...s,
+    phase: 'voting',
+    reviewIndex,
+    groups,
+    votes: {},
+    outcomes: {},
+    pendingVoters: [],
+    voters: connectedIds(ctx),
+    selfVoteGroups: [],
+    questionPoints: {},
+    timeRate: 1,
+    phaseEndsAt: null,
+  };
+  return groups.length === 0 ? enterResult(next, ctx) : checkVotingDone(next, ctx);
 }
 
 // ---- voting ----
@@ -244,40 +280,33 @@ function enterResult(s: QuizState, ctx: QuizCtx): Result {
   return changed({ ...s, phase: 'result', questionPoints, scores, pendingVoters: [], phaseEndsAt: null });
 }
 
-function onResultNext(s: QuizState, ctx: QuizCtx): Result {
-  if (s.index + 1 < s.questions.length) return beginQuestion(s, s.index + 1, ctx);
+// ---- events ----
+
+/** The host moves on from a review result (the only phase `next` applies to). */
+function onNext(s: QuizState, ctx: QuizCtx): Result {
+  if (s.phase !== 'result') return unchanged(s);
+  if (s.reviewIndex + 1 < s.questions.length) return enterReview(s, s.reviewIndex + 1, ctx);
   return changed({ ...s, phase: 'gameOver', phaseEndsAt: null });
 }
 
-// ---- events ----
-
-function onNext(s: QuizState, ctx: QuizCtx): Result {
-  switch (s.phase) {
-    case 'revealing':
-      return onRevealNext(s, ctx);
-    case 'result':
-      return onResultNext(s, ctx);
-    default:
-      return unchanged(s);
-  }
-}
-
 function onTimeout(s: QuizState, ctx: QuizCtx): Result {
-  if (s.phase !== 'answering' || s.phaseEndsAt === null || ctx.now < s.phaseEndsAt) return unchanged(s);
-  return endAnswering(s, ctx);
+  if (s.phaseEndsAt === null || ctx.now < s.phaseEndsAt) return unchanged(s);
+  if (s.phase === 'answering') return endAnswering(s, ctx);
+  if (s.phase === 'transition') return beginQuestion(s, s.index + 1, ctx);
+  return unchanged(s);
 }
 
 /** Join/leave always report a change: the player list the clients show has changed. */
 function onPlayerJoined(s: QuizState, playerId: string, ctx: QuizCtx): Result {
   if (s.phase === 'lobby' || s.phase === 'gameOver') return changed(s);
   const next = s.scores[playerId] === undefined ? { ...s, scores: { ...s.scores, [playerId]: 0 } } : s;
-  return next.phase === 'voting' ? checkVotingDone(next, ctx) : changed(next);
+  return next.phase === 'voting' ? checkVotingDone(next, ctx) : changed(retime(next, ctx));
 }
 
 function onPlayerLeft(s: QuizState, ctx: QuizCtx): Result {
   // Answering: a leaver may just be refreshing, so only submissions or the timer end the phase.
   if (s.phase === 'voting') return checkVotingDone(s, ctx);
-  return changed(s);
+  return changed(retime(s, ctx));
 }
 
 export function quizReduce(state: QuizState, event: QuizEvent, ctx: QuizCtx): Result {

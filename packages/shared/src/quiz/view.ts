@@ -5,7 +5,7 @@ import type { VoteValue } from './grouping';
 export type QuizView = {
   phase: QuizPhase;
   settings: QuizSettings;
-  /** 1-based; 0 in the lobby. */
+  /** 1-based: the question answered (answering / transition) or reviewed (voting / deciding / result); 0 in the lobby. */
   questionNumber: number;
   questionCount: number;
   question: { theme: string; text: string } | null;
@@ -15,11 +15,11 @@ export type QuizView = {
   myAnswer: string | null;
   /** True once the viewer submitted; false while their text is only a draft. */
   mySubmitted: boolean;
-  /** How many answer groups the reveal goes through (0 while answering); lets the host's button say what comes next. */
-  groupCount: number;
-  /** Only the groups revealed so far. */
+  /** True while a question is reviewed (voting / deciding / result). */
+  reviewing: boolean;
+  /** Every answer group of the reviewed question; empty outside the review. */
   revealed: { groupId: string; text: string; authors: string[] }[];
-  /** Only once the host showed it. */
+  /** The reviewed question's answer; null outside the review. */
   correct: { answer: string; variants: string[] } | null;
   myVotes: Record<string, VoteValue>;
   /** Only in deciding / result. */
@@ -31,15 +31,24 @@ export type QuizView = {
   ties: string[];
   outcomes: Record<string, VoteValue>;
   questionPoints: Record<string, number>;
+  /** {} until the first review result, then cumulative. */
   scores: Record<string, number>;
   phaseEndsAt: number | null;
+  /** Answering speed: seconds left to show = (phaseEndsAt − now) × timeRate. 1 outside answering. */
+  timeRate: number;
   serverNow: number;
 };
 
-const IN_QUESTION: QuizPhase[] = ['answering', 'revealing', 'voting', 'deciding', 'result'];
+const ANSWERING: QuizPhase[] = ['answering', 'transition'];
+const REVIEWING: QuizPhase[] = ['voting', 'deciding', 'result'];
 
 export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizView {
-  const current = IN_QUESTION.includes(s.phase) ? s.questions[s.index] : undefined;
+  const reviewing = REVIEWING.includes(s.phase);
+  const shownIndex = reviewing ? s.reviewIndex : ANSWERING.includes(s.phase) ? s.index : null;
+  const current = shownIndex === null ? undefined : s.questions[shownIndex];
+  const reviewed = reviewing ? current : undefined;
+  // Scores stay hidden until the first question's result.
+  const scoresShown = s.phase === 'gameOver' || s.phase === 'result' || (reviewing && s.reviewIndex > 0);
   const showCounts = s.phase === 'deciding' || s.phase === 'result';
   const myVotes: Record<string, VoteValue> = {};
   for (const [groupId, byVoter] of Object.entries(s.votes)) {
@@ -49,15 +58,15 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
   return {
     phase: s.phase,
     settings: s.settings,
-    questionNumber: s.phase === 'lobby' ? 0 : s.index + 1,
+    questionNumber: s.phase === 'lobby' ? 0 : (shownIndex ?? s.index) + 1,
     questionCount: s.questions.length,
     question: current ? { theme: current.theme, text: current.question } : null,
     answered: Object.keys(s.answers).filter((id) => s.submitted[id] === true && !isBlankAnswer(s.answers[id])),
     myAnswer: s.answers[viewerId] ?? null,
     mySubmitted: s.submitted[viewerId] === true && !isBlankAnswer(s.answers[viewerId]),
-    groupCount: s.groups.length,
-    revealed: s.groups.slice(0, s.revealedCount).map((g) => ({ groupId: g.id, text: g.text, authors: g.authors })),
-    correct: current && s.answerShown ? { answer: current.answer, variants: current.variants } : null,
+    reviewing,
+    revealed: reviewing ? s.groups.map((g) => ({ groupId: g.id, text: g.text, authors: g.authors })) : [],
+    correct: reviewed ? { answer: reviewed.answer, variants: reviewed.variants } : null,
     myVotes,
     voteCounts: showCounts
       ? Object.fromEntries(s.groups.map((g) => {
@@ -70,9 +79,10 @@ export function quizViewFor(s: QuizState, viewerId: string, now: number): QuizVi
     selfVoteGroups: s.phase === 'voting' ? s.selfVoteGroups : [],
     ties: s.phase === 'deciding' ? s.groups.filter((g) => s.outcomes[g.id] === undefined).map((g) => g.id) : [],
     outcomes: s.outcomes,
-    questionPoints: s.questionPoints,
-    scores: s.scores,
+    questionPoints: scoresShown ? s.questionPoints : {},
+    scores: scoresShown ? s.scores : {},
     phaseEndsAt: s.phaseEndsAt,
+    timeRate: s.phase === 'answering' ? s.timeRate : 1,
     serverNow: now,
   };
 }

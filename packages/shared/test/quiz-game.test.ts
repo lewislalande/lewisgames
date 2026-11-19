@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  quizReduce, quizInitialState, quizViewFor, clampQuizSettings,
+  quizReduce, quizInitialState, quizViewFor, clampQuizSettings, TRANSITION_MS,
   type Question, type QuizCtx, type QuizEvent, type QuizState,
 } from '../src';
 import { disconnect, type Room } from '../src/room';
@@ -33,10 +33,12 @@ const answerAll = (s: QuizState, texts: Record<string, string>, room = mkRoom())
 const nexts = (s: QuizState, n: number, room = mkRoom()) =>
   run(s, Array.from({ length: n }, () => ({ type: 'next', by: 'A' }) as QuizEvent), room);
 
-/** Answers, reveals everything and opens the vote. */
+/** Ends the transition between two questions (its timer is due). */
+const endTransition = (s: QuizState, room = mkRoom()) => run(s, [{ type: 'timeout' }], room, s.phaseEndsAt!);
+
+/** A one-question game where everybody answered: the review of that question (its vote) is open. */
 function toVoting(texts: Record<string, string>, room = mkRoom()): QuizState {
-  const s = answerAll(started(room), texts, room);
-  return nexts(s, s.groups.length + 2, room);
+  return answerAll(started(room, [q(1)]), texts, room);
 }
 
 describe('start', () => {
@@ -80,11 +82,21 @@ describe('answering', () => {
     s = run(s, [{ type: 'answer', by: 'C', text: 'y'.repeat(100), final: true }]);
     expect(s.answers.C).toHaveLength(100);
   });
-  it('ends early when every connected player answered', () => {
-    const s = answerAll(started(), { A: 'a', B: 'b', C: 'c' });
-    expect(s.phase).toBe('revealing');
+  it('ends early when every connected player answered: answers stored, transition to the next question', () => {
+    const s = answerAll(started(), { A: 'a', B: 'b', C: ' c ' });
+    expect(s.phase).toBe('transition');
+    expect(s.allAnswers).toEqual([{ A: 'a', B: 'b', C: 'c' }]);
+    expect(s.answers).toEqual({});
+    expect(s.submitted).toEqual({});
+    expect(s.groups).toEqual([]);
+    expect(s.phaseEndsAt).toBe(1000 + TRANSITION_MS);
+    expect(TRANSITION_MS).toBe(1000);
+  });
+  it('after the last question, the review of question 1 opens', () => {
+    const s = answerAll(started(mkRoom(), [q(1)]), { A: 'a', B: 'b', C: 'c' });
+    expect(s.phase).toBe('voting');
+    expect(s.reviewIndex).toBe(0);
     expect(s.groups.map((g) => g.authors)).toEqual([['A'], ['B'], ['C']]);
-    expect(s.revealedCount).toBe(0);
     expect(s.phaseEndsAt).toBeNull();
   });
   it('an empty answer does not count as answered', () => {
@@ -98,10 +110,11 @@ describe('answering', () => {
     expect(early.state).toBe(s);
     expect(early.effects).toEqual([]);
     const due = quizReduce(s, { type: 'timeout' }, ctxOf(mkRoom(), s.phaseEndsAt!));
-    expect(due.state.phase).toBe('revealing');
-    // A timeout outside answering does nothing.
-    const later = quizReduce(due.state, { type: 'timeout' }, ctxOf(mkRoom(), 10 ** 9));
-    expect(later.state).toBe(due.state);
+    expect(due.state.phase).toBe('transition');
+    // A timeout in a review phase does nothing.
+    const voting = toVoting({ A: 'a', B: 'b', C: 'c' });
+    const later = quizReduce(voting, { type: 'timeout' }, ctxOf(mkRoom(), 10 ** 9));
+    expect(later.state).toBe(voting);
   });
   it('answer survives reconnect', () => {
     let room = mkRoom();
@@ -125,15 +138,15 @@ describe('answering', () => {
     // The reconnecting player can still answer before the timer, which ends the phase.
     room = reconnect(room, 'C');
     s = run(s, [{ type: 'playerJoined', playerId: 'C' }, { type: 'answer', by: 'C', text: 'c', final: true }], room);
-    expect(s.phase).toBe('revealing');
+    expect(s.phase).toBe('transition');
   });
   it('only connected players\' submissions are counted', () => {
     let room = mkRoom();
     let s = answerAll(started(room), { A: 'a' }, room);
     room = disconnect(room, 'C');
     s = run(s, [{ type: 'playerLeft', playerId: 'C' }, { type: 'answer', by: 'B', text: 'b', final: true }], room);
-    expect(s.phase).toBe('revealing');
-    expect(s.groups.map((g) => g.id)).toEqual(['a', 'b']);
+    expect(s.phase).toBe('transition');
+    expect(s.allAnswers[0]).toEqual({ A: 'a', B: 'b' });
   });
   it('drafts do not end the phase, and the timeout uses drafts', () => {
     let s = run(started(), [
@@ -146,15 +159,15 @@ describe('answering', () => {
     s = run(s, [{ type: 'answer', by: 'A', text: 'a2', final: true }]);
     expect(quizViewFor(s, 'B', 1000).answered).toEqual(['A']);
     s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
-    expect(s.phase).toBe('revealing');
-    expect(s.groups.map((g) => g.text)).toEqual(['a2', 'b', 'c']);
+    expect(s.phase).toBe('transition');
+    expect(s.allAnswers[0]).toEqual({ A: 'a2', B: 'b', C: 'c' });
   });
   it('a draft for the last missing player does not end it; submitting does', () => {
     let s = answerAll(started(), { A: 'a', B: 'b' });
     s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: false }]);
     expect(s.phase).toBe('answering');
     s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: true }]);
-    expect(s.phase).toBe('revealing');
+    expect(s.phase).toBe('transition');
   });
   it('Modifier (final:false) withdraws the submission; mySubmitted follows', () => {
     let s = run(started(), [{ type: 'answer', by: 'A', text: 'a', final: true }]);
@@ -169,7 +182,7 @@ describe('answering', () => {
     s = run(s, [{ type: 'answer', by: 'B', text: 'b', final: true }, { type: 'answer', by: 'C', text: 'c', final: true }]);
     expect(s.phase).toBe('answering');
     s = run(s, [{ type: 'answer', by: 'A', text: 'a', final: true }]);
-    expect(s.phase).toBe('revealing');
+    expect(s.phase).toBe('transition');
   });
   it('a blank final answer is not a submission', () => {
     const s = run(started(), [{ type: 'answer', by: 'A', text: '  ', final: true }]);
@@ -197,50 +210,289 @@ describe('answering', () => {
   });
 });
 
-describe('revealing', () => {
-  it('reveals step by step, then the answer, then opens the vote', () => {
-    let s = answerAll(started(), { A: 'a', B: 'b', C: 'c' });
-    expect(quizViewFor(s, 'B', 1000).revealed).toEqual([]);
-    s = nexts(s, 1);
-    expect(quizViewFor(s, 'B', 1000).revealed).toEqual([{ groupId: 'a', text: 'a', authors: ['A'] }]);
-    s = nexts(s, 2);
-    expect(quizViewFor(s, 'B', 1000).revealed).toHaveLength(3);
-    expect(quizViewFor(s, 'A', 1000).correct).toBeNull();
-    s = nexts(s, 1);
-    expect(s.answerShown).toBe(true);
-    expect(quizViewFor(s, 'A', 1000).correct).toEqual({ answer: 'R1', variants: ['V1'] });
-    expect(s.phase).toBe('revealing');
+describe('transition', () => {
+  it('lasts TRANSITION_MS, ignores early timeouts, answers and next, then opens the next question', () => {
+    // started() at 1000 with 30 s: answering times out at 31000.
+    let s = started();
+    s = run(s, [{ type: 'timeout' }], mkRoom(), s.phaseEndsAt!);
+    expect(s.phase).toBe('transition');
+    const endsAt = s.phaseEndsAt!;
+    expect(endsAt).toBe(31000 + 1000);
+    const early = quizReduce(s, { type: 'timeout' }, ctxOf(mkRoom(), endsAt - 1));
+    expect(early.state).toBe(s);
+    expect(early.effects).toEqual([]);
+    for (const e of [
+      { type: 'answer', by: 'A', text: 'late', final: true },
+      { type: 'next', by: 'A' },
+      { type: 'vote', by: 'A', groupId: 'x', vote: 'yes' },
+    ] as QuizEvent[]) {
+      expect(quizReduce(s, e, ctxOf(mkRoom(), endsAt - 1)).state).toBe(s);
+    }
+    const v = quizViewFor(s, 'A', endsAt - 1);
+    expect(v.phase).toBe('transition');
+    expect(v.timeRate).toBe(1);
+    expect(v.reviewing).toBe(false);
+    expect(v.revealed).toEqual([]);
+    expect(v.correct).toBeNull();
+    const next = quizReduce(s, { type: 'timeout' }, ctxOf(mkRoom(), endsAt));
+    expect(next.effects).toEqual([{ type: 'state' }]);
+    expect(next.state.phase).toBe('answering');
+    expect(next.state.index).toBe(1);
+    expect(next.state.timeRate).toBe(1);
+    expect(next.state.phaseEndsAt).toBe(endsAt + 30000);
+    expect(quizViewFor(next.state, 'A', endsAt).questionNumber).toBe(2);
+    expect(quizViewFor(next.state, 'A', endsAt).question).toEqual({ theme: 'T2', text: 'Q2?' });
+  });
+});
+
+describe('timer', () => {
+  const room4 = () => mkRoom(['A', 'B', 'C', 'D']);
+  const at = (s: QuizState, events: QuizEvent[], now: number, room = room4()) => run(s, events, room, now);
+  const sub = (by: string): QuizEvent => ({ type: 'answer', by, text: `t${by}`, final: true });
+
+  it('speeds up with each submission: rate = 1 + 2 × submitted / connected, end time rescaled', () => {
+    let s = started(room4());
+    expect(s.timeRate).toBe(1);
+    expect(s.phaseEndsAt).toBe(31000);
+    s = at(s, [sub('A')], 1000);
+    expect(s.timeRate).toBe(1.5);
+    expect(s.phaseEndsAt).toBe(1000 + 30000 / 1.5);
+    expect(quizViewFor(s, 'B', 1000).timeRate).toBe(1.5);
+    // 10 s later: 10 s real left = 15 s virtual, now at rate 2.
+    s = at(s, [sub('B')], 11000);
+    expect(s.timeRate).toBe(2);
+    expect(s.phaseEndsAt).toBe(11000 + 15000 / 2);
+    s = at(s, [sub('C')], 11000);
+    expect(s.timeRate).toBe(2.5);
+    expect(s.phase).toBe('answering');
+    s = at(s, [sub('D')], 11000);
+    expect(s.phase).toBe('transition');
+    expect(s.timeRate).toBe(1);
+    expect(quizViewFor(s, 'B', 11000).timeRate).toBe(1);
+  });
+  it('a withdrawn submission (final:false) does not lower the rate', () => {
+    let s = at(started(room4()), [sub('A')], 1000);
+    const endsAt = s.phaseEndsAt;
+    s = at(s, [{ type: 'answer', by: 'A', text: 'tA', final: false }], 2000);
+    expect(s.submitted.A).toBe(false);
+    expect(s.timeRate).toBe(1.5);
+    expect(s.phaseEndsAt).toBe(endsAt);
+    // Resubmitting gives the same rate: nothing to rescale.
+    s = at(s, [sub('A')], 3000);
+    expect(s.timeRate).toBe(1.5);
+    expect(s.phaseEndsAt).toBe(endsAt);
+  });
+  it('drafts do not speed it up', () => {
+    const s = at(started(room4()), [{ type: 'answer', by: 'A', text: 'x', final: false }], 1000);
+    expect(s.timeRate).toBe(1);
+    expect(s.phaseEndsAt).toBe(31000);
+  });
+  it('a player leaving: rate uses the new connected count, never decreasing', () => {
+    let room = room4();
+    let s = at(started(room), [sub('A')], 1000, room);
+    room = disconnect(disconnect(room, 'D'), 'C');
+    s = at(s, [{ type: 'playerLeft', playerId: 'D' }], 1000, room);
+    // 1 submitted of 2 connected → 2; 20 s real at 1.5 = 30 s virtual → 15 s.
+    expect(s.timeRate).toBe(2);
+    expect(s.phaseEndsAt).toBe(16000);
+    // The submitter leaving would give 1: the rate keeps 2.
+    room = disconnect(room, 'A');
+    s = at(s, [{ type: 'playerLeft', playerId: 'A' }], 2000, room);
+    expect(s.timeRate).toBe(2);
+    expect(s.phaseEndsAt).toBe(16000);
+    // Players coming back (more connected) do not slow it down either.
+    room = reconnect(reconnect(reconnect(room, 'A'), 'C'), 'D');
+    s = at(s, [{ type: 'playerJoined', playerId: 'C' }], 3000, room);
+    expect(s.timeRate).toBe(2);
+    expect(s.phaseEndsAt).toBe(16000);
+  });
+  it('with nobody connected the rate is kept', () => {
+    let room = room4();
+    let s = at(started(room), [sub('A')], 1000, room);
+    for (const id of ['A', 'B', 'C', 'D']) room = disconnect(room, id);
+    s = at(s, [{ type: 'playerLeft', playerId: 'D' }], 2000, room);
+    expect(s.timeRate).toBe(1.5);
+    expect(s.phaseEndsAt).toBe(21000);
+  });
+  it('the end time never goes before now', () => {
+    const s0 = started(room4());
+    const late = s0.phaseEndsAt! + 500;
+    const s = at(s0, [sub('A')], late);
+    expect(s.timeRate).toBe(1.5);
+    expect(s.phaseEndsAt).toBe(late);
+  });
+  it('every question starts at rate 1', () => {
+    let s = at(started(room4()), [sub('A'), sub('B')], 1000);
+    s = at(s, [{ type: 'timeout' }], s.phaseEndsAt!);
+    s = endTransition(s, room4());
+    expect(s.phase).toBe('answering');
+    expect(s.timeRate).toBe(1);
+  });
+});
+
+describe('review at the end', () => {
+  it('keeps every answer secret during answering and transition; scores hidden until the first result', () => {
+    let s = run(started(), [{ type: 'answer', by: 'B', text: 'secretone', final: true }]);
+    const views = () => ['A', 'C'].map((id) => quizViewFor(s, id, 1000));
+    const check = () => {
+      for (const v of views()) {
+        const json = JSON.stringify(v);
+        for (const secret of ['secretone', 'secrettwo', 'R1', 'V1', 'R2', 'V2']) expect(json).not.toContain(secret);
+        expect(v.correct).toBeNull();
+        expect(v.revealed).toEqual([]);
+        expect(v.scores).toEqual({});
+        expect(v.questionPoints).toEqual({});
+        expect(v.reviewing).toBe(false);
+      }
+    };
+    check();
+    s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
+    expect(s.phase).toBe('transition');
+    check();
+    s = endTransition(s);
+    s = run(s, [{ type: 'answer', by: 'B', text: 'secrettwo', final: true }]);
+    expect(s.phase).toBe('answering');
+    check();
+  });
+  it('plays 2 questions: answering → transition → answering → review q1 → result → review q2 → result → gameOver', () => {
+    const settings = clampQuizSettings({ questionCount: 5, answerSeconds: 15 });
+    let s = run(quizInitialState(settings), [{ type: 'start', by: 'A', questions: [q(1), q(2)] }]);
+    // Q1: A and B right, C wrong.
+    s = answerAll(s, { A: 'r', B: 'R', C: 'w' });
+    expect(s.phase).toBe('transition');
+    s = endTransition(s);
+    expect(s.phase).toBe('answering');
+    expect(s.index).toBe(1);
+    expect(s.answers).toEqual({});
+    // Q2: only C answers.
+    s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: true }, { type: 'timeout' }], mkRoom(), 10 ** 9);
+    expect(s.allAnswers).toEqual([{ A: 'r', B: 'R', C: 'w' }, { C: 'c' }]);
+    // Review of Q1.
+    expect(s.phase).toBe('voting');
+    expect(s.reviewIndex).toBe(0);
+    let v = quizViewFor(s, 'B', 1000);
+    expect(v.reviewing).toBe(true);
+    expect(v.questionNumber).toBe(1);
+    expect(v.question).toEqual({ theme: 'T1', text: 'Q1?' });
+    expect(v.correct).toEqual({ answer: 'R1', variants: ['V1'] });
+    expect(v.revealed).toEqual([
+      { groupId: 'r', text: 'r', authors: ['A', 'B'] },
+      { groupId: 'w', text: 'w', authors: ['C'] },
+    ]);
+    expect(v.scores).toEqual({});
+    expect(v.timeRate).toBe(1);
+    expect(v.myAnswer).toBeNull();
+    expect(v.answered).toEqual([]);
+    // `next` outside result does nothing (no reveal step).
+    expect(quizReduce(s, { type: 'next', by: 'A' }, ctxOf(mkRoom())).state).toBe(s);
+    s = run(s, [
+      { type: 'vote', by: 'C', groupId: 'r', vote: 'yes' },
+      { type: 'vote', by: 'A', groupId: 'w', vote: 'no' },
+      { type: 'vote', by: 'B', groupId: 'w', vote: 'no' },
+    ]);
+    expect(s.phase).toBe('result');
+    expect(s.scores).toEqual({ A: 1, B: 1, C: 0 });
+    v = quizViewFor(s, 'B', 1000);
+    expect(v.scores).toEqual({ A: 1, B: 1, C: 0 });
+    expect(v.questionPoints).toEqual({ A: 1, B: 1, C: 0 });
+    // next by a non-host is ignored.
+    expect(quizReduce(s, { type: 'next', by: 'B' }, ctxOf(mkRoom())).state).toBe(s);
+    // Review of Q2.
     s = nexts(s, 1);
     expect(s.phase).toBe('voting');
+    expect(s.reviewIndex).toBe(1);
+    expect(s.votes).toEqual({});
+    expect(s.outcomes).toEqual({});
+    v = quizViewFor(s, 'A', 1000);
+    expect(v.questionNumber).toBe(2);
+    expect(v.question).toEqual({ theme: 'T2', text: 'Q2?' });
+    expect(v.correct).toEqual({ answer: 'R2', variants: ['V2'] });
+    expect(v.revealed).toEqual([{ groupId: 'c', text: 'c', authors: ['C'] }]);
+    expect(v.scores).toEqual({ A: 1, B: 1, C: 0 });
+    expect(v.questionPoints).toEqual({});
+    expect(v.myVotes).toEqual({});
+    s = run(s, [
+      { type: 'vote', by: 'A', groupId: 'c', vote: 'half' },
+      { type: 'vote', by: 'B', groupId: 'c', vote: 'half' },
+    ]);
+    expect(s.phase).toBe('result');
+    expect(s.questionPoints).toEqual({ A: 0, B: 0, C: 0.5 });
+    s = nexts(s, 1);
+    expect(s.phase).toBe('gameOver');
+    expect(s.scores).toEqual({ A: 1, B: 1, C: 0.5 });
+    expect(quizViewFor(s, 'B', 1000).scores).toEqual({ A: 1, B: 1, C: 0.5 });
+    // restart
+    expect(quizReduce(s, { type: 'restart', by: 'B' }, ctxOf(mkRoom())).state).toBe(s);
+    s = run(s, [{ type: 'restart', by: 'A' }]);
+    expect(s.phase).toBe('lobby');
+    expect(s.settings).toEqual(settings);
+    expect(s.scores).toEqual({});
+    expect(s.allAnswers).toEqual([]);
   });
-  it('tells everyone how many answers there are to reveal (0 while answering)', () => {
-    const s = started();
-    expect(quizViewFor(s, 'B', 1000).groupCount).toBe(0);
-    const r = answerAll(s, { A: 'Paris', B: 'paris', C: 'Lyon' });
-    expect(quizViewFor(r, 'B', 1000).groupCount).toBe(2);
-    expect(quizViewFor(r, 'B', 1000).revealed).toEqual([]);
+  it('a question nobody answered: its review goes straight to result (0 points), then the host moves on', () => {
+    let s = answerAll(started(), { A: 'a' });
+    s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
+    s = endTransition(s);
+    s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 10);
+    expect(s.allAnswers).toEqual([{ A: 'a' }, {}]);
+    expect(s.phase).toBe('voting');
+    s = run(s, [{ type: 'vote', by: 'B', groupId: 'a', vote: 'yes' }, { type: 'vote', by: 'C', groupId: 'a', vote: 'yes' }]);
+    expect(s.phase).toBe('result');
+    s = nexts(s, 1);
+    expect(s.phase).toBe('result');
+    expect(s.reviewIndex).toBe(1);
+    expect(s.groups).toEqual([]);
+    expect(s.questionPoints).toEqual({ A: 0, B: 0, C: 0 });
+    const v = quizViewFor(s, 'B', 1000);
+    expect(v.revealed).toEqual([]);
+    expect(v.correct).toEqual({ answer: 'R2', variants: ['V2'] });
+    expect(nexts(s, 1).phase).toBe('gameOver');
   });
-  it('next by a non-host is ignored', () => {
-    const s = answerAll(started(), { A: 'a', B: 'b', C: 'c' });
-    const r = quizReduce(s, { type: 'next', by: 'B' }, ctxOf(mkRoom()));
-    expect(r.state).toBe(s);
-    expect(r.effects).toEqual([]);
+  it('with no answers at all in a one-question game: straight to result', () => {
+    const s = run(started(mkRoom(), [q(1)]), [{ type: 'timeout' }], mkRoom(), 10 ** 9);
+    expect(s.groups).toEqual([]);
+    expect(s.phase).toBe('result');
+    expect(s.questionPoints).toEqual({ A: 0, B: 0, C: 0 });
   });
+  it('a refresh (leave + join) keeps earlier answers, reviewed at the end', () => {
+    let room = mkRoom();
+    let s = answerAll(started(room), { A: 'a', B: 'paris', C: 'c' }, room);
+    s = endTransition(s, room);
+    room = disconnect(room, 'B');
+    s = run(s, [{ type: 'playerLeft', playerId: 'B' }], room);
+    room = reconnect(room, 'B');
+    s = run(s, [{ type: 'playerJoined', playerId: 'B' }], room);
+    expect(s.allAnswers[0]).toEqual({ A: 'a', B: 'paris', C: 'c' });
+    s = answerAll(s, { A: 'a2', B: 'b2', C: 'c2' }, room);
+    expect(s.phase).toBe('voting');
+    expect(s.groups.map((g) => [g.id, g.authors])).toEqual([['a', ['A']], ['paris', ['B']], ['c', ['C']]]);
+  });
+  it('voters are the players connected when the review opens; questionPoints cover authors who left', () => {
+    let room = mkRoom();
+    let s = answerAll(started(room), { A: 'a', B: 'b', C: 'c' }, room);
+    s = endTransition(s, room);
+    room = disconnect(room, 'C');
+    s = run(s, [{ type: 'playerLeft', playerId: 'C' }, { type: 'answer', by: 'A', text: 'x', final: true }, { type: 'answer', by: 'B', text: 'y', final: true }], room);
+    expect(s.phase).toBe('voting');
+    expect(s.voters).toEqual(['A', 'B']);
+    s = run(s, [
+      { type: 'vote', by: 'A', groupId: 'b', vote: 'yes' },
+      { type: 'vote', by: 'A', groupId: 'c', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'a', vote: 'yes' },
+      { type: 'vote', by: 'B', groupId: 'c', vote: 'yes' },
+    ], room);
+    expect(s.phase).toBe('result');
+    expect(s.questionPoints).toEqual({ A: 1, B: 1, C: 1 });
+  });
+});
+
+describe('review grouping', () => {
   it('identical answers share one group', () => {
-    const s = answerAll(started(), { A: 'Paris', B: ' paris ', C: 'Lyon' });
+    const s = toVoting({ A: 'Paris', B: ' paris ', C: 'Lyon' });
     expect(s.groups).toEqual([
       { id: 'paris', text: 'Paris', authors: ['A', 'B'] },
       { id: 'lyon', text: 'Lyon', authors: ['C'] },
     ]);
-  });
-  it('with no answers: show answer, then straight to result', () => {
-    let s = run(started(), [{ type: 'timeout' }], mkRoom(), 10 ** 9);
-    expect(s.groups).toEqual([]);
-    s = nexts(s, 1);
-    expect(s.answerShown).toBe(true);
-    s = nexts(s, 1);
-    expect(s.phase).toBe('result');
-    expect(s.questionPoints).toEqual({ A: 0, B: 0, C: 0 });
   });
 });
 
@@ -467,7 +719,7 @@ describe('voting', () => {
     expect(r.state.questionPoints).toEqual({ A: 1, B: 0.5, C: 1 });
   });
   it('whitespace-only and punctuation-only answers: not answered, no group, 0 points', () => {
-    let s = run(started(), [
+    let s = run(started(mkRoom(), [q(1)]), [
       { type: 'answer', by: 'A', text: 'x', final: true },
       { type: 'answer', by: 'B', text: '   ', final: true },
       { type: 'answer', by: 'C', text: '?!', final: true },
@@ -477,7 +729,6 @@ describe('voting', () => {
     expect(quizViewFor(s, 'C', 1000).myAnswer).toBe('?!');
     s = run(s, [{ type: 'timeout' }], mkRoom(), 10 ** 9);
     expect(s.groups.map((g) => g.id)).toEqual(['x']);
-    s = nexts(s, 3);
     s = run(s, [
       { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
       { type: 'vote', by: 'C', groupId: 'x', vote: 'yes' },
@@ -486,13 +737,12 @@ describe('voting', () => {
     expect(s.questionPoints).toEqual({ A: 1, B: 0, C: 0 });
   });
   it('empty answer gets 0 and no group', () => {
-    let s = run(started(), [
+    let s = run(started(mkRoom(), [q(1)]), [
       { type: 'answer', by: 'A', text: 'x', final: true },
       { type: 'answer', by: 'B', text: 'y', final: true },
       { type: 'timeout' },
     ], mkRoom(), 10 ** 9);
     expect(s.groups.map((g) => g.id)).toEqual(['x', 'y']);
-    s = nexts(s, 4);
     s = run(s, [
       { type: 'vote', by: 'B', groupId: 'x', vote: 'yes' },
       { type: 'vote', by: 'C', groupId: 'x', vote: 'yes' },
@@ -504,48 +754,7 @@ describe('voting', () => {
   });
 });
 
-describe('full game', () => {
-  it('plays 2 questions to gameOver with expected scores, then restarts keeping settings', () => {
-    const settings = clampQuizSettings({ questionCount: 5, answerSeconds: 15 });
-    let s = run(quizInitialState(settings), [{ type: 'start', by: 'A', questions: [q(1), q(2)] }]);
-    // Q1: A and B right, C wrong.
-    s = answerAll(s, { A: 'r', B: 'R', C: 'w' });
-    s = nexts(s, 4);
-    s = run(s, [
-      { type: 'vote', by: 'C', groupId: 'r', vote: 'yes' },
-      { type: 'vote', by: 'A', groupId: 'w', vote: 'no' },
-      { type: 'vote', by: 'B', groupId: 'w', vote: 'no' },
-    ]);
-    expect(s.phase).toBe('result');
-    expect(s.scores).toEqual({ A: 1, B: 1, C: 0 });
-    s = nexts(s, 1, mkRoom());
-    expect(s.phase).toBe('answering');
-    expect(s.index).toBe(1);
-    expect(s.answers).toEqual({});
-    expect(s.groups).toEqual([]);
-    expect(s.votes).toEqual({});
-    expect(s.outcomes).toEqual({});
-    expect(s.answerShown).toBe(false);
-    expect(quizViewFor(s, 'A', 1000).question).toEqual({ theme: 'T2', text: 'Q2?' });
-    // Q2: only C answers (half).
-    s = run(s, [{ type: 'answer', by: 'C', text: 'c', final: true }, { type: 'timeout' }], mkRoom(), 10 ** 9);
-    s = nexts(s, 3);
-    s = run(s, [
-      { type: 'vote', by: 'A', groupId: 'c', vote: 'half' },
-      { type: 'vote', by: 'B', groupId: 'c', vote: 'half' },
-    ]);
-    expect(s.questionPoints).toEqual({ A: 0, B: 0, C: 0.5 });
-    s = nexts(s, 1);
-    expect(s.phase).toBe('gameOver');
-    expect(s.scores).toEqual({ A: 1, B: 1, C: 0.5 });
-    expect(quizViewFor(s, 'B', 1000).scores).toEqual({ A: 1, B: 1, C: 0.5 });
-    // restart
-    expect(quizReduce(s, { type: 'restart', by: 'B' }, ctxOf(mkRoom())).state).toBe(s);
-    s = run(s, [{ type: 'restart', by: 'A' }]);
-    expect(s.phase).toBe('lobby');
-    expect(s.settings).toEqual(settings);
-    expect(s.scores).toEqual({});
-  });
+describe('settings and room events', () => {
   it('setSettings only by the host in lobby/gameOver, clamped', () => {
     const s = run(quizInitialState(), [{ type: 'setSettings', by: 'A', settings: { questionCount: 999 } }]);
     expect(s.settings.questionCount).toBe(50);

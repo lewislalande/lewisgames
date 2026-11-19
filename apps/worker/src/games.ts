@@ -98,7 +98,8 @@ function quizAdapter(db: D1Database): GameAdapter<QuizState, QuizEvent> {
   return {
     initial: () => quizInitialState(),
     maxPlayers: (s) => s.settings.maxPlayers,
-    phaseEndsAt: (s) => s.phaseEndsAt,
+    // The accelerating timer gives fractional end times: never fire before the end.
+    phaseEndsAt: (s) => (s.phaseEndsAt === null ? null : Math.ceil(s.phaseEndsAt)),
     toEvent(msg, by) {
       switch (msg.t) {
         case 'settings': return { type: 'setSettings', by, settings: msg.settings };

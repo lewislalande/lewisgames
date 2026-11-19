@@ -1,9 +1,12 @@
-import { SELF, env } from 'cloudflare:test';
+import { SELF, env, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { BASE, Client, createRoom, until } from './helpers';
 import { markUsed, pickQuestions } from '../src/questions';
 
 afterEach(() => vi.restoreAllMocks());
+
+const stubFor = (code: string) => env.ROOM.get(env.ROOM.idFromName(code));
+const readAlarm = (code: string) => runInDurableObject(stubFor(code), (_i, state) => state.storage.getAlarm());
 
 let seq = 0;
 /** A theme no other test uses, so tests sharing the database stay independent. */
@@ -71,35 +74,53 @@ describe('quiz rooms', () => {
     expect(used).toHaveLength(3);
   });
 
-  it('keeps answers and the correct answer secret until they are revealed', async () => {
+  it('keeps answers, the correct answer and scores secret until the review at the end', async () => {
     const theme = freshTheme();
-    await seed(theme, [{ question: 'Q secrète ?', answer: 'zzcorrectsecret', variants: ['zzvariantsecret'] }]);
-    const { a, aId, b, bId } = await quizRoom(theme);
+    await seed(theme, [
+      { question: 'Q secrète 1 ?', answer: 'zzcorrectsecret1', variants: ['zzvariantsecret1'] },
+      { question: 'Q secrète 2 ?', answer: 'zzcorrectsecret2', variants: ['zzvariantsecret2'] },
+    ]);
+    const { code, a, aId, b, bId } = await quizRoom(theme);
     a.send({ t: 'start' });
-    await b.nextQuiz((m) => m.game.phase === 'answering');
+    const first = await b.nextQuiz((m) => m.game.phase === 'answering');
 
-    a.send({ t: 'answer', text: 'zzanswerofa', final: true });
+    a.send({ t: 'answer', text: 'zzanswerofa1', final: true });
     const afterA = await b.nextQuiz((m) => m.game.answered.includes(aId));
     expect(afterA.game.myAnswer).toBeNull();
+    // 1 of 2 submitted: the timer runs at ×2 and the alarm follows the new end time.
+    expect(afterA.game.timeRate).toBe(2);
+    expect(afterA.game.phaseEndsAt!).toBeLessThan(first.game.phaseEndsAt!);
+    // Persisted after delivery: poll.
+    await until(() => readAlarm(code), (t) => t === Math.ceil(afterA.game.phaseEndsAt!));
     // A sees their own answer.
-    expect((await a.nextQuiz((m) => m.game.answered.includes(aId))).game.myAnswer).toBe('zzanswerofa');
-    expect(b.raw.join('\n')).not.toContain('zzanswerofa');
+    expect((await a.nextQuiz((m) => m.game.answered.includes(aId))).game.myAnswer).toBe('zzanswerofa1');
 
-    b.send({ t: 'answer', text: 'zzanswerofb', final: true });
-    await a.nextQuiz((m) => m.game.phase === 'revealing');
-    await b.nextQuiz((m) => m.game.phase === 'revealing');
-    // Reveal both answers: still no correct answer anywhere.
-    a.send({ t: 'next' });
-    a.send({ t: 'next' });
-    await b.nextQuiz((m) => m.game.revealed.length === 2);
-    await a.nextQuiz((m) => m.game.revealed.length === 2);
-    for (const c of [a, b]) {
-      expect(c.raw.join('\n')).not.toContain('zzcorrectsecret');
-      expect(c.raw.join('\n')).not.toContain('zzvariantsecret');
+    b.send({ t: 'answer', text: 'zzanswerofb1', final: true });
+    const transition = await b.nextQuiz((m) => m.game.phase === 'transition');
+    expect(transition.game.phaseEndsAt! - transition.game.serverNow).toBeLessThanOrEqual(1000);
+    // The transition timer opens question 2.
+    await runInDurableObject(stubFor(code), (instance) => {
+      (instance as unknown as { data: { game: { phaseEndsAt: number } } }).data.game.phaseEndsAt = Date.now() - 1;
+    });
+    await runDurableObjectAlarm(stubFor(code));
+    await b.nextQuiz((m) => m.game.phase === 'answering' && m.game.questionNumber === 2);
+    a.send({ t: 'answer', text: 'zzanswerofa2', final: true });
+    await b.nextQuiz((m) => m.game.answered.includes(aId));
+
+    for (const [c, others] of [[a, ['zzanswerofb1']], [b, ['zzanswerofa1', 'zzanswerofa2']]] as const) {
+      const raw = c.raw.join('\n');
+      for (const secret of [...others, 'zzcorrectsecret', 'zzvariantsecret']) expect(raw).not.toContain(secret);
+      for (const m of c.msgs) {
+        if (m.t === 'state' && m.kind === 'quiz') expect(m.game.scores).toEqual({});
+      }
     }
-    a.send({ t: 'next' });
-    const shown = await b.nextQuiz((m) => m.game.correct !== null);
-    expect(shown.game.correct).toEqual({ answer: 'zzcorrectsecret', variants: ['zzvariantsecret'] });
+
+    b.send({ t: 'answer', text: 'zzanswerofb2', final: true });
+    const review = await b.nextQuiz((m) => m.game.phase === 'voting');
+    expect(review.game.questionNumber).toBe(1);
+    expect(review.game.reviewing).toBe(true);
+    expect(review.game.correct?.answer).toMatch(/^zzcorrectsecret[12]$/);
+    expect(review.game.revealed.map((g) => g.text).sort()).toEqual(['zzanswerofa1', 'zzanswerofb1']);
     void bId;
   });
 

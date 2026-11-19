@@ -7,7 +7,6 @@ import { QuizLobby } from '../quiz/QuizLobby';
 import { QuizScoreboard } from '../quiz/QuizScoreboard';
 import { Timer } from '../pictionary/Timer';
 import { Answering } from '../quiz/Answering';
-import { Reveal } from '../quiz/Reveal';
 import { Voting } from '../quiz/Voting';
 import { QuestionResult } from '../quiz/QuestionResult';
 import { QuizGameOver } from '../quiz/QuizGameOver';
@@ -20,7 +19,7 @@ const NOTICES: Partial<Record<ErrorCode, string>> = {
 
 const TITLES: Partial<Record<QuizPhase, string>> = {
   answering: 'Réponds !',
-  revealing: 'Les réponses',
+  transition: 'Question suivante…',
   voting: 'Le vote',
   deciding: 'Égalité',
   result: 'Résultats',
@@ -95,7 +94,6 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
             {game.phase === 'answering' && (
               <Answering key={game.questionNumber} game={game} connectedIds={state.players.filter((p) => p.connected).map((p) => p.id)} send={sock.send} online={sock.status === 'open'} />
             )}
-            {game.phase === 'revealing' && <Reveal game={game} names={names} isHost={isHost} hostName={hostName} send={sock.send} />}
             {(game.phase === 'voting' || game.phase === 'deciding') && (
               <Voting game={game} names={names} playerId={playerId} isHost={isHost} hostName={hostName} send={sock.send} />
             )}
