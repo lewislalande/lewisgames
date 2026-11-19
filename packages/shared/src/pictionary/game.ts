@@ -2,7 +2,7 @@ import { connectedPlayers, type Room } from '../room';
 import { clampSettings, DEFAULT_SETTINGS, type PictionarySettings } from './settings';
 import { drawerPoints, guesserPoints } from './scoring';
 import { hintsUnlocked, isLetterIndex } from './hints';
-import { classifyGuess } from '../text';
+import { classifyGuess, normalize } from '../text';
 import {
   addAction, appendPoints, emptyHistory, isValidAction, MAX_STROKE_POINTS, redo, undo,
   type DrawAction, type DrawingHistory, type Point,
@@ -101,6 +101,13 @@ const addChat = (s: PictionaryState, entry: Omit<ChatEntry, 'id'>): PictionarySt
 
 const addSystemChat = (s: PictionaryState, text: string): PictionaryState =>
   addChat(s, { kind: 'system', text });
+
+/** Token form used to detect a guess that embeds the word (punctuation treated as spaces). */
+const tokens = (t: string): string => ` ${normalize(t).replace(/[^\p{L}\p{N}]+/gu, ' ').trim()} `;
+const containsWord = (guess: string, word: string): boolean => {
+  const w = tokens(word);
+  return w.trim() !== '' && tokens(guess).includes(w);
+};
 
 const playerName = (room: Room, id: string): string => room.players.find((p) => p.id === id)?.name ?? id;
 
@@ -264,7 +271,7 @@ function onGuess(s: PictionaryState, by: string, text: unknown, ctx: Ctx): Resul
   const guess = text.trim();
   if (guess.length < 1 || guess.length > MAX_GUESS_LENGTH) return unchanged(s);
   const verdict = classifyGuess(guess, s.word, s.settings.closeDetection);
-  if (verdict === 'close') return { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] };
+  if (verdict === 'close' || (verdict === 'wrong' && containsWord(guess, s.word))) return { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] };
   if (verdict === 'wrong') return changed(addChat(s, { kind: 'guess', playerId: by, text: guess }));
   const elapsed = ctx.now - (s.drawStartedAt ?? ctx.now);
   const pts = guesserPoints(elapsed, s.settings.drawSeconds * 1000, s.found.length === 0);

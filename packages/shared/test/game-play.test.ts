@@ -66,6 +66,18 @@ describe('guessing', () => {
     expect(r.state.chat.at(-1)).toMatchObject({ kind: 'guess', playerId: 'B', text: 'voiture' });
     expect(r.effects).toEqual([{ type: 'state' }]);
   });
+  it.each([true, false])('guess embedding the word is never broadcast (closeDetection %s)', (closeDetection) => {
+    const room = mkRoom();
+    const s0 = drawing(room);
+    const s = { ...s0, settings: { ...s0.settings, closeDetection } };
+    for (const text of ['le chat', 'chat chat', "c'est un chat", 'Le CHAT!']) {
+      const r = reduce(s, { type: 'guess', by: 'B', text }, mkCtx(room, 3000));
+      expect(r.effects).toEqual([{ type: 'private', to: 'B', notice: 'close' }]);
+      expect(r.state.chat.some((c) => c.text.includes('chat'))).toBe(false);
+    }
+    const ok = reduce(s, { type: 'guess', by: 'B', text: 'chateau' }, mkCtx(room, 3000));
+    expect(ok.state.chat.at(-1)?.text).toBe('chateau');
+  });
   it('finder guesses are ignored', () => {
     const room = mkRoom();
     const b = run(drawing(room), { type: 'guess', by: 'B', text: 'chat' }, mkCtx(room, 3000));
@@ -208,7 +220,7 @@ describe('endTurn and effects', () => {
     const e = run(s, { type: 'playerLeft', playerId: 'A' }, mkCtx(room, 2000));
     expect(e.phase).toBe('turnEnd');
     expect(e.wordChoices).toEqual([]);
-    for (const id of ['A', 'B', 'C']) expect(viewFor(e, id, 2000).wordChoices).toBeNull();
+    for (const id of ['A', 'B', 'C']) expect(viewFor(e, id, 2000, 'A').wordChoices).toBeNull();
   });
   it('changed() effects are fresh arrays', () => {
     const room = mkRoom();
@@ -219,8 +231,18 @@ describe('endTurn and effects', () => {
 });
 
 describe('viewFor', () => {
+  it('only the host sees customWords; everyone gets the count', () => {
+    const s = drawing();
+    const withWords = { ...s, settings: { ...s.settings, customWords: ['zorglub', 'plouf'] } };
+    expect(viewFor(withWords, 'A', 0, 'A').settings.customWords).toEqual(['zorglub', 'plouf']);
+    const b = viewFor(withWords, 'B', 0, 'A');
+    expect(b.settings.customWords).toEqual([]);
+    expect(JSON.stringify(b)).not.toContain('zorglub');
+    expect(b.customWordsCount).toBe(2);
+    expect(viewFor(withWords, 'A', 0, null).settings.customWords).toEqual([]);
+  });
   it('guesser during drawing sees mask, no word, no choices', () => {
-    const v = viewFor(drawing(), 'B', 5000);
+    const v = viewFor(drawing(), 'B', 5000, 'A');
     expect(v.word).toBeNull();
     expect(v.mask).toEqual(['_', '_', '_', '_']);
     expect(v.wordChoices).toBeNull();
@@ -233,36 +255,36 @@ describe('viewFor', () => {
   it('drawer and finders see the word; others do not', () => {
     const room = mkRoom();
     const s = run(drawing(room, 'licorne'), { type: 'guess', by: 'B', text: 'licorne' }, mkCtx(room, 3000));
-    expect(viewFor(s, 'A', 0).word).toBe('licorne');
-    const b = viewFor(s, 'B', 0);
+    expect(viewFor(s, 'A', 0, 'A').word).toBe('licorne');
+    const b = viewFor(s, 'B', 0, 'A');
     expect(b.word).toBe('licorne');
     expect(b.hasFound).toBe(true);
     expect(b.found).toEqual(['B']);
-    expect(viewFor(s, 'C', 0).word).toBeNull();
-    expect(JSON.stringify(viewFor(s, 'C', 0))).not.toContain('licorne');
+    expect(viewFor(s, 'C', 0, 'A').word).toBeNull();
+    expect(JSON.stringify(viewFor(s, 'C', 0, 'A'))).not.toContain('licorne');
   });
   it('choosing: only the drawer gets choices, nobody gets a word or mask', () => {
     const s = run(initialState(), { type: 'start', by: 'A' }, mkCtx(mkRoom()));
-    expect(viewFor(s, 'A', 0).wordChoices).toHaveLength(3);
-    expect(viewFor(s, 'B', 0).wordChoices).toBeNull();
-    expect(viewFor(s, 'A', 0).word).toBeNull();
-    expect(viewFor(s, 'A', 0).mask).toBeNull();
+    expect(viewFor(s, 'A', 0, 'A').wordChoices).toHaveLength(3);
+    expect(viewFor(s, 'B', 0, 'A').wordChoices).toBeNull();
+    expect(viewFor(s, 'A', 0, 'A').word).toBeNull();
+    expect(viewFor(s, 'A', 0, 'A').mask).toBeNull();
   });
   it('turnEnd and gameOver reveal the word to everyone', () => {
     const room = mkRoom();
     const e = run(drawing(room), { type: 'timeout' }, mkCtx(room, 2000 + 80000));
-    const v = viewFor(e, 'C', 0);
+    const v = viewFor(e, 'C', 0, 'A');
     expect(v.word).toBe('chat');
     expect(v.mask).toEqual(['_', '_', '_', '_']);
     const over = run(e, { type: 'playerLeft', playerId: 'B' }, mkCtx(disconnect(disconnect(room, 'B'), 'C')));
     expect(over.phase).toBe('gameOver');
-    expect(viewFor(over, 'C', 0).word).toBeNull();
-    expect(viewFor(over, 'C', 0).mask).toBeNull();
+    expect(viewFor(over, 'C', 0, 'A').word).toBeNull();
+    expect(viewFor(over, 'C', 0, 'A').mask).toBeNull();
   });
   it('hintsLeft reflects revealed letters, floored at 0', () => {
     const s = { ...drawing(), revealed: [0, 1, 2] };
-    expect(viewFor(s, 'B', 0).hintsLeft).toBe(0);
-    expect(viewFor(s, 'B', 0).mask).toEqual(['c', 'h', 'a', '_']);
+    expect(viewFor(s, 'B', 0, 'A').hintsLeft).toBe(0);
+    expect(viewFor(s, 'B', 0, 'A').mask).toEqual(['c', 'h', 'a', '_']);
   });
 });
 
