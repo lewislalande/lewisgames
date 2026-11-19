@@ -72,8 +72,9 @@ describe('guessing', () => {
     const s = { ...s0, settings: { ...s0.settings, closeDetection } };
     for (const text of ['le chat', 'chat chat', "c'est un chat", 'Le CHAT!']) {
       const r = reduce(s, { type: 'guess', by: 'B', text }, mkCtx(room, 3000));
-      expect(r.effects).toEqual([{ type: 'private', to: 'B', notice: 'close' }]);
-      expect(r.state.chat.some((c) => c.text.includes('chat'))).toBe(false);
+      // With closeDetection off the guess is dropped silently: no chat line, no « tu chauffes ! ».
+      expect(r.effects).toEqual(closeDetection ? [{ type: 'private', to: 'B', notice: 'close' }] : []);
+      expect(r.state).toBe(s);
     }
     const ok = reduce(s, { type: 'guess', by: 'B', text: 'chateau' }, mkCtx(room, 3000));
     expect(ok.state.chat.at(-1)?.text).toBe('chateau');
@@ -110,6 +111,24 @@ describe('guessing', () => {
     expect(b.phase).toBe('drawing');
     room = disconnect(room, 'C');
     expect(run(b, { type: 'playerLeft', playerId: 'C' }, mkCtx(room, 4000)).phase).toBe('turnEnd');
+  });
+  it('drawer points stay within 100 when a finder disconnected before the turn ended', () => {
+    let room = mkRoom();
+    let s = run(drawing(room), { type: 'guess', by: 'B', text: 'chat' }, mkCtx(room, 3000));
+    room = disconnect(room, 'B');
+    s = run(s, { type: 'playerLeft', playerId: 'B' }, mkCtx(room, 3500));
+    s = run(s, { type: 'guess', by: 'C', text: 'chat' }, mkCtx(room, 4000));
+    expect(s.phase).toBe('turnEnd');
+    expect(s.turnPoints.A).toBe(100);
+  });
+  it('drawer points count a disconnected finder as a guesser', () => {
+    let room = { ...mkRoom(), players: ['A', 'B', 'C', 'D'].map((id, i) => ({ id, name: id, connected: true, joinedAt: i })) };
+    let s = run(drawing(room), { type: 'guess', by: 'B', text: 'chat' }, mkCtx(room, 3000));
+    room = disconnect(room, 'B');
+    s = run(s, { type: 'playerLeft', playerId: 'B' }, mkCtx(room, 3500));
+    s = run(s, { type: 'timeout' }, mkCtx(room, 2000 + 80000));
+    // 1 finder out of {B (gone, found), C, D}
+    expect(s.turnPoints.A).toBe(33);
   });
   it('chat keeps the last 100 entries', () => {
     const room = mkRoom();

@@ -213,8 +213,10 @@ function startDrawing(s: PictionaryState, index: number, ctx: Ctx): Result {
 
 function endTurn(s: PictionaryState, ctx: Ctx): Result {
   const drawer = s.drawerId!;
-  const guessers = connectedPlayers(ctx.room).filter((p) => p.id !== drawer).length;
-  const pts = drawerPoints(s.found.length, guessers);
+  // Guessers = connected non-drawers plus finders who have since left, so found ≤ guessers.
+  const guessers = new Set(connectedPlayers(ctx.room).filter((p) => p.id !== drawer).map((p) => p.id));
+  for (const f of s.found) guessers.add(f.playerId);
+  const pts = drawerPoints(s.found.length, guessers.size);
   let next: PictionaryState = {
     ...s,
     phase: 'turnEnd',
@@ -275,7 +277,11 @@ function onGuess(s: PictionaryState, by: string, text: unknown, ctx: Ctx): Resul
   const guess = text.trim();
   if (guess.length < 1 || guess.length > MAX_GUESS_LENGTH) return unchanged(s);
   const verdict = classifyGuess(guess, s.word, s.settings.closeDetection);
-  if (verdict === 'close' || (verdict === 'wrong' && containsWord(guess, s.word))) return { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] };
+  if (verdict === 'close') return { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] };
+  if (verdict === 'wrong' && containsWord(guess, s.word)) {
+    // Never broadcast a guess that spells the word; without close detection, drop it silently.
+    return s.settings.closeDetection ? { state: s, effects: [{ type: 'private', to: by, notice: 'close' }] } : unchanged(s);
+  }
   if (verdict === 'wrong') return changed(addChat(s, { kind: 'guess', playerId: by, text: guess }));
   const elapsed = ctx.now - (s.drawStartedAt ?? ctx.now);
   const pts = guesserPoints(elapsed, s.settings.drawSeconds * 1000, s.found.length === 0);

@@ -1,3 +1,5 @@
+import { normalize } from '../text';
+
 export type PictionarySettings = {
   rounds: number;
   drawSeconds: number;
@@ -47,9 +49,12 @@ function cleanWords(v: unknown): string[] {
   const out: string[] = [];
   for (const w of v) {
     if (typeof w !== 'string') continue;
-    const t = w.trim();
-    if (!t || t.length > MAX_WORD_LENGTH || seen.has(t)) continue;
-    seen.add(t);
+    const t = w.normalize('NFC').trim();
+    if (!t || t.length > MAX_WORD_LENGTH) continue;
+    // Same key as guess matching: "Éléphant" and "elephant" are one word (first spelling kept).
+    const key = normalize(t);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
     out.push(t);
     if (out.length >= MAX_CUSTOM_WORDS) break;
   }
