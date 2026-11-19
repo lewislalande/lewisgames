@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
-import type { ClientMsg, DrawOp, ServerMsg } from '@kg/shared';
+import type { ClientMsg, DrawOp, ErrorCode, ServerMsg } from '@kg/shared';
 import { getToken } from './identity';
 
 export type StateMsg = Extract<ServerMsg, { t: 'state' }>;
 export type PictionaryStateMsg = Extract<StateMsg, { kind: 'pictionary' }>;
+export type QuizStateMsg = Extract<StateMsg, { kind: 'quiz' }>;
 type Status = 'connecting' | 'open' | 'closed';
 
 export type RoomSocket = {
@@ -14,6 +15,9 @@ export type RoomSocket = {
   send(m: ClientMsg): void;
   onDraw(cb: (op: DrawOp) => void): () => void;
   onNotice(cb: (n: 'close' | 'correct') => void): () => void;
+  /** Errors that leave the socket open (a refused action, e.g. no_questions). */
+  onError(cb: (code: ErrorCode) => void): () => void;
+  /** A fatal error: the server closed the socket for good. */
   error: string | null;
 };
 
@@ -32,6 +36,7 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
   const wsRef = useRef<WebSocket | null>(null);
   const drawCbs = useRef(new Set<(op: DrawOp) => void>());
   const noticeCbs = useRef(new Set<(n: 'close' | 'correct') => void>());
+  const errorCbs = useRef(new Set<(code: ErrorCode) => void>());
 
   useEffect(() => {
     let disposed = false;
@@ -74,6 +79,7 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
           case 'notice': noticeCbs.current.forEach((cb) => cb(m.notice)); break;
           case 'error':
             if (FATAL_ERRORS.includes(m.code)) { fatal = true; setError(m.code); }
+            else errorCbs.current.forEach((cb) => cb(m.code));
             break;
         }
       };
@@ -130,5 +136,10 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
     return () => { noticeCbs.current.delete(cb); };
   }, []);
 
-  return { status, playerId, state, send, onDraw, onNotice, error };
+  const onError = useCallback((cb: (code: ErrorCode) => void) => {
+    errorCbs.current.add(cb);
+    return () => { errorCbs.current.delete(cb); };
+  }, []);
+
+  return { status, playerId, state, send, onDraw, onNotice, onError, error };
 }

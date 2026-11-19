@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, SETTING_RANGES, clampSettings } from '@kg/shared';
 import type { ClientMsg, NumericSettingKey, PictionarySettings } from '@kg/shared';
 import type { PictionaryStateMsg } from '../lib/socket';
-import { avatarColor } from './Scoreboard';
+import { CodeHeader } from '../room/CodeHeader';
+import { LobbyPlayers } from '../room/LobbyPlayers';
+import { NumberField } from '../room/NumberField';
 
 const SETTINGS_KEY = 'kg.pictionarySettings';
 
@@ -43,7 +45,6 @@ export function Lobby({ code, state, playerId, send }: Props) {
   const wordsTouched = useRef(false);
   const [wordsText, setWordsText] = useState('');
   const [replaceText, setReplaceText] = useState('');
-  const [copied, setCopied] = useState(false);
 
   // Host with saved settings: push them once on lobby entry.
   useEffect(() => {
@@ -107,17 +108,6 @@ export function Lobby({ code, state, playerId, send }: Props) {
     commit({ ...latest.current, customWords: splitWords(text) }, true);
   }
 
-  async function copy() {
-    const url = `${location.origin}/pictionary/${code}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt('Copie ce lien :', url);
-    }
-  }
-
   const connected = state.players.filter((p) => p.connected).length;
   // Mirrors pickChoices: 'only' with fewer words than choices falls back to the default list.
   const tooFewCustom = server.customWordsMode === 'only' && state.game.customWordsCount < server.wordChoices;
@@ -125,36 +115,11 @@ export function Lobby({ code, state, playerId, send }: Props) {
 
   return (
     <div className="lobby">
-      <header className="lobby-head">
-        <div>
-          <p className="muted">Code de la salle</p>
-          <div className="code-tiles" aria-label={`Code ${code}`}>
-            {code.split('').map((c, i) => (
-              <span key={i} className="tile">{c}</span>
-            ))}
-          </div>
-        </div>
-        <button className="btn" onClick={copy}>{copied ? 'Lien copié' : 'Copier le lien'}</button>
-      </header>
+      <CodeHeader code={code} game="pictionary" />
 
       <div className="lobby-grid">
         <div className="lobby-side">
-          <section className="card players">
-            <h2>Joueurs ({state.players.length}/{server.maxPlayers})</h2>
-            <ul className="player-list">
-              {state.players.map((p) => (
-                <li key={p.id} className={`${p.connected ? '' : 'away'}${p.id === playerId ? ' me' : ''}`}>
-                  <span className="avatar" style={{ background: avatarColor(p.id) }} aria-hidden="true">{[...p.name][0]?.toUpperCase()}</span>
-                  <span className="player-name">
-                    {p.id === state.hostId && <span className="crown" title="Hôte" aria-label="Hôte">♛</span>}
-                    {p.name}
-                    {p.id === playerId && <span className="you"> (toi)</span>}
-                    {!p.connected && <span className="you"> (absent)</span>}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          <LobbyPlayers players={state.players} hostId={state.hostId} playerId={playerId} maxPlayers={server.maxPlayers} />
           <footer className="lobby-foot">
             {isHost ? (
               <>
@@ -242,51 +207,5 @@ export function Lobby({ code, state, playerId, send }: Props) {
       </div>
 
     </div>
-  );
-}
-
-function NumberField({ label, unit, range, value, onCommit }: {
-  label: string;
-  unit?: string;
-  range: [number, number];
-  value: number;
-  onCommit: (v: number) => void;
-}) {
-  const [text, setText] = useState(String(value));
-  const [focused, setFocused] = useState(false);
-  useEffect(() => {
-    if (!focused) setText(String(value));
-  }, [value, focused]);
-  const [min, max] = range;
-  return (
-    <label className="row">
-      <span className="field-label">{label}</span>
-      <span className="num">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          value={text}
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setFocused(false);
-            const n = Number(text);
-            if (text.trim() === '' || !Number.isFinite(n)) setText(String(value));
-            else {
-              const c = Math.min(max, Math.max(min, Math.round(n)));
-              setText(String(c));
-              if (c !== value) onCommit(c);
-            }
-          }}
-          onChange={(e) => {
-            setText(e.target.value);
-            const n = Number(e.target.value);
-            if (e.target.value.trim() !== '' && Number.isFinite(n) && n >= min && n <= max && Number.isInteger(n)) onCommit(n);
-          }}
-        />
-        <small>{unit ?? ''}</small>
-      </span>
-    </label>
   );
 }

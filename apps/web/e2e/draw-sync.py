@@ -65,7 +65,7 @@ def main():
             pg.on('pageerror', lambda e, who=who: failures.append(f'{who} page error: {e}'))
 
         a.goto(args.base + '/')
-        a.get_by_role('button', name='Créer une salle').click()
+        a.locator('.game-pictionary').get_by_role('button', name='Créer une salle').click()
         a.wait_for_url('**/pictionary/*')
         url = a.url
         print('room', url)

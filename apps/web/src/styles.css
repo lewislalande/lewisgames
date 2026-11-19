@@ -159,20 +159,24 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--mint); }
 }
 .logo span { color: var(--mint); }
 .tagline { font-size: 1.25rem; font-weight: 800; max-width: 34ch; margin: 1rem 0 2.75rem; text-shadow: 0 2px 0 rgb(27 16 53 / .45); }
-.games { display: grid; grid-template-columns: 1.35fr 1fr; gap: 2rem; align-items: start; }
-.card-game { position: relative; margin-top: 18px; padding-top: 1.75rem; }
-.card-game h2, .card-soon h2 {
+.games { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: stretch; }
+.card-game { position: relative; margin-top: 18px; padding-top: 1.75rem; display: flex; flex-direction: column; align-items: flex-start; }
+.card-game p { flex: 1; }
+.card-game h2 {
   display: block; background: none; border: 0; padding: 0; letter-spacing: .02em;
   font-size: 2.2rem; text-transform: uppercase; color: var(--mint);
   text-shadow: 0 3px 0 var(--ink);
 }
-.card-game .btn-primary { margin: .5rem 0 1.4rem; }
-.card-soon { margin-top: 18px; background: rgb(44 15 99 / .55); border-style: dashed; box-shadow: none; }
-.card-soon h2 { color: var(--lilac); text-shadow: none; }
-.card-soon p { color: var(--lilac); }
+.card-game .btn-primary { margin: .5rem 0 0; }
+.card-game .error { margin: .9rem 0 0; }
+.game-quiz h2 { color: var(--sun); }
+.game-quiz .btn-primary { background: var(--sun); }
 .badge { display: inline-block; font-weight: 900; color: var(--ink); background: var(--sun); border: var(--line); border-radius: 999px; padding: .1rem .9rem; }
-.join { border-top: 3px dashed rgb(27 16 53 / .55); padding-top: 1rem; }
-.join-row { display: flex; gap: .6rem; margin-top: .4rem; }
+.join-card { margin-top: 2rem; display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1.25rem; padding: 1rem 1.25rem; }
+.join-card > label { font-size: 1.15rem; font-weight: 900; text-transform: uppercase; letter-spacing: .05em; }
+.join-card .join-row { margin: 0; }
+.join-card .error { flex-basis: 100%; margin: 0; }
+.join-row { display: flex; gap: .6rem; }
 .code-input { text-transform: uppercase; letter-spacing: .3em; font-weight: 900; font-size: 1.25rem; text-align: center; max-width: 9.5rem; }
 
 /* Name prompt / errors */
@@ -237,6 +241,28 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--mint); }
 .lobby-foot .btn-big { width: 100%; padding-inline: 1rem; }
 .lobby-foot .muted { margin-top: .9rem; color: #fff; font-weight: 800; }
 .lobby-foot > .muted:only-child { background: rgb(44 15 99 / .55); border: 3px dashed var(--ink); border-radius: var(--r-md); padding: .8rem 1rem; margin: 0; }
+.lobby-foot .error { margin: 0 0 1rem; text-align: left; }
+.banner-error { background: var(--rose); color: #fff; }
+
+/* Quiz lobby: theme chips */
+.themes { margin-top: .6rem; display: flex; flex-direction: column; gap: .5rem; border-top: 2px dashed rgb(27 16 53 / .35); padding-top: .7rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+.chip {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font: 800 .95rem var(--font); color: #fff;
+  background: var(--plum-deep);
+  border: 2.5px solid var(--ink); border-radius: 999px;
+  padding: .3rem .8rem; cursor: pointer;
+  box-shadow: var(--drop-sm);
+  transition: transform .06s, box-shadow .06s;
+}
+.chip:hover:not(:disabled) { filter: brightness(1.15); }
+.chip[aria-pressed='true'] { background: var(--sun); color: var(--ink); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.chip:disabled { cursor: not-allowed; }
+.chip-count { font-size: .78rem; font-weight: 900; padding: 0 .4rem; border-radius: 999px; background: rgb(27 16 53 / .35); color: inherit; }
+.chip[aria-pressed='true'] .chip-count { background: rgb(27 16 53 / .15); }
+.available { margin: .2rem 0 0; color: var(--lilac); font-weight: 800; }
+.quiz-placeholder { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; max-width: 1000px; margin: 0 auto; align-items: start; }
 
 /* ---------------------------------------------------------------- Game screen */
 .room.wide { max-width: none; }
@@ -571,6 +597,7 @@ input[type='range']::-moz-range-thumb {
 
 @media (max-width: 760px) {
   .games, .lobby-grid { grid-template-columns: 1fr; }
+  .games { gap: 0; }
   .tile { width: 2.8rem; height: 3.5rem; font-size: 2rem; }
 }
 

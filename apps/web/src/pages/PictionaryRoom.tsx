@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { getName, setName } from '../lib/identity';
+import { RoomError, WrongGame } from '../room/RoomError';
+import { RoomPage } from '../room/RoomPage';
 import { useRoomSocket } from '../lib/socket';
 import { Lobby } from '../pictionary/Lobby';
 import { Scoreboard } from '../pictionary/Scoreboard';
@@ -13,64 +14,11 @@ import { WordChoice } from '../pictionary/WordChoice';
 import { TurnEnd } from '../pictionary/TurnEnd';
 import { GameOver } from '../pictionary/GameOver';
 
-const ERRORS: Record<string, string> = {
-  room_full: 'Cette salle est pleine.',
-  not_found: "Cette salle n'existe pas.",
-  bad_name: 'Ce pseudo est invalide (1 à 20 caractères).',
-  bad_token: 'Ton identifiant de joueur est invalide. Recharge la page.',
-  bad_message: 'Une erreur est survenue. Recharge la page.',
-};
-
-export function RoomError({ error, onChangeName }: { error: string; onChangeName?: () => void }) {
-  return (
-    <main className="narrow">
-      <div className="card">
-        <h1 className="title-sm">Oups</h1>
-        <p className="error" role="alert">{ERRORS[error] ?? ERRORS.bad_message}</p>
-        {error === 'bad_name' && onChangeName && (
-          <button className="btn" onClick={onChangeName}>Changer de pseudo</button>
-        )}
-        <a className="btn btn-primary" href="/">Retour à l'accueil</a>
-      </div>
-    </main>
-  );
-}
-
 export function PictionaryRoom({ code }: { code: string }) {
-  const [name, setNameState] = useState<string | null>(getName());
-  if (!name) {
-    return (
-      <NamePrompt
-        code={code}
-        onSubmit={(n) => {
-          setName(n);
-          setNameState(getName());
-        }}
-      />
-    );
-  }
-  return <Connected code={code} name={name} onChangeName={() => setNameState(null)} />;
-}
-
-function NamePrompt({ code, onSubmit }: { code: string; onSubmit: (n: string) => void }) {
-  const [value, setValue] = useState('');
   return (
-    <main className="narrow">
-      <form
-        className="card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (value.trim()) onSubmit(value);
-        }}
-      >
-        <h1 className="title-sm">Salle {code}</h1>
-        <label htmlFor="pseudo">Choisis ton pseudo</label>
-        <input id="pseudo" className="text-input" value={value} maxLength={20} autoFocus autoComplete="off" onChange={(e) => setValue(e.target.value)} />
-        <button className="btn btn-primary" type="submit" disabled={!value.trim()}>
-          Entrer dans la salle
-        </button>
-      </form>
-    </main>
+    <RoomPage code={code} game="pictionary">
+      {(name, onChangeName) => <Connected code={code} name={name} onChangeName={onChangeName} />}
+    </RoomPage>
   );
 }
 
@@ -93,8 +41,8 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
     );
   }
 
-  // A quiz room opened through a Pictionary link.
-  if (state.kind !== 'pictionary') return <RoomError error="not_found" />;
+  // A quiz room opened through a Pictionary link (RoomPage normally catches it before joining).
+  if (state.kind !== 'pictionary') return <WrongGame code={code} expected="pictionary" actual={state.kind} />;
   const game = state.game;
   const drawerName = game.drawerId ? names[game.drawerId] ?? null : null;
   const playing = game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd';

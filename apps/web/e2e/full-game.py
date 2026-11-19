@@ -77,7 +77,7 @@ def main():
         everyone = list(pages.values())
 
         a.goto(args.base + '/')
-        a.get_by_role('button', name='Créer une salle').click()
+        a.locator('.game-pictionary').get_by_role('button', name='Créer une salle').click()
         a.wait_for_url('**/pictionary/*')
         url = a.url
         for n in ('Bob', 'Carol'):
