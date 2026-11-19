@@ -1,0 +1,747 @@
+{
+  "questions": [
+    {
+      "theme": "Musique",
+      "question": "Quelle chanson a été la plus écoutée sur Spotify dans le monde en 2023 ?",
+      "answer": "Flowers (Miley Cyrus)",
+      "variants": [
+        "Flowers",
+        "Miley Cyrus - Flowers",
+        "Flowers de Miley Cyrus"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Selon le Guinness World Records, quel Pokémon, aux airs de rhinocéros, fut le tout premier Pokémon créé ?",
+      "answer": "Rhinoféros",
+      "variants": [
+        "Rhydon"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Comment s'appelle le personnage principal de « GTA IV » ?",
+      "answer": "Niko Bellic",
+      "variants": [
+        "Niko",
+        "Nico Bellic",
+        "Bellic"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Dans Minecraft, quel matériau venu du Nether permet de fabriquer un équipement encore meilleur que le diamant ?",
+      "answer": "Netherite",
+      "variants": [
+        "Lingot de netherite",
+        "La netherite"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Dans quel monde se déroule « World of Warcraft » ?",
+      "answer": "Azeroth",
+      "variants": []
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Dans quel jeu Yoshi fait-il sa toute première apparition ?",
+      "answer": "Super Mario World",
+      "variants": [
+        "Mario World",
+        "Super Mario World (1990)"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Dans « Call of Duty 4: Modern Warfare » (2007), quel soldat du SAS, sous les ordres du capitaine Price, le joueur incarne-t-il ?",
+      "answer": "Soap MacTavish",
+      "variants": [
+        "Soap",
+        "John MacTavish",
+        "MacTavish",
+        "John « Soap » MacTavish"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Citez un combattant de « Super Smash Bros. Ultimate » issu de la série Kid Icarus.",
+      "answer": "Pit",
+      "variants": [
+        "Palutena",
+        "Pit maléfique",
+        "Dark Pit"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Combien d'étoiles faut-il récolter pour compléter à 100 % « Super Mario 64 » ?",
+      "answer": "120",
+      "variants": [
+        "120 étoiles",
+        "Cent vingt"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Quelle ville de Fortnite, hérissée de gratte-ciel et célèbre pour ses atterrissages chaotiques, est le lieu le plus emblématique du jeu ?",
+      "answer": "Tilted Towers",
+      "variants": [
+        "Tilted"
+      ]
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "Dans la plupart des jeux « The Legend of Zelda », comment s'appelle la Sheikah, garde du corps et nourrice de la princesse Zelda ?",
+      "answer": "Impa",
+      "variants": []
+    },
+    {
+      "theme": "Jeux vidéo",
+      "question": "D'après les chiffres de fin septembre 2026, quelle console reste la plus vendue de l'histoire, juste devant la Nintendo Switch ?",
+      "answer": "PlayStation 2",
+      "variants": [
+        "PS2",
+        "La PS2",
+        "La PlayStation 2"
+      ]
+    },
+    {
+      "theme": "League of Legends",
+      "question": "Après les 17 champions de l'alpha (février 2009), deux champions ont été les premiers ajoutés à League of Legends, en avril 2009. Citez-en un.",
+      "answer": "Singed",
+      "variants": [
+        "Zilean"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Quelle échelle mesure la force (le piquant) des piments ?",
+      "answer": "Échelle de Scoville",
+      "variants": [
+        "Scoville",
+        "L'échelle de Scoville"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Quelle est, en volume, la boisson alcoolisée la plus consommée en Belgique ?",
+      "answer": "La bière",
+      "variants": [
+        "Bière",
+        "Les bières"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "La soupe thaïe tom yam est surtout célèbre dans sa version « tom yam kung » : avec quel ingrédient principal ?",
+      "answer": "Crevettes",
+      "variants": [
+        "Les crevettes",
+        "Crevette",
+        "Gambas"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Selon la réglementation européenne, le « vin » ne peut provenir que de la fermentation d'un seul fruit : lequel ?",
+      "answer": "Le raisin",
+      "variants": [
+        "Raisin",
+        "Raisins",
+        "Raisin frais"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Comment s'appelle la science qui étudie le vin et sa fabrication ?",
+      "answer": "Œnologie",
+      "variants": [
+        "Oenologie",
+        "L'œnologie",
+        "L'oenologie"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Comment s'appelle la science qui identifie et décrit les cépages en observant leurs feuilles, leurs grappes et leurs baies ?",
+      "answer": "Ampélographie",
+      "variants": [
+        "L'ampélographie"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Rouge, rosé, blanc… comment appelle-t-on la « quatrième couleur » du vin, un blanc vinifié avec ses peaux comme un rouge ?",
+      "answer": "Vin orange",
+      "variants": [
+        "Orange",
+        "Le vin orange"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Comment appelle-t-on le vin obtenu en pressant le marc, une fois le vin de goutte écoulé ?",
+      "answer": "Vin de presse",
+      "variants": [
+        "Le vin de presse"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Selon l'OIV, quel pays affichait en 2020 la plus forte consommation de vin par habitant au monde (micro-États comme le Vatican non classés, désolé pour eux) ?",
+      "answer": "Portugal",
+      "variants": [
+        "Le Portugal"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Citez un type de verre utilisé pour servir le vin ou le champagne.",
+      "answer": "Flûte",
+      "variants": [
+        "Flûte à champagne",
+        "Ballon",
+        "Verre ballon",
+        "Coupe",
+        "INAO",
+        "Verre INAO",
+        "Impitoyable",
+        "Tulipe",
+        "Verre à bordeaux",
+        "Verre à bourgogne"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "Quel pays a été le premier producteur mondial de vin en 2023 ?",
+      "answer": "France",
+      "variants": [
+        "La France"
+      ]
+    },
+    {
+      "theme": "Cuisine & gastronomie",
+      "question": "En 2023, quel était le cépage le plus planté de France ?",
+      "answer": "Merlot",
+      "variants": [
+        "Le merlot",
+        "Merlot noir"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Dans le film « Mr. & Mrs. Smith » (2005), quel couple d'acteurs incarne deux tueurs à gages mariés, qui travaillent pour des agences rivales ?",
+      "answer": "Brad Pitt et Angelina Jolie",
+      "variants": [
+        "Brad Pitt & Angelina Jolie",
+        "Angelina Jolie et Brad Pitt",
+        "Pitt et Jolie",
+        "Brangelina"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Citez un des six acteurs principaux de la série « Friends ».",
+      "answer": "Jennifer Aniston",
+      "variants": [
+        "Courteney Cox",
+        "Lisa Kudrow",
+        "Matt LeBlanc",
+        "Matthew Perry",
+        "David Schwimmer",
+        "Matt Perry"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Dans « La Petite Sirène » de Disney, comment s'appelle le crabe ?",
+      "answer": "Sébastien",
+      "variants": [
+        "Sebastian"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Quelle série a rendu Will Smith célèbre au début des années 1990 ?",
+      "answer": "Le Prince de Bel-Air",
+      "variants": [
+        "Prince de Bel-Air",
+        "The Fresh Prince of Bel-Air",
+        "Fresh Prince"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Dans « Star Wars », à quelle espèce appartient Chewbacca ?",
+      "answer": "Wookie",
+      "variants": [
+        "Wookiee",
+        "Un Wookie",
+        "Wookies"
+      ]
+    },
+    {
+      "theme": "Littérature & BD",
+      "question": "Dans « Harry Potter et la Chambre des secrets », quelle créature Harry affronte-t-il au fond de la Chambre ?",
+      "answer": "Le Basilic",
+      "variants": [
+        "Basilic",
+        "Un basilic"
+      ]
+    },
+    {
+      "theme": "Littérature & BD",
+      "question": "Quel roman espagnol paru en 1605 est souvent cité comme le roman le plus vendu de l'histoire ?",
+      "answer": "Don Quichotte",
+      "variants": [
+        "Don Quijote",
+        "Don Quixote",
+        "L'Ingénieux Hidalgo Don Quichotte de la Manche"
+      ]
+    },
+    {
+      "theme": "Littérature & BD",
+      "question": "Le Marsupilami a trois petits : citez le nom de l'un d'eux.",
+      "answer": "Bibi",
+      "variants": [
+        "Bibu",
+        "Bobo"
+      ]
+    },
+    {
+      "theme": "Littérature & BD",
+      "question": "Citez un des copains de classe de Titeuf.",
+      "answer": "Manu",
+      "variants": [
+        "François",
+        "Hugo",
+        "Jean-Claude",
+        "Vomito",
+        "Nadia",
+        "Dumbo",
+        "Ramatou",
+        "Puduk",
+        "Romuald"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « Naruto », quel village caché Orochimaru a-t-il fondé ?",
+      "answer": "Village caché du Son",
+      "variants": [
+        "Village du Son",
+        "Le village caché du Son",
+        "Otogakure",
+        "Oto",
+        "Le Son"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « One Piece », dans quelle ville Gol D. Roger a-t-il été exécuté ?",
+      "answer": "Loguetown",
+      "variants": [
+        "Logue Town",
+        "Logtown",
+        "Log Town"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « Naruto », comment s'appelle la série de romans coquins écrite par Jiraiya, que Kakashi lit sans arrêt ?",
+      "answer": "Le Paradis du batifolage",
+      "variants": [
+        "Paradis du batifolage",
+        "Icha Icha",
+        "Icha Icha Paradise"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « Yu-Gi-Oh! », quel duelliste jette à la mer les cartes Exodia de Yugi, sur le bateau qui mène à l'île de Pegasus ?",
+      "answer": "Insector Haga",
+      "variants": [
+        "Haga",
+        "Insector",
+        "Weevil Underwood"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « One Piece », qui a confié son chapeau de paille à Luffy ?",
+      "answer": "Shanks",
+      "variants": [
+        "Shanks le Roux",
+        "Le Roux"
+      ]
+    },
+    {
+      "theme": "Mangas & animés",
+      "question": "Dans « One Piece », citez un des trois amiraux de la Marine avant l'ellipse.",
+      "answer": "Akainu",
+      "variants": [
+        "Kizaru",
+        "Aokiji",
+        "Sakazuki",
+        "Borsalino",
+        "Kuzan"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Oggy et les Cafards », citez un des trois cafards.",
+      "answer": "Joey",
+      "variants": [
+        "Marky",
+        "Dee Dee",
+        "Didi"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Foot 2 rue », comment s'appelle l'équipe des héros ?",
+      "answer": "Les Bleus de Port-Marie",
+      "variants": [
+        "Bleus de Port-Marie",
+        "Les Bleus",
+        "Les Blues de Port-Marie"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans le dessin animé « La Famille Pirate », sur quelle île vivent les McBernik ?",
+      "answer": "L'île de la Tortue",
+      "variants": [
+        "Île de la Tortue",
+        "La Tortue"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Code Lyoko », que doit faire Aelita sur Lyoko pour stopper une attaque de XANA ?",
+      "answer": "Désactiver la tour",
+      "variants": [
+        "Désactiver une tour",
+        "Désactiver la tour activée",
+        "Entrer le code Lyoko"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Quelle activité extrascolaire pratique Kim Possible au lycée ?",
+      "answer": "Pom-pom girl",
+      "variants": [
+        "Cheerleader",
+        "Cheerleading",
+        "Pom-pom girls"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Martin Matin », comment s'appelle le meilleur ami de Martin ?",
+      "answer": "Gromo",
+      "variants": [
+        "Grosmot"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Les Ratz », où vivent les deux rats Razmo et Rapido ?",
+      "answer": "Sur un cargo",
+      "variants": [
+        "Un cargo",
+        "Un bateau",
+        "Un navire marchand",
+        "Dans la cale d'un cargo",
+        "Un bateau de marchandises"
+      ]
+    },
+    {
+      "theme": "Dessins animés",
+      "question": "Dans « Totally Spies! », de quelle couleur est la combinaison de Sam ?",
+      "answer": "Verte",
+      "variants": [
+        "Vert"
+      ]
+    },
+    {
+      "theme": "Cinéma & séries",
+      "question": "Citez un des quatre Teletubbies.",
+      "answer": "Tinky Winky",
+      "variants": [
+        "Dipsy",
+        "Laa-Laa",
+        "Lala",
+        "Po"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quel composant est considéré comme le « cerveau » d'un ordinateur ?",
+      "answer": "Le processeur",
+      "variants": [
+        "Processeur",
+        "CPU",
+        "Microprocesseur",
+        "Unité centrale de traitement"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quel sigle anglais désigne la mémoire morte, non volatile, d'un ordinateur ?",
+      "answer": "ROM",
+      "variants": [
+        "Read-Only Memory"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Que signifie le sigle BIOS ?",
+      "answer": "Basic Input/Output System",
+      "variants": [
+        "Système d'entrées/sorties de base"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quel périphérique permet de relier un ordinateur à un réseau via une ligne téléphonique analogique ?",
+      "answer": "Modem",
+      "variants": [
+        "Un modem",
+        "Modulateur-démodulateur"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quelle unité, déclinée en kilo, méga, giga ou téra, mesure la capacité de stockage d'un disque dur ?",
+      "answer": "L'octet",
+      "variants": [
+        "Octet",
+        "Octets",
+        "Byte",
+        "Gigaoctet",
+        "Go"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quelle technologie sans fil de courte portée, qui relie souris, casques et manettes à un PC, doit son nom au surnom d'un roi viking ?",
+      "answer": "Bluetooth",
+      "variants": []
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Comment s'appelle la carte principale d'un PC, sur laquelle on branche le processeur, la RAM et la carte graphique ?",
+      "answer": "La carte mère",
+      "variants": [
+        "Carte mère",
+        "Motherboard"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quel appareil permet de numériser des images ou des documents papier ?",
+      "answer": "Un scanner",
+      "variants": [
+        "Scanner",
+        "Scanneur",
+        "Numériseur"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Sous quelle forme la plupart des informations d'un ordinateur sont-elles stockées et transmises ?",
+      "answer": "En binaire",
+      "variants": [
+        "Binaire",
+        "Code binaire",
+        "0 et 1",
+        "Suites de 0 et de 1",
+        "Bits"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Sur quel type de support sont soudés les composants électroniques d'une carte mère ou d'une barrette de RAM ?",
+      "answer": "Un circuit imprimé",
+      "variants": [
+        "Circuit imprimé",
+        "PCB",
+        "Carte de circuit imprimé"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Comment s'intitule la toute première vidéo publiée sur YouTube, en avril 2005 ?",
+      "answer": "Me at the zoo",
+      "variants": [
+        "Me at zoo"
+      ]
+    },
+    {
+      "theme": "Informatique & Internet",
+      "question": "Quel gala de boxe entre streamers, organisé par l'Espagnol Ibai, a battu en juillet 2025 le record de spectateurs simultanés sur Twitch ?",
+      "answer": "La Velada del Año",
+      "variants": [
+        "Velada del Año",
+        "La Velada",
+        "Velada",
+        "La Velada del Año 5",
+        "La Velada del Año V"
+      ]
+    },
+    {
+      "theme": "Sport",
+      "question": "Quel entraîneur, resté plus de 40 ans sur le banc de l'AJ Auxerre (1961-2005), détient le record de longévité à la tête d'un club français ?",
+      "answer": "Guy Roux",
+      "variants": [
+        "Roux"
+      ]
+    },
+    {
+      "theme": "Sport",
+      "question": "Au curling, comment s'appelle l'instrument que les joueurs frottent sur la glace devant la pierre ?",
+      "answer": "Le balai",
+      "variants": [
+        "Balai",
+        "Brosse",
+        "Balai-brosse"
+      ]
+    },
+    {
+      "theme": "Sport",
+      "question": "À l'issue de l'édition 2023, quelle nation a remporté le plus de Coupes du monde de rugby masculines ?",
+      "answer": "Afrique du Sud",
+      "variants": [
+        "L'Afrique du Sud",
+        "Springboks",
+        "Les Springboks"
+      ]
+    },
+    {
+      "theme": "Sport",
+      "question": "Quelle équipe a remporté le titre NBA en 2023 ?",
+      "answer": "Denver Nuggets",
+      "variants": [
+        "Nuggets",
+        "Les Nuggets",
+        "Nuggets de Denver",
+        "Denver"
+      ]
+    },
+    {
+      "theme": "Sport",
+      "question": "Quelle est la prise de finition signature du catcheur Batista à la WWE ?",
+      "answer": "Batista Bomb",
+      "variants": [
+        "Powerbomb",
+        "Sitout powerbomb"
+      ]
+    },
+    {
+      "theme": "Géographie",
+      "question": "Combien de cantons compte la Suisse (en comptant les six anciens demi-cantons) ?",
+      "answer": "26",
+      "variants": [
+        "26 cantons",
+        "Vingt-six"
+      ]
+    },
+    {
+      "theme": "Géographie",
+      "question": "Dans quel pays se trouve le Taj Mahal ?",
+      "answer": "Inde",
+      "variants": [
+        "L'Inde"
+      ]
+    },
+    {
+      "theme": "Histoire",
+      "question": "Quel est le plus célèbre roi des Huns, surnommé le « fléau de Dieu » ?",
+      "answer": "Attila",
+      "variants": [
+        "Attila le Hun"
+      ]
+    },
+    {
+      "theme": "Histoire",
+      "question": "Quel dieu égyptien à tête de faucon, fils d'Isis et d'Osiris, est le protecteur des pharaons ?",
+      "answer": "Horus",
+      "variants": []
+    },
+    {
+      "theme": "Histoire",
+      "question": "Quel peintre a représenté le bombardement de la ville basque de Guernica (1937) dans une toile monumentale ?",
+      "answer": "Pablo Picasso",
+      "variants": [
+        "Picasso"
+      ]
+    },
+    {
+      "theme": "Culture générale",
+      "question": "Selon la Bible, quelle arme David utilise-t-il pour vaincre le géant Goliath ?",
+      "answer": "Une fronde",
+      "variants": [
+        "Fronde",
+        "Une fronde et une pierre"
+      ]
+    },
+    {
+      "theme": "Culture générale",
+      "question": "Quel modèle de voiture, vendu à plus de 50 millions d'exemplaires, est le plus vendu de l'histoire ?",
+      "answer": "Toyota Corolla",
+      "variants": [
+        "Corolla",
+        "La Corolla",
+        "La Toyota Corolla"
+      ]
+    },
+    {
+      "theme": "Culture générale",
+      "question": "Quelle fleur offre-t-on traditionnellement en France le 1er mai ?",
+      "answer": "Le muguet",
+      "variants": [
+        "Muguet",
+        "Brin de muguet"
+      ]
+    },
+    {
+      "theme": "Nature & animaux",
+      "question": "Dans le règne animal, qu'est-ce qu'un magot ?",
+      "answer": "Un singe (macaque)",
+      "variants": [
+        "Singe",
+        "Un singe",
+        "Macaque",
+        "Un macaque",
+        "Macaque de Barbarie",
+        "Macaque berbère"
+      ]
+    },
+    {
+      "theme": "Nature & animaux",
+      "question": "Vipère, loup, ours, ou guêpes et frelons : lesquels font chaque année le plus de morts en France ?",
+      "answer": "Guêpes et frelons",
+      "variants": [
+        "Guêpes",
+        "Les guêpes",
+        "Frelons",
+        "Les frelons",
+        "Guêpe",
+        "Frelon",
+        "Hyménoptères"
+      ]
+    },
+    {
+      "theme": "Logique & énigmes",
+      "question": "J'ai 20 ans et mon frère a la moitié de mon âge. Quel âge aura-t-il quand j'aurai 40 ans ?",
+      "answer": "30 ans",
+      "variants": [
+        "30",
+        "Trente ans",
+        "Trente"
+      ]
+    }
+  ]
+}
