@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import type { GameKind } from '@kg/shared';
 import { roomPath } from '../lib/rooms';
+import { SoundControl } from './SoundControl';
 
-/** Lobby header: the room code as tiles and a « Copier le lien » button. */
+/** Lobby header: the room code as tiles, the sound control and a « Copier le lien » button. */
 export function CodeHeader({ code, game }: { code: string; game: GameKind }) {
   const [copied, setCopied] = useState(false);
 
@@ -27,7 +28,10 @@ export function CodeHeader({ code, game }: { code: string; game: GameKind }) {
           ))}
         </div>
       </div>
-      <button className="btn" onClick={copy}>{copied ? 'Lien copié' : 'Copier le lien'}</button>
+      <div className="lobby-head-actions">
+        <SoundControl />
+        <button className="btn" onClick={copy}>{copied ? 'Lien copié' : 'Copier le lien'}</button>
+      </div>
     </header>
   );
 }

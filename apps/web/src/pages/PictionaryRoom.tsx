@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type { PictionaryView } from '@kg/shared';
 import { RoomError, WrongGame } from '../room/RoomError';
 import { RoomPage } from '../room/RoomPage';
 import { useRoomSocket } from '../lib/socket';
@@ -13,6 +14,21 @@ import { Chat } from '../pictionary/Chat';
 import { WordChoice } from '../pictionary/WordChoice';
 import { TurnEnd } from '../pictionary/TurnEnd';
 import { GameOver } from '../pictionary/GameOver';
+import { SoundControl } from '../room/SoundControl';
+import { useStateChanges } from '../room/useStateChanges';
+import { play } from '../lib/sound';
+
+/** A turn ending this close to (or past) the deadline was the timer running out. */
+const DEADLINE_SLACK_MS = 250;
+
+/** Sound effects of one state change (turn start, someone found, time up, podium). */
+function pictionarySounds(a: PictionaryView, b: PictionaryView): void {
+  if (b.phase === 'gameOver' && a.phase !== 'gameOver') return play('podium');
+  if (b.phase === 'drawing' && a.phase !== 'drawing') return play('turnStart');
+  if (a.phase !== 'drawing' || (b.phase !== 'drawing' && b.phase !== 'turnEnd')) return;
+  if (b.found.some((id) => !a.found.includes(id))) play('found');
+  else if (b.phase === 'turnEnd' && a.phaseEndsAt !== null && b.serverNow >= a.phaseEndsAt - DEADLINE_SLACK_MS) play('timeUp');
+}
 
 export function PictionaryRoom({ code }: { code: string }) {
   return (
@@ -30,6 +46,10 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   // Server clock offset, re-measured on every state message.
   const offset = useMemo(() => (state ? state.game.serverNow - Date.now() : 0), [state]);
   const names = useMemo(() => Object.fromEntries((state?.players ?? []).map((p) => [p.id, p.name])), [state]);
+  useStateChanges(state?.kind === 'pictionary' ? state.game : null, sock.status === 'open', pictionarySounds);
+  // Notices are live only (never replayed): « presque ! » for this player's own guess.
+  const { onNotice } = sock;
+  useEffect(() => onNotice((n) => { if (n === 'close') play('close'); }), [onNotice]);
 
   if (error) return <RoomError error={error} onChangeName={onChangeName} />;
 
@@ -72,16 +92,19 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
             onTools={setTools}
             header={
               <header className="nb-head">
-                <span className="round" aria-label={`Manche ${game.round}/${game.settings.rounds}`}>
-                  <small aria-hidden="true">Manche</small>
-                  <span aria-hidden="true">{game.round}/{game.settings.rounds}</span>
-                </span>
+                <div className="nb-side">
+                  <span className="round" aria-label={`Manche ${game.round}/${game.settings.rounds}`}>
+                    <small aria-hidden="true">Manche</small>
+                    <span aria-hidden="true">{game.round}/{game.settings.rounds}</span>
+                  </span>
+                  <SoundControl />
+                </div>
                 <div className="nb-center">
                   <h1 className="nb-title">{title}</h1>
                   <WordBar game={game} drawerName={drawerName} offset={offset} send={sock.send} />
                 </div>
                 <div className="nb-timer">
-                  <Timer endsAt={game.phaseEndsAt} offset={offset} />
+                  <Timer endsAt={game.phaseEndsAt} offset={offset} ticking={game.phase === 'drawing'} fastEnd />
                 </div>
               </header>
             }

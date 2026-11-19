@@ -1,5 +1,6 @@
 import type { PlayerInfo } from '@kg/shared';
 import { Podium } from './Podium';
+import { SoundControl } from './SoundControl';
 
 type Props = {
   players: PlayerInfo[];
@@ -26,6 +27,7 @@ export function GameOverCard({ players, scores, hostId, playerId, onRestart, for
           <p className="muted">En attente de l'hôte…</p>
         )}
         <a className="btn" href="/">Accueil</a>
+        <SoundControl />
       </div>
     </section>
   );
