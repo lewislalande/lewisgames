@@ -151,7 +151,7 @@ def main():
         g2.get_by_text('a trouvé !').wait_for()
         names = {id(a): 'Alice', id(pages['Bob']): 'Bob', id(pages['Carol']): 'Carol'}
         name1 = names[id(g1)]
-        check(f'« {name1} a trouvé ! »' in g2.locator('.chat-list').inner_text(), 'others see « X a trouvé ! »')
+        check(f'{name1} a trouvé !' in g2.locator('.chat-list').inner_text(), 'others see « X a trouvé ! »')
         check(word.lower() not in g2.evaluate(HTML_JS), 'non-finder DOM has no word after a find')
         g1.locator('.wordbar .slots').wait_for()
         check(word.lower() in g1.evaluate(HTML_JS), 'finder sees the word')

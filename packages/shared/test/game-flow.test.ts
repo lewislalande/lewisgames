@@ -89,7 +89,7 @@ describe('choosing and drawing', () => {
     const e = run(d, { type: 'timeout' }, mkCtx(room, 2000 + 80000));
     expect(e.phase).toBe('turnEnd');
     expect(e.phaseEndsAt).toBe(2000 + 80000 + TURN_END_MS);
-    expect(e.chat.at(-1)).toMatchObject({ kind: 'system', text: `« Le mot était : ${d.word} »` });
+    expect(e.chat.at(-1)).toMatchObject({ kind: 'system', text: `Le mot était : ${d.word}` });
   });
 });
 

@@ -36,6 +36,13 @@ export function Chat({ game, names, send, onNotice }: Props) {
   }, [last]);
 
   const canGuess = game.phase === 'drawing' && !game.isDrawer && !game.hasFound;
+  const inputRef = useRef<HTMLInputElement>(null);
+  const couldGuess = useRef(canGuess);
+  useEffect(() => {
+    // Disabled inputs lose focus: take it back when guessing opens up again.
+    if (canGuess && !couldGuess.current) inputRef.current?.focus();
+    couldGuess.current = canGuess;
+  }, [canGuess]);
   const placeholder = game.hasFound
     ? 'Tu as trouvé !'
     : game.isDrawer && game.phase === 'drawing'
@@ -69,6 +76,7 @@ export function Chat({ game, names, send, onNotice }: Props) {
       <form className="chat-form" onSubmit={submit}>
         {close && <p className="chat-close" role="status">tu chauffes !</p>}
         <input
+          ref={inputRef}
           type="text"
           className="chat-input"
           aria-label="Ta réponse"

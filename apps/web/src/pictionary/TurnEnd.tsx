@@ -9,7 +9,7 @@ export function TurnEnd({ game, names }: Props) {
   return (
     <div className="overlay">
       <div className="overlay-card" role="dialog" aria-label="Fin du tour">
-        <h2>Le mot était : {game.word}</h2>
+        <h2>{game.word ? `Le mot était : ${game.word}` : 'Le dessinateur est parti'}</h2>
         <ul className="player-list">
           {rows.map((r) => (
             <li key={r.id}>

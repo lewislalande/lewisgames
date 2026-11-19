@@ -223,7 +223,7 @@ function endTurn(s: PictionaryState, ctx: Ctx): Result {
     turnPoints: { ...s.turnPoints, [drawer]: (s.turnPoints[drawer] ?? 0) + pts },
     phaseEndsAt: ctx.now + TURN_END_MS,
   };
-  if (s.word) next = addSystemChat(next, `« Le mot était : ${s.word} »`);
+  if (s.word) next = addSystemChat(next, `Le mot était : ${s.word}`);
   return changed(next);
 }
 
@@ -285,7 +285,7 @@ function onGuess(s: PictionaryState, by: string, text: unknown, ctx: Ctx): Resul
     scores: { ...s.scores, [by]: (s.scores[by] ?? 0) + pts },
     turnPoints: { ...s.turnPoints, [by]: (s.turnPoints[by] ?? 0) + pts },
   };
-  next = addSystemChat(next, `« ${playerName(ctx.room, by)} a trouvé ! »`);
+  next = addSystemChat(next, `${playerName(ctx.room, by)} a trouvé !`);
   const effects: Effect[] = [{ type: 'state' }, { type: 'private', to: by, notice: 'correct' }];
   if (allFound(next, ctx)) return { state: endTurn(next, ctx).state, effects };
   return { state: next, effects };

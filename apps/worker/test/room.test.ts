@@ -175,7 +175,7 @@ describe('room websocket', () => {
     const bBeforeFound = b.raw.length;
     b.send({ t: 'guess', text: 'ZEPPELIN' });
     expect(await b.next((m) => m.t === 'notice')).toEqual({ t: 'notice', notice: 'correct' });
-    const cState = await cc.nextState((m) => m.game.chat.some((e) => e.text === '« B a trouvé ! »'));
+    const cState = await cc.nextState((m) => m.game.chat.some((e) => e.text === 'B a trouvé !'));
     expect(cState.game.phase).toBe('drawing');
     expect(cState.game.found).toEqual([bId]);
 

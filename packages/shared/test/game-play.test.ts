@@ -39,7 +39,7 @@ describe('guessing', () => {
     expect(r.state.found.map((f) => f.playerId)).toEqual(['B']);
     expect(r.state.scores.B).toBeGreaterThan(0);
     expect(r.state.turnPoints.B).toBe(r.state.scores.B);
-    expect(r.state.chat.at(-1)).toMatchObject({ kind: 'system', text: '« NomB a trouvé ! »' });
+    expect(r.state.chat.at(-1)).toMatchObject({ kind: 'system', text: 'NomB a trouvé !' });
     expect(r.state.chat.some((c) => c.text.includes('chat'))).toBe(false);
     expect(r.effects).toEqual([{ type: 'state' }, { type: 'private', to: 'B', notice: 'correct' }]);
     expect(r.state.phase).toBe('drawing');

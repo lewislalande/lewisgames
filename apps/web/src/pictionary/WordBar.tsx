@@ -30,7 +30,7 @@ export function WordBar({ game, drawerName, offset, send }: Props) {
 
   return (
     <div className="wordbar">
-      <div className="slots" aria-label={word !== null ? `Le mot : ${word}` : `Mot de ${letterCount} lettres`}>
+      <div className="slots" aria-label={word !== null ? `Le mot : ${word}` : `Mot de ${letterCount} ${letterCount > 1 ? 'lettres' : 'lettre'}`}>
         {chars.map((ch, i) => {
           if (!isLetterIndex(shown, i)) return <span key={i} className="slot sep">{ch === ' ' ? ' ' : ch}</span>;
           const hinted = isShown.has(i);
@@ -53,7 +53,7 @@ export function WordBar({ game, drawerName, offset, send }: Props) {
           return <span key={i} className={cls}>{ch === '_' ? '' : ch}</span>;
         })}
       </div>
-      {phase === 'drawing' && <span className="wordbar-note">{letterCount} lettres</span>}
+      {phase === 'drawing' && <span className="wordbar-note">{letterCount} {letterCount > 1 ? 'lettres' : 'lettre'}</span>}
       {interactive && <span className="wordbar-note" title={unlocked ? undefined : "Les indices ne sont pas encore disponibles"}>Indices restants : {game.hintsLeft}</span>}
     </div>
   );
