@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  quizReduce, quizInitialState, quizViewFor, clampQuizSettings, TRANSITION_MS,
+  quizReduce, quizInitialState, quizViewFor, clampQuizSettings, normalizeQuizState, TRANSITION_MS,
   type Question, type QuizCtx, type QuizEvent, type QuizState,
 } from '../src';
 import { disconnect, type Room } from '../src/room';
@@ -779,5 +779,41 @@ describe('settings and room events', () => {
     const room = { ...mkRoom(), hostId: null };
     const s = quizInitialState();
     expect(quizReduce(s, { type: 'start', by: 'A', questions: [q(1)] }, ctxOf(room)).state).toBe(s);
+  });
+});
+
+describe('normalizeQuizState (states stored before quiz v2)', () => {
+  /** A stored state of the previous format: reveal fields, none of the v2 ones. */
+  const legacy = (s: QuizState, phase: string): unknown => {
+    const { allAnswers: _a, reviewIndex: _r, timeRate: _t, ...rest } = s;
+    return { ...rest, phase, revealedCount: 1, answerShown: false };
+  };
+
+  it('a state in a phase that no longer exists becomes gameOver; restart works', () => {
+    const old = legacy({ ...answerAll(started(), { A: 'a' }), phaseEndsAt: null }, 'revealing');
+    const s = normalizeQuizState(old as QuizState);
+    expect(s.phase).toBe('gameOver');
+    expect(s.phaseEndsAt).toBeNull();
+    expect(s.allAnswers).toEqual([]);
+    expect(quizViewFor(s, 'A', 1000).timeRate).toBe(1);
+    const restarted = run(s, [{ type: 'restart', by: 'A' }]);
+    expect(restarted).toEqual(quizInitialState(s.settings));
+  });
+  it('an answering state without timeRate gets rate 1 and keeps working (no NaN)', () => {
+    const s = normalizeQuizState(legacy(started(), 'answering') as QuizState);
+    expect(s.phase).toBe('answering');
+    expect(s.timeRate).toBe(1);
+    expect(s.allAnswers).toEqual([]);
+    expect(s.reviewIndex).toBe(0);
+    let next = run(s, [{ type: 'answer', by: 'A', text: 'a', final: true }]);
+    expect(next.timeRate).toBe(1 + 2 / 3);
+    expect(Number.isFinite(next.phaseEndsAt)).toBe(true);
+    next = answerAll(next, { B: 'b', C: 'c' });
+    expect(next.phase).toBe('transition');
+    expect(next.allAnswers).toEqual([{ A: 'a', B: 'b', C: 'c' }]);
+  });
+  it('leaves a current state unchanged', () => {
+    const s = answerAll(started(), { A: 'a' });
+    expect(normalizeQuizState(s)).toEqual(s);
   });
 });

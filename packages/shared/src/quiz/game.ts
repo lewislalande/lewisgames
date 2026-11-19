@@ -89,6 +89,18 @@ export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS)
   };
 }
 
+const PHASES: readonly string[] = ['lobby', 'answering', 'transition', 'voting', 'deciding', 'result', 'gameOver'];
+
+/**
+ * Brings a stored state up to the current format (rooms saved before quiz v2): missing fields
+ * get their initial value, and a phase that no longer exists (the old `revealing`) ends the game
+ * so the host can restart. A current state comes back equal.
+ */
+export function normalizeQuizState(stored: QuizState): QuizState {
+  const s: QuizState = { ...quizInitialState(stored.settings ?? DEFAULT_QUIZ_SETTINGS), ...stored };
+  return PHASES.includes(s.phase) ? s : { ...s, phase: 'gameOver', phaseEndsAt: null };
+}
+
 const changed = (state: QuizState): Result => ({ state, effects: [{ type: 'state' }] });
 const unchanged = (state: QuizState): Result => ({ state, effects: [] });
 

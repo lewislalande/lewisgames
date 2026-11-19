@@ -51,7 +51,7 @@ export class RoomDO extends DurableObject<Env> {
       this.alarmAt = await ctx.storage.getAlarm();
       if (this.data) {
         this.adapter = adapterFor(this.data.room.game, env.DB);
-        await this.adapter.resume(this.data.game);
+        this.data.game = await this.adapter.resume(this.data.game);
         await this.dropGhosts();
       }
     });

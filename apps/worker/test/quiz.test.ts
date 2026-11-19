@@ -1,7 +1,8 @@
-import { SELF, env, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
+import { SELF, env, evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { BASE, Client, createRoom, until } from './helpers';
 import { markUsed, pickQuestions } from '../src/questions';
+import type { QuizState, Room } from '@kg/shared';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -98,7 +99,8 @@ describe('quiz rooms', () => {
     b.send({ t: 'answer', text: 'zzanswerofb1', final: true });
     const transition = await b.nextQuiz((m) => m.game.phase === 'transition');
     expect(transition.game.phaseEndsAt! - transition.game.serverNow).toBeLessThanOrEqual(1000);
-    // The transition timer opens question 2.
+    // The transition timer opens question 2: reach into the instance's in-memory state (private
+    // `data`) to make the 1 s transition already due, then fire the alarm instead of waiting.
     await runInDurableObject(stubFor(code), (instance) => {
       (instance as unknown as { data: { game: { phaseEndsAt: number } } }).data.game.phaseEndsAt = Date.now() - 1;
     });
@@ -122,6 +124,47 @@ describe('quiz rooms', () => {
     expect(review.game.correct?.answer).toMatch(/^zzcorrectsecret[12]$/);
     expect(review.game.revealed.map((g) => g.text).sort()).toEqual(['zzanswerofa1', 'zzanswerofb1']);
     void bId;
+  });
+
+  describe('states stored before quiz v2', () => {
+    type Stored = { room: Room; game: Record<string, unknown> };
+    /** Rewrites the stored game in the previous format, then restarts the instance so it loads it. */
+    async function storeLegacy(code: string, phase: string): Promise<void> {
+      await runInDurableObject(stubFor(code), async (_i, state) => {
+        const stored = (await state.storage.get<Stored>('state'))!;
+        const { allAnswers: _a, reviewIndex: _r, timeRate: _t, ...rest } = stored.game as unknown as QuizState;
+        const game = { ...rest, phase, revealedCount: 0, answerShown: false, phaseEndsAt: phase === 'answering' ? rest.phaseEndsAt : null };
+        await state.storage.put('state', { ...stored, game });
+      });
+      await evictDurableObject(stubFor(code), { webSockets: 'hibernate' });
+    }
+
+    it('an answering game without timeRate keeps working after a restart', async () => {
+      const theme = freshTheme();
+      await seed(theme, three('legacy-answering'));
+      const { code, a, aId, b } = await quizRoom(theme);
+      a.send({ t: 'start' });
+      await b.nextQuiz((m) => m.game.phase === 'answering');
+      await storeLegacy(code, 'answering');
+      a.send({ t: 'answer', text: 'zzlegacy', final: true });
+      const s = await b.nextQuiz((m) => m.game.answered.includes(aId));
+      expect(s.game.timeRate).toBe(2);
+      expect(Number.isFinite(s.game.phaseEndsAt)).toBe(true);
+      await until(() => readAlarm(code), (t) => t === Math.ceil(s.game.phaseEndsAt!));
+    });
+
+    it('a game in the removed reveal phase ends, and the host can restart', async () => {
+      const theme = freshTheme();
+      await seed(theme, three('legacy-reveal'));
+      const { code, a, b } = await quizRoom(theme);
+      a.send({ t: 'start' });
+      await b.nextQuiz((m) => m.game.phase === 'answering');
+      await storeLegacy(code, 'revealing');
+      a.send({ t: 'restart' });
+      const s = await b.nextQuiz((m) => m.game.phase === 'lobby');
+      expect(s.game.settings.themes).toEqual([theme]);
+      expect(await readAlarm(code)).toBeNull();
+    });
   });
 
   it('never shows a final:false draft in other players\' frames, nor counts it as answered', async () => {

@@ -1,5 +1,5 @@
 import {
-  connectedPlayers, DEFAULT_WORDS, initialState, quizInitialState, quizReduce, quizViewFor, reduce, viewFor,
+  connectedPlayers, DEFAULT_WORDS, initialState, normalizeQuizState, quizInitialState, quizReduce, quizViewFor, reduce, viewFor,
   type ClientMsg, type DrawOp, type ErrorCode, type GameEvent as PictionaryEvent, type GameKind, type PictionaryState,
   type PictionaryView, type QuizEvent, type QuizState, type QuizView, type Room,
 } from '@kg/shared';
@@ -37,8 +37,8 @@ export type GameAdapter<S, E> = {
   toEvent(msg: GameMsg, by: string): E | null;
   /** Loads what the event needs before it is reduced; `commit` runs after it was applied. */
   prepare(state: S, event: E, room: Room): Promise<Prepared<S, E>>;
-  /** Called when an instance loads a stored game (after a restart), before any event. */
-  resume(state: S): Promise<void>;
+  /** Called when an instance loads a stored game (after a restart), before any event; returns the state to use. */
+  resume(state: S): Promise<S>;
   reduce(state: S, event: E | RoomEvent, ctx: GameCtx): { state: S; effects: RoomEffect[] };
   view(state: S, playerId: string, now: number, room: Room): GameView;
   /** Frequent, low-value events whose persistence may be batched. */
@@ -83,6 +83,7 @@ function pictionaryAdapter(db: D1Database): GameAdapter<PictionaryState, Piction
     },
     async resume(state) {
       if (state.phase !== 'lobby') await refreshWords();
+      return state;
     },
     reduce(state, event, ctx) {
       const r = reduce(state, event, { ...ctx, rng: Math.random, words: words ?? FALLBACK_WORDS });
@@ -140,7 +141,8 @@ function quizAdapter(db: D1Database): GameAdapter<QuizState, QuizEvent> {
         },
       };
     },
-    resume: async () => {},
+    // Rooms stored by an older version may lack fields or be in a removed phase.
+    resume: async (state) => normalizeQuizState(state),
     reduce: (state, event, ctx) => quizReduce(state, event, ctx),
     view: (s, playerId, now) => ({ kind: 'quiz', game: quizViewFor(s, playerId, now) }),
     batched: () => false,
