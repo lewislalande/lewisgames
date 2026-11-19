@@ -22,7 +22,7 @@ export function QuestionResult({ game, players, names, playerId, hostId, hostNam
   return (
     <>
       <div className="qz-page">
-        {game.correct && <CorrectCard correct={game.correct} />}
+        {game.correct && <div className="qz-pinned"><CorrectCard correct={game.correct} /></div>}
         {game.revealed.length === 0 && <p className="qz-empty">Personne n'a répondu.</p>}
         <ul className="qz-answers">
           {game.revealed.map((g, i) => {

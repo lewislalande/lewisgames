@@ -342,7 +342,16 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--mint); }
   text-shadow: 0 2px 0 var(--ink);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
 }
-.nb-timer { display: flex; justify-content: flex-end; }
+.nb-timer .timer { flex: none; }
+.nb-timer { display: flex; justify-content: flex-end; align-items: center; gap: .6rem; }
+.speed-chip {
+  font: 900 1.1rem/1 var(--font); font-variant-numeric: tabular-nums;
+  color: var(--ink); background: var(--sun);
+  border: var(--line); border-radius: 999px; box-shadow: var(--drop-sm);
+  padding: .3rem .7rem;
+}
+.speed-chip.pulse { animation: speed-pulse .6s cubic-bezier(.2, .9, .3, 1.4); }
+@keyframes speed-pulse { 0% { transform: scale(1); } 35% { transform: scale(1.4); background: var(--rose); color: #fff; } 100% { transform: scale(1); } }
 
 .canvas-wrap {
   position: relative; width: 100%; aspect-ratio: 4 / 3;
@@ -594,7 +603,6 @@ input[type='range']::-moz-range-thumb {
   font-size: clamp(1.6rem, 2.5vw, 2.5rem); font-weight: 900; line-height: 1.18;
   max-width: 28ch; margin: 0 0 1.75rem; overflow-wrap: anywhere;
 }
-.qz-question-sm { font-size: 1.2rem; max-width: none; color: var(--violet); margin-bottom: 1rem; }
 .qz-empty { color: #6b5f8e; font-weight: 800; }
 
 /* Answering */
@@ -612,7 +620,6 @@ input[type='range']::-moz-range-thumb {
 /* Footer bar under the page: status + host action */
 .qz-foot { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 3.6rem; padding: var(--nb-pad) .3rem 0; }
 .qz-status { margin: 0; font-weight: 800; display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; }
-.qz-count { color: var(--ink); background: var(--sun); border: 2.5px solid var(--ink); border-radius: 999px; padding: .05rem .7rem; font-weight: 900; font-size: .9rem; }
 .qz-foot .btn { flex: none; }
 
 /* Answer cards */
@@ -630,11 +637,6 @@ input[type='range']::-moz-range-thumb {
 .qz-answer-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .qz-answer-text { font-size: 1.3rem; font-weight: 900; line-height: 1.2; overflow-wrap: anywhere; }
 .qz-authors { font-size: .85rem; font-weight: 800; color: #5b4d86; }
-.qz-in { transform-origin: top center; animation: card-in .5s cubic-bezier(.2, .9, .3, 1.25) both; }
-@keyframes card-in {
-  from { opacity: 0; transform: perspective(700px) rotateX(-75deg) translateY(-8px); }
-  to { opacity: 1; transform: none; }
-}
 
 .qz-correct {
   margin-top: 1rem;
@@ -642,11 +644,9 @@ input[type='range']::-moz-range-thumb {
   border: var(--line-thick); border-radius: var(--r-md); box-shadow: var(--drop);
   padding: .8rem 1.2rem;
 }
-.qz-revealing .qz-correct { animation: correct-pop .45s cubic-bezier(.2, .9, .3, 1.4) both; }
 .qz-correct-main { margin: 0; font-size: 1.2rem; font-weight: 900; overflow-wrap: anywhere; }
 .qz-correct-main strong { font-size: 1.65rem; }
 .qz-variants { margin: .15rem 0 0; font-size: .9rem; font-weight: 700; color: #0b4d3a; overflow-wrap: anywhere; }
-@keyframes correct-pop { from { transform: scale(.85); opacity: 0; } to { transform: none; opacity: 1; } }
 .qz-pinned { position: sticky; top: -1.4rem; z-index: 2; margin: -1.4rem 0 1rem; padding-top: 1.4rem; background: linear-gradient(#fff 70%, transparent); }
 .qz-pinned .qz-correct { margin-top: 0; }
 
@@ -681,8 +681,14 @@ input[type='range']::-moz-range-thumb {
 .qz-tie-counts { font-size: .85rem; font-weight: 800; color: #5b4d86; white-space: nowrap; }
 
 /* Result */
-.qz-page > .qz-correct:first-child { margin-top: 0; }
-.qz-correct + .qz-answers, .qz-correct + .qz-empty { margin-top: 1rem; }
+.qz-pinned + .qz-empty { margin-top: 0; }
+.qz-transition { text-align: center; }
+.qz-transition-title { margin: 0; font-size: clamp(2.2rem, 4vw, 3.4rem); font-weight: 900; }
+.qz-transition-next {
+  display: inline-block; margin: 1rem 0 0;
+  font-size: 1.3rem; font-weight: 900; color: #fff; background: var(--violet);
+  border: var(--line); border-radius: 999px; box-shadow: var(--drop-sm); padding: .3rem 1.2rem;
+}
 .qz-outcome { flex: none; font-size: .9rem; font-weight: 900; border: 2.5px solid var(--ink); border-radius: 999px; padding: .15rem .7rem; white-space: nowrap; }
 .out-yes { background: var(--mint); }
 .out-half { background: var(--sun); }

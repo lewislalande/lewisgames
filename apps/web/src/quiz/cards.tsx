@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { VoteValue } from '@kg/shared';
+import { formatRate } from './format';
 
 export const VOTES: { value: VoteValue; icon: string; label: string }[] = [
   { value: 'yes', icon: '✅', label: 'Correct' },
@@ -73,5 +74,21 @@ export function QuizFoot({ children, action }: { children?: ReactNode; action?: 
       <p className="qz-status">{children}</p>
       {action}
     </div>
+  );
+}
+
+/** Answering speed, hidden at ×1; pulses each time it rises (not on first display). */
+export function SpeedChip({ rate }: { rate: number }) {
+  const prev = useRef(rate);
+  const [pulses, setPulses] = useState(0);
+  useEffect(() => {
+    if (rate > prev.current) setPulses((n) => n + 1);
+    prev.current = rate;
+  }, [rate]);
+  if (rate <= 1) return null;
+  return (
+    <span key={pulses} className={`speed-chip${pulses > 0 ? ' pulse' : ''}`} title="Le temps s'accélère à mesure que les autres répondent">
+      {formatRate(rate)}
+    </span>
   );
 }

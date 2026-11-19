@@ -7,12 +7,12 @@ Prerequisites:
 Usage: python3 apps/web/e2e/quiz-game.py [--base http://localhost:8787] [--shots DIR] [--chrome /usr/bin/google-chrome]
 
 Two questions are imported in their own theme through the admin API (re-runs skip them as
-duplicates); Alice (host) plays only that theme. Question 1: answers stay hidden from the others
-while answering, an answer can be changed, identical answers form one group, the reveal goes card
-by card, nobody sees the correct answer before « Montrer la réponse », votes end in a tie the host
-decides. Question 2: Carol gives no answer (❌ without vote), the host ends the vote early. Scores
-are checked after each question and on the podium; Rejouer goes back to the lobby. Carol's
-1280×800 window must never scroll.
+duplicates); Alice (host) plays only that theme. Both questions are answered in a row: answers and
+scores stay hidden, a speed chip appears and grows as players submit, a 1-second « Question
+suivante… » card sits between the two. Then each question is reviewed: all answers and the correct
+answer at once, votes end in a tie the host decides (question 1) or the host ends the vote early
+(question 2, Carol gave no answer). Scores appear from the first result and on the podium; Rejouer
+goes back to the lobby. Carol's 1280×800 window must never scroll.
 """
 import argparse
 import json
@@ -96,7 +96,8 @@ def scores_of(pg):
     out = {}
     for li in pg.locator('.quiz-grid > .players li').all():
         name = li.locator('.player-name').inner_text().split(' (')[0].replace('♛', '').replace('✓', '').strip()
-        out[name] = li.locator('.score').inner_text()
+        if li.locator('.score').count():
+            out[name] = li.locator('.score').inner_text()
     return out
 
 
@@ -136,11 +137,13 @@ def main():
         no_scroll('lobby')
         a.get_by_role('button', name='Lancer la partie').click()
 
-        # ---- Question 1: answering
+        # ---- Question 1: answering (answers stay hidden, the clock speeds up as players submit)
         wait_title(everyone, 'Réponds !')
         check(a.locator('.qz-notebook').get_attribute('aria-label') == 'Question 1/2', 'header says question 1/2')
         check(a.locator('.nb-theme').text_content() == THEME, 'header shows the theme')
         check(a.locator('.timer').count() == 1, 'timer badge shown while answering')
+        check(a.locator('.speed-chip').count() == 0, 'no speed chip at ×1')
+        check(scores_of(c) == {}, 'no scores on the scoreboard while answering')
         question1 = a.locator('.qz-question').inner_text()
         check(question1 in SECRET, 'question shown in big type')
         q1 = next(q for q in QUESTIONS if q['question'] == question1)
@@ -149,12 +152,16 @@ def main():
 
         answer(c, 'Melbourne')
         check(c.locator('.qz-sent-text').inner_text() == 'Melbourne', 'Carol sees her sent answer')
+        for pg in everyone:
+            pg.locator('.speed-chip').wait_for()
+        check(all(pg.locator('.speed-chip').inner_text() == '×1,7' for pg in everyone), 'speed chip ×1,7 after one submit out of three')
         b.locator('.players li', has_text='Carol').locator('.mark.ok').wait_for()
         check(True, 'others see a check next to Carol')
         for pg, who in ((a, 'Alice'), (b, 'Bob')):
             check('melbourne' not in pg.evaluate(HTML_JS), f'{who} DOM has no trace of Carol\'s answer')
         c.get_by_role('button', name='Modifier').click()
         check(c.locator('#qz-input').input_value() == 'Melbourne', 'Modifier pre-fills the answer')
+        check(c.locator('.speed-chip').inner_text() == '×1,7', 'the speed never drops back')
         answer(c, 'Sydney')
         check(c.locator('.qz-sent-text').inner_text() == 'Sydney', 'changed answer is shown')
 
@@ -164,47 +171,44 @@ def main():
             check('canberra' not in html and secret1 not in html, f'{who} DOM has no Canberra nor the correct answer while answering')
         check('sydney' not in b.evaluate(HTML_JS), 'Bob DOM has no Sydney while answering')
         b.locator('.players li', has_text='Alice').locator('.mark.ok').wait_for()
-        b.screenshot(path=f'{args.shots}/quiz-answering.png')
-        a.screenshot(path=f'{args.shots}/quiz-answered.png')
+        b.locator('.speed-chip', has_text='×2,3').wait_for()
+        check(scores_of(b) == {}, 'still no scores with two answers in')
+        shown = int(b.locator('.timer').inner_text().replace('s', '').strip())
+        check(0 < shown <= 20 * 2.4, f'timer shows rate-adjusted seconds ({shown})')
+        b.wait_for_timeout(500)
+        b.screenshot(path=f'{args.shots}/quizv2-answering.png')
+        a.screenshot(path=f'{args.shots}/quizv2-answered.png')
         no_scroll('answering')
         answer(b, '  CANBERRA ', last=True)
 
-        # ---- Question 1: reveal
-        wait_title(everyone, 'Les réponses')
-        check(a.locator('.timer').count() == 0, 'no timer once answering is over')
-        check(b.get_by_text('Alice fait défiler les réponses…').count() == 1 and b.locator('.qz-foot .btn').count() == 0, 'others see « Alice fait défiler les réponses… » and no button')
-        check(all(cards(pg).count() == 0 for pg in everyone), 'no answer shown before the first click')
-        check('canberra' not in c.evaluate(HTML_JS), 'Carol still has no Canberra before the reveal')
-        check(a.locator('.qz-foot .btn').inner_text() == 'Suivant', 'host button « Suivant »')
-        a.get_by_role('button', name='Suivant').click()
+        # ---- Transition (1 s), then question 2
         for pg in everyone:
-            cards(pg).first.wait_for()
-        check(all(cards(pg).count() == 1 for pg in everyone), 'one card after one click')
-        first = c.locator('.qz-answer').first
-        check(first.locator('.qz-answer-text').inner_text() == 'Canberra' and first.locator('.qz-authors').inner_text() == 'Alice, Bob', 'identical answers grouped with both authors')
-        a.get_by_role('button', name='Suivant').click()
-        for pg in everyone:
-            card(pg, 'Sydney').wait_for()
-        check(all(cards(pg).count() == 2 for pg in everyone), 'second card after the second click')
-        check(a.locator('.qz-foot .btn').inner_text() == 'Montrer la réponse', 'host button becomes « Montrer la réponse »')
-        a.wait_for_timeout(300)
-        for pg, who in zip(everyone, ('Alice', 'Bob', 'Carol')):
-            html = pg.evaluate(HTML_JS)
-            check('bonne réponse' not in html and secret1 not in html, f'{who} has no correct answer before « Montrer la réponse »')
-        a.get_by_role('button', name='Montrer la réponse').click()
-        for pg in everyone:
-            pg.locator('.qz-correct').wait_for()
-        check(c.locator('.qz-correct-main').inner_text() == f"Bonne réponse : {q1['answer']}", 'everyone sees « Bonne réponse : … »')
-        check(c.locator('.qz-variants').inner_text() == 'Aussi accepté : ' + ', '.join(q1['variants']), 'variants listed small')
-        b.wait_for_timeout(500)
-        b.screenshot(path=f'{args.shots}/quiz-reveal.png')
-        no_scroll('reveal')
-        check(a.locator('.qz-foot .btn').inner_text() == 'Passer au vote', 'host button becomes « Passer au vote »')
-        a.get_by_role('button', name='Passer au vote').click()
+            pg.get_by_text('Question suivante…').wait_for(timeout=3000)
+        check(a.locator('.qz-transition-next').inner_text() == 'Question 2/2', 'transition announces question 2/2')
+        check(a.locator('.timer').count() == 0, 'no timer during the transition')
+        a.screenshot(path=f'{args.shots}/quizv2-transition.png')
+        no_scroll('transition')
+        wait_title(everyone, 'Réponds !')
+        check(a.locator('.qz-notebook').get_attribute('aria-label') == 'Question 2/2', 'header says question 2/2')
+        check(c.locator('#qz-input').input_value() == '', 'answer box empty on a new question')
+        check(a.locator('.qz-question').inner_text() == q2['question'], 'second question shown')
+        check(a.locator('.speed-chip').count() == 0, 'speed back to ×1 on the new question')
+        answer(a, '6')
+        answer(b, 'six')
+        # Carol stays silent: the timer (sped up to ×2,3) ends the question and the review begins.
+        wait_title(everyone, 'Correction — question 1/2', timeout=30000)
 
-        # ---- Question 1: votes, then a tie decided by the host
-        wait_title(everyone, 'Le vote')
-        check(c.locator('.qz-pinned .qz-correct').count() == 1, 'correct answer pinned at the top of the vote')
+        # ---- Review of question 1: everything at once
+        check(c.locator('.qz-notebook').get_attribute('aria-label') == 'Question 1/2', 'review header says question 1/2')
+        check(a.locator('.nb-theme').text_content() == THEME, 'review header shows the theme')
+        check(a.locator('.timer').count() == 0, 'no timer in the review')
+        check(all(cards(pg).count() == 2 for pg in everyone), 'both answer groups shown at once')
+        check(c.locator('.qz-pinned .qz-correct-main').inner_text() == f"Bonne réponse : {q1['answer']}", 'correct answer pinned at the top, shown at once')
+        check(c.locator('.qz-variants').inner_text() == 'Aussi accepté : ' + ', '.join(q1['variants']), 'variants listed small')
+        first = card(c, 'Canberra')
+        check(first.locator('.qz-authors').inner_text() == 'Alice, Bob', 'identical answers grouped with both authors')
+        check(card(c, 'Sydney').locator('.qz-authors').inner_text() == 'Carol', 'author shown on every answer')
+        check(scores_of(c) == {}, 'no scores before the first review result')
         mine = b.locator('.qz-answer.mine')
         check(mine.count() == 1 and 'Ta réponse' in mine.inner_text() and mine.locator('.vote-btn').count() == 0, 'own group shows « Ta réponse » without buttons')
         check(a.get_by_role('button', name='Terminer le vote').count() == 1 and b.get_by_role('button', name='Terminer le vote').count() == 0, 'only the host has « Terminer le vote »')
@@ -215,51 +219,47 @@ def main():
         check(card(c, 'Canberra').get_by_role('button', name='Correct').get_attribute('aria-pressed') == 'true', 'chosen vote highlighted')
         card(b, 'Sydney').get_by_role('button', name='Correct').click()
         a.locator('.qz-status', has_text='En attente de : Alice').wait_for()
-        b.screenshot(path=f'{args.shots}/quiz-voting.png')
+        b.screenshot(path=f'{args.shots}/quizv2-voting.png')
         no_scroll('voting')
         card(a, 'Sydney').get_by_role('button', name='Faux').click()
 
-        wait_title(everyone, 'Égalité')
-        check(a.get_by_text('Égalité — à toi de trancher').count() == 1, 'host sees « Égalité — à toi de trancher »')
+        # tie decided by the host
+        wait_title(everyone, 'Correction — question 1/2')
+        a.get_by_text('Égalité — à toi de trancher').wait_for()
         check(b.get_by_text('Alice tranche les égalités…').count() == 1, 'others see « Alice tranche les égalités… »')
         check(cards(a).count() == 1 and card(a, 'Sydney').count() == 1, 'only the tied group is shown')
         check(card(a, 'Sydney').locator('.vote-btn').count() == 3 and card(b, 'Sydney').locator('.vote-btn').count() == 0, 'only the host can decide')
-        a.screenshot(path=f'{args.shots}/quiz-deciding.png')
+        a.screenshot(path=f'{args.shots}/quizv2-deciding.png')
         no_scroll('deciding')
         card(a, 'Sydney').get_by_role('button', name='À moitié').click()
 
         # ---- Question 1: result
-        wait_title(everyone, 'Résultats')
+        for pg in everyone:
+            card(pg, 'Canberra').locator('.qz-points').wait_for()
         check(card(c, 'Canberra').locator('.qz-points').inner_text() == '+1' and 'Correct' in card(c, 'Canberra').locator('.qz-outcome').inner_text(), 'Canberra: Correct, +1')
         check(card(c, 'Sydney').locator('.qz-points').inner_text() == '+0,5' and 'À moitié' in card(c, 'Sydney').locator('.qz-outcome').inner_text(), 'Sydney: À moitié, +0,5')
+        check(c.locator('.qz-pinned .qz-correct').count() == 1, 'correct answer still pinned in the result')
         check(scores_of(c) == {'Alice': '1', 'Bob': '1', 'Carol': '0,5'}, f'scores after question 1: {scores_of(c)}')
         check(b.get_by_text('En attente de Alice…').count() == 1, 'others wait for the host')
-        a.screenshot(path=f'{args.shots}/quiz-result.png')
+        a.screenshot(path=f'{args.shots}/quizv2-result.png')
         no_scroll('result')
+        check(a.locator('.qz-foot .btn').inner_text() == 'Question suivante', 'host button « Question suivante »')
         a.get_by_role('button', name='Question suivante').click()
 
-        # ---- Question 2: Carol stays silent, the host ends the vote early
-        wait_title(everyone, 'Réponds !')
-        check(a.locator('.qz-notebook').get_attribute('aria-label') == 'Question 2/2', 'header says question 2/2')
-        check(c.locator('#qz-input').input_value() == '', 'answer box empty on a new question')
-        check(a.locator('.qz-question').inner_text() == q2['question'], 'second question shown')
-        answer(a, '6')
-        answer(b, 'six', last=False)
-        wait_title(everyone, 'Les réponses', timeout=30000)
-        for _ in range(3):
-            a.locator('.qz-foot .btn').click()
-            a.wait_for_timeout(250)
-        check(cards(a).count() == 2 and a.locator('.qz-correct').count() == 1, 'two groups (no blank one) and the answer')
+        # ---- Review of question 2: Carol gave no answer, the host ends the vote early
+        wait_title(everyone, 'Correction — question 2/2')
+        check(c.locator('.qz-notebook').get_attribute('aria-label') == 'Question 2/2', 'review header says question 2/2')
+        check(cards(c).count() == 2 and c.locator('.qz-answer.mine').count() == 0, 'two groups (no blank one); Carol, who did not answer, votes on both')
+        check(c.locator('.qz-correct-main').inner_text() == f"Bonne réponse : {q2['answer']}", 'second correct answer shown at once')
         check(c.locator('.qz-variants').inner_text() == 'Aussi accepté : ' + ', '.join(q2['variants']), 'variants listed small (question 2)')
-        a.get_by_role('button', name='Passer au vote').click()
-        wait_title(everyone, 'Le vote')
-        check(cards(c).count() == 2 and c.locator('.qz-answer.mine').count() == 0, 'Carol, who did not answer, votes on both groups')
+        check(scores_of(c) == {'Alice': '1', 'Bob': '1', 'Carol': '0,5'}, 'scores shown during the second review')
         card(c, '6').get_by_role('button', name='Correct').click()
         card(c, 'six').get_by_role('button', name='Correct').click()
         card(b, '6').get_by_role('button', name='Correct').click()
         a.locator('.qz-status', has_text='En attente de : Alice').wait_for()
         a.get_by_role('button', name='Terminer le vote').click()
-        wait_title(everyone, 'Résultats')
+        for pg in everyone:
+            card(pg, 'six').locator('.qz-points').wait_for()
         check(card(a, 'six').locator('.qz-points').inner_text() == '+1', 'six: +1 with Carol\'s vote only')
         check(a.locator('.qz-ranking li', has_text='Carol').locator('.qz-gained').inner_text() == '+0', 'no answer: +0')
         check(scores_of(a) == {'Alice': '2', 'Bob': '2', 'Carol': '0,5'}, f'scores after question 2: {scores_of(a)}')
@@ -273,7 +273,7 @@ def main():
         check(a.locator('.final-list .score').all_inner_texts() == ['2', '2', '0,5'], 'final scores 2, 2, 0,5')
         check(a.get_by_role('button', name='Rejouer').count() == 1 and b.get_by_role('button', name='Rejouer').count() == 0, 'only the host sees Rejouer')
         check(b.get_by_role('link', name='Accueil').get_attribute('href') == '/', 'Accueil links to /')
-        a.screenshot(path=f'{args.shots}/quiz-gameover.png')
+        a.screenshot(path=f'{args.shots}/quizv2-gameover.png')
         no_scroll('game over')
         a.get_by_role('button', name='Rejouer').click()
         a.get_by_role('button', name='Lancer la partie').wait_for()

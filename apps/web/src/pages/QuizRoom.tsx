@@ -7,6 +7,8 @@ import { QuizLobby } from '../quiz/QuizLobby';
 import { QuizScoreboard } from '../quiz/QuizScoreboard';
 import { Timer } from '../pictionary/Timer';
 import { Answering } from '../quiz/Answering';
+import { Transition } from '../quiz/Transition';
+import { SpeedChip } from '../quiz/cards';
 import { Voting } from '../quiz/Voting';
 import { QuestionResult } from '../quiz/QuestionResult';
 import { QuizGameOver } from '../quiz/QuizGameOver';
@@ -17,13 +19,8 @@ const NOTICES: Partial<Record<ErrorCode, string>> = {
   internal: 'Oups, le serveur a eu un souci. Réessaie.',
 };
 
-const TITLES: Partial<Record<QuizPhase, string>> = {
-  answering: 'Réponds !',
-  transition: 'Question suivante…',
-  voting: 'Le vote',
-  deciding: 'Égalité',
-  result: 'Résultats',
-};
+const title = (phase: QuizPhase, n: number, total: number): string =>
+  phase === 'answering' ? 'Réponds !' : `Correction — question ${n}/${total}`;
 
 export function QuizRoom({ code }: { code: string }) {
   return (
@@ -75,9 +72,13 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
       {playing && (
         <div className="quiz-grid">
           <QuizScoreboard state={state} playerId={playerId} />
-          <section className={`notebook qz-notebook qz-${game.phase}`} aria-label={`Question ${game.questionNumber}/${game.questionCount}`}>
+          <section
+            className={`notebook qz-notebook qz-${game.phase}`}
+            aria-label={`Question ${game.phase === 'transition' ? game.questionNumber + 1 : game.questionNumber}/${game.questionCount}`}
+          >
             <span className="ring ring-l" aria-hidden="true" />
             <span className="ring ring-r" aria-hidden="true" />
+            {game.phase !== 'transition' && (
             <header className="nb-head">
               <span className="round" aria-hidden="true">
                 <small>Question</small>
@@ -85,12 +86,19 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
               </span>
               <div className="nb-center">
                 {game.question && <span className="nb-theme">{game.question.theme}</span>}
-                <h1 className="nb-title">{TITLES[game.phase]}</h1>
+                <h1 className="nb-title">{title(game.phase, game.questionNumber, game.questionCount)}</h1>
               </div>
               <div className="nb-timer">
-                {game.phase === 'answering' && <Timer endsAt={game.phaseEndsAt} offset={offset} />}
+                {game.phase === 'answering' && (
+                  <>
+                    <SpeedChip rate={game.timeRate} />
+                    <Timer endsAt={game.phaseEndsAt} offset={offset} rate={game.timeRate} />
+                  </>
+                )}
               </div>
             </header>
+            )}
+            {game.phase === 'transition' && <Transition game={game} />}
             {game.phase === 'answering' && (
               <Answering key={game.questionNumber} game={game} connectedIds={state.players.filter((p) => p.connected).map((p) => p.id)} send={sock.send} online={sock.status === 'open'} />
             )}
