@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "kgames",
+  "name": "lewisgames",
   "main": "src/index.ts",
   "compatibility_date": "2025-11-01",
   "assets": {
@@ -17,8 +17,7 @@
     {
       "binding": "DB",
       "database_name": "kgames",
-      // Placeholder: replace with the id printed by `wrangler d1 create kgames` (see README).
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "863772fe-de65-4623-8b20-199b01e4f800",
       "migrations_dir": "migrations"
     }
   ]

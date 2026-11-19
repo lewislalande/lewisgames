@@ -87,7 +87,7 @@ Le script est sans danger à relancer (`INSERT OR IGNORE` : rien n'est écrasé 
 
 ## Administration du quiz
 
-Page `/admin` (ex. `https://kgames.<ton-compte>.workers.dev/admin`), protégée par un mot de passe. Elle permet de :
+Page `/admin` (ex. `https://lewisgames.<ton-compte>.workers.dev/admin`), protégée par un mot de passe. Elle permet de :
 
 - parcourir, rechercher et filtrer les questions par thème ; ajouter, modifier, supprimer une question ;
 - importer un fichier JSON (aperçu, doublons ignorés et signalés) et exporter toutes les questions ;
@@ -130,6 +130,23 @@ En local, copie `apps/worker/.dev.vars.example` vers `apps/worker/.dev.vars` (ig
 
 ## Déploiement
 
+### Automatique (GitHub Actions)
+
+La base D1 `kgames` existe déjà sur le compte Cloudflare et son id est dans `wrangler.jsonc`. Chaque push sur `main` lance `.github/workflows/deploy.yml` : tests, migrations D1, build du front, `wrangler deploy`, puis pose des secrets admin.
+
+À configurer une fois dans GitHub → *Settings → Secrets and variables → Actions* :
+
+| Secret | Contenu |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | Jeton créé sur dash.cloudflare.com → *My Profile → API Tokens*, modèle « Edit Cloudflare Workers », en ajoutant la permission *Account → D1 → Edit* |
+| `CLOUDFLARE_ACCOUNT_ID` | L'id du compte (dashboard → *Workers & Pages*, colonne de droite) |
+| `ADMIN_PASSWORD` | Mot de passe de `/admin` (long et aléatoire) |
+| `ADMIN_SECRET` | Clé de signature des cookies admin (longue chaîne aléatoire, ex. `openssl rand -hex 32`) |
+
+Ensuite, une seule fois : onglet *Actions* → **Seed questions** → *Run workflow* pour charger les 200 questions et les mots du Pictionary. Ne le relance pas après avoir supprimé des questions dans l'admin : il les rajouterait.
+
+### À la main
+
 Première fois, depuis `apps/worker` :
 
 ```sh
@@ -143,7 +160,7 @@ Puis crée la base, applique les migrations, pose les secrets et sème les quest
 pnpm run deploy
 ```
 
-Utilise bien `pnpm run deploy` : `pnpm deploy` est une commande intégrée de pnpm, différente. Le script construit le front puis lance `wrangler deploy`. Le site est publié sur `https://kgames.<ton-compte>.workers.dev` (`kgames` est le nom dans `apps/worker/wrangler.jsonc`).
+Utilise bien `pnpm run deploy` : `pnpm deploy` est une commande intégrée de pnpm, différente. Le script construit le front puis lance `wrangler deploy`. Le site est publié sur `https://lewisgames.<ton-compte>.workers.dev` (`lewisgames` est le nom dans `apps/worker/wrangler.jsonc`).
 
 ## Inviter des amis
 
