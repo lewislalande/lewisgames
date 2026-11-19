@@ -10,3 +10,5 @@ export * from './pictionary/words';
 export * from './protocol';
 export * from './quiz/settings';
 export * from './quiz/grouping';
+export * from './quiz/game';
+export * from './quiz/view';
