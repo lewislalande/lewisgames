@@ -43,7 +43,8 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
       wsRef.current = ws;
       ws.onopen = () => {
         attempt = 0;
-        setStatus('open');
+        // Committed on its own, before any state of this connection (DrawingCanvas relies on it).
+        flushSync(() => setStatus('open'));
         ws.send(JSON.stringify({ t: 'hello', token: getToken(), name } satisfies ClientMsg));
       };
       ws.onmessage = (ev) => {

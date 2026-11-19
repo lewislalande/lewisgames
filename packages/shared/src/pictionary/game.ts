@@ -159,8 +159,13 @@ function gameOver(s: PictionaryState): Result {
   });
 }
 
-/** Start the turn at the first connected drawer found from `fromIndex` (wrapping rounds), or end the game. */
+/**
+ * Start the turn at the first connected drawer found from `fromIndex` (wrapping rounds), or end the
+ * game. A turn needs at least 2 connected players; this is checked only here, so a guesser who
+ * refreshes mid-turn does not end the game.
+ */
 function advance(s: PictionaryState, fromIndex: number, ctx: Ctx): Result {
+  if (connectedPlayers(ctx.room).length < 2) return gameOver(s);
   let index = fromIndex;
   let round = s.round;
   for (let i = 0; i < s.turnOrder.length; i++) {
@@ -257,7 +262,6 @@ function onPlayerJoined(s: PictionaryState, playerId: string): Result {
 
 function onPlayerLeft(s: PictionaryState, playerId: string, ctx: Ctx): Result {
   if (s.phase === 'lobby' || s.phase === 'gameOver') return changed(s);
-  if (connectedPlayers(ctx.room).length < 2) return gameOver(s);
   if ((s.phase === 'choosing' || s.phase === 'drawing') && playerId === s.drawerId) return endTurn(s, ctx);
   if (s.phase === 'drawing' && allFound(s, ctx)) return endTurn(s, ctx);
   return changed(s);

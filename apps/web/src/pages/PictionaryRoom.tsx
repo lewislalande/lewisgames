@@ -95,6 +95,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
                 canDraw={game.isDrawer && game.phase === 'drawing'}
                 onOp={(op) => sock.send({ t: 'draw', op })}
                 subscribe={sock.onDraw}
+                connected={sock.status === 'open'}
               />
             )}
           </section>

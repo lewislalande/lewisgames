@@ -142,11 +142,46 @@ describe('turn loop', () => {
     const n = run(e, { type: 'timeout' }, mkCtx(room, 87000));
     expect(n.drawerId).toBe('C');
   });
-  it('fewer than 2 connected players ends the game', () => {
+  it('fewer than 2 connected players ends the game at the next turn', () => {
     let room = mkRoom();
     const s = started(room);
     room = disconnect(disconnect(room, 'B'), 'C');
-    expect(run(s, { type: 'playerLeft', playerId: 'C' }, mkCtx(room)).phase).toBe('gameOver');
+    const left = run(s, { type: 'playerLeft', playerId: 'C' }, mkCtx(room));
+    expect(left.phase).toBe('choosing');
+    const d = run(left, { type: 'timeout' }, mkCtx(room, 16000));
+    const e = run(d, { type: 'timeout' }, mkCtx(room, 96000));
+    expect(e.phase).toBe('turnEnd');
+    expect(run(e, { type: 'timeout' }, mkCtx(room, 96000 + TURN_END_MS)).phase).toBe('gameOver');
+  });
+  describe('2 players, guesser refreshes', () => {
+    const two = (): Room => ({ ...mkRoom(), players: mkRoom().players.slice(0, 2) });
+    const drawingTwo = () => {
+      const room = two();
+      return run(started(room), { type: 'chooseWord', by: 'A', index: 0 }, mkCtx(room, 2000));
+    };
+    it('guesser disconnecting during drawing keeps the turn going', () => {
+      const room = disconnect(two(), 'B');
+      expect(run(drawingTwo(), { type: 'playerLeft', playerId: 'B' }, mkCtx(room, 3000)).phase).toBe('drawing');
+    });
+    it('guesser reconnecting continues the game', () => {
+      const gone = disconnect(two(), 'B');
+      let s = run(drawingTwo(), { type: 'playerLeft', playerId: 'B' }, mkCtx(gone, 3000));
+      const back = two();
+      s = run(s, { type: 'playerJoined', playerId: 'B' }, mkCtx(back, 4000));
+      expect(s.phase).toBe('drawing');
+      s = run(s, { type: 'timeout' }, mkCtx(back, 2000 + 80000));
+      s = run(s, { type: 'timeout' }, mkCtx(back, 2000 + 80000 + TURN_END_MS));
+      expect(s.phase).toBe('choosing');
+      expect(s.drawerId).toBe('B');
+    });
+    it('guesser still gone when the next turn begins → gameOver', () => {
+      const gone = disconnect(two(), 'B');
+      let s = run(drawingTwo(), { type: 'playerLeft', playerId: 'B' }, mkCtx(gone, 3000));
+      s = run(s, { type: 'timeout' }, mkCtx(gone, 2000 + 80000));
+      expect(s.phase).toBe('turnEnd');
+      s = run(s, { type: 'timeout' }, mkCtx(gone, 2000 + 80000 + TURN_END_MS));
+      expect(s.phase).toBe('gameOver');
+    });
   });
   it('a non-drawer leaving does not end the turn', () => {
     let room = mkRoom();
@@ -207,7 +242,9 @@ describe('settings and restart', () => {
     let s = run(initialState(), { type: 'setSettings', by: 'A', settings: { rounds: 1 } }, ctx);
     s = run(s, { type: 'start', by: 'A' }, ctx);
     expect(run(s, { type: 'restart', by: 'A' }, ctx).phase).toBe('choosing');
-    const over = run(s, { type: 'playerLeft', playerId: 'B' }, mkCtx(disconnect(disconnect(room, 'B'), 'C')));
+    const alone = mkCtx(disconnect(disconnect(room, 'B'), 'C'));
+    let over = run(s, { type: 'playerLeft', playerId: 'B' }, alone);
+    for (const now of [16000, 96000, 96000 + TURN_END_MS]) over = run(over, { type: 'timeout' }, { ...alone, now });
     expect(over.phase).toBe('gameOver');
     expect(run(over, { type: 'restart', by: 'B' }, ctx).phase).toBe('gameOver');
     const r = run(over, { type: 'restart', by: 'A' }, ctx);

@@ -276,7 +276,7 @@ describe('viewFor', () => {
     const v = viewFor(e, 'C', 0, 'A');
     expect(v.word).toBe('chat');
     expect(v.mask).toEqual(['_', '_', '_', '_']);
-    const over = run(e, { type: 'playerLeft', playerId: 'B' }, mkCtx(disconnect(disconnect(room, 'B'), 'C')));
+    const over = run(e, { type: 'timeout' }, mkCtx(disconnect(disconnect(room, 'B'), 'C'), 2000 + 80000 + TURN_END_MS));
     expect(over.phase).toBe('gameOver');
     expect(viewFor(over, 'C', 0, 'A').word).toBeNull();
     expect(viewFor(over, 'C', 0, 'A').mask).toBeNull();

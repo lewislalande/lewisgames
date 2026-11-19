@@ -6,7 +6,7 @@ Usage: python3 apps/web/e2e/draw-sync.py [--base http://localhost:8787] [--scree
 Alice creates a room, Bob and Carol join, Alice starts; the word is auto-picked after
 chooseSeconds (5 s). Alice draws with every tool, undoes/redoes with the keyboard,
 and after each step both canvases must be pixel-identical. Finally Bob reloads and
-the replayed drawing must still match.
+the replayed drawing must still match, with 3 players and again with 2.
 """
 import argparse
 import math
@@ -55,12 +55,13 @@ def main():
         cb = browser.new_context(viewport={'width': 1000, 'height': 900})
         ca.add_init_script(init_script('Alice', "localStorage.setItem('kg.pictionarySettings', JSON.stringify({chooseSeconds: 5, drawSeconds: 240}));"))
         cb.add_init_script(init_script('Bob'))
-        # A third player keeps the game alive while Bob reloads (< 2 connected ends it).
+        # A third player, to check the canvas syncs to every guesser.
         cc = browser.new_context(viewport={'width': 1000, 'height': 900})
         cc.add_init_script(init_script('Carol'))
         a = ca.new_page()
         b = cb.new_page()
-        for pg, who in ((a, 'A'), (b, 'B')):
+        c = cc.new_page()
+        for pg, who in ((a, 'A'), (b, 'B'), (c, 'C')):
             pg.on('pageerror', lambda e, who=who: failures.append(f'{who} page error: {e}'))
 
         a.goto(args.base + '/')
@@ -69,7 +70,6 @@ def main():
         url = a.url
         print('room', url)
         b.goto(url)
-        c = cc.new_page()
         c.goto(url)
         a.get_by_text('Bob').first.wait_for()
         a.get_by_text('Carol').first.wait_for()
@@ -174,18 +174,53 @@ def main():
         if not (undone != full and redone == full):
             failures.append(f'undo/redo did not change the drawing as expected ({full}, {undone}, {redone})')
 
+        # Undo pressed mid-stroke: the open stroke (and its unsent points) is undone everywhere
+        a.keyboard.press('b')
+        a.mouse.move(*at(450, 300))
+        a.mouse.down()
+        a.mouse.move(*at(600, 330), steps=15)
+        a.keyboard.press('Control+z')
+        a.mouse.move(*at(700, 500), steps=15)
+        a.mouse.up()
+        if compare('undo mid-stroke') != full:
+            failures.append('undo mid-stroke left pixels behind')
+
+        # Tool shortcut during a shape drag is ignored: the rect stays a rect
+        a.keyboard.press('r')
+        a.mouse.move(*at(440, 470))
+        a.mouse.down()
+        a.mouse.move(*at(520, 520), steps=6)
+        a.keyboard.press('l')
+        a.mouse.move(*at(560, 580), steps=6)
+        a.mouse.up()
+        compare('tool key during rect drag')
+        if a.locator('[data-tool="rect"][aria-pressed="true"]').count() != 1:
+            failures.append('tool changed during a drag')
+        full = compare('before clear')
+
         a.get_by_role('button', name='Tout effacer').click()
         cleared = compare('tout effacer')
         if cleared != 0:
             failures.append('clear left non-white pixels')
         a.get_by_role('button', name='Annuler').click()
-        compare('undo clear')
+        if compare('undo clear') != full:
+            failures.append('undo of clear did not restore the drawing')
 
         b.reload()
         b.locator('canvas.board').wait_for()
         b.wait_for_timeout(800)
         compare('guesser reload replay')
         compare('third player', c)
+
+        # Down to 2 players: a guesser refresh must not end the game
+        cc.close()
+        a.wait_for_timeout(500)
+        b.reload()
+        b.locator('canvas.board').wait_for(timeout=10000)
+        b.wait_for_timeout(800)
+        compare('2-player guesser reload')
+        if a.locator('.toolbar').count() != 1:
+            failures.append('drawer lost the turn after a 2-player refresh')
 
         browser.close()
     if failures:

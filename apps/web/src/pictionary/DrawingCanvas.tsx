@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
-import { addAction, appendPoints, MAX_STROKE_POINTS, redo, undo } from '@kg/shared';
+import { addAction, appendPoints, isValidAction, MAX_STROKE_POINTS, redo, undo } from '@kg/shared';
 import type { DrawAction, DrawingHistory, DrawOp, Point } from '@kg/shared';
 import { Renderer, renderAction } from './renderer';
 import { DEFAULT_TOOL_STATE, TOOLS, Toolbar } from './Toolbar';
@@ -60,15 +60,19 @@ function applyOp(h: DrawingHistory, op: DrawOp): DrawingHistory {
 
 const lastId = (h: DrawingHistory) => h.actions[h.actions.length - 1]?.id;
 
+type ShapeAction = Extract<DrawAction, { kind: 'line' | 'rect' | 'ellipse' }>;
 type Gesture =
   | { kind: 'stroke'; pointerId: number; id: string; count: number; last: Point; pending: Point[] }
-  | { kind: 'shape'; pointerId: number; from: Point; to: Point };
+  /** The shape's kind and style are fixed at pointerdown; only `to` follows the pointer. */
+  | { kind: 'shape'; pointerId: number; action: ShapeAction };
 
 type Props = {
   history: DrawingHistory;
   canDraw: boolean;
   onOp: (op: DrawOp) => void;
   subscribe: (cb: (op: DrawOp) => void) => () => void;
+  /** Socket open. After a reconnect the next `history` replaces the local copy, drawer included. */
+  connected: boolean;
 };
 
 /**
@@ -77,7 +81,7 @@ type Props = {
  * Mount one instance per turn (React `key`): the drawer's copy is authoritative
  * for the whole turn.
  */
-export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
+export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<Renderer | null>(null);
@@ -93,8 +97,9 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
     renderer.current.reset(local.current);
   }, []);
 
-  /** Apply locally, repaint, and (drawer) send. */
+  /** Apply locally, repaint, and (drawer) send. Invalid actions are dropped. */
   const commit = useCallback((op: DrawOp, send: boolean) => {
+    if (op.op === 'add' && !isValidAction(op.action)) return;
     const next = applyOp(local.current, op);
     if (next === local.current) return;
     local.current = next;
@@ -102,16 +107,28 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
     if (send) onOpRef.current(op);
   }, []);
 
-  // Non-drawers: resync whenever the server's history diverges from ours. Layout
-  // effect so it runs before the next relayed op is processed.
+  // After a reconnect, the history held at that moment is stale: wait for the next one.
+  const staleHistory = useRef<DrawingHistory | null>(null);
+  const wasConnected = useRef(connected);
+
+  // Non-drawers: resync whenever the server's history diverges from ours. Drawer:
+  // only after a reconnect (ops sent while offline were lost). Layout effect so it
+  // runs before the next relayed op is processed.
   useLayoutEffect(() => {
-    if (canDraw) return;
+    if (connected && !wasConnected.current) staleHistory.current = history;
+    wasConnected.current = connected;
     const h = local.current;
-    if (history.actions.length !== h.actions.length || lastId(history) !== lastId(h)) {
+    let reset = !canDraw && (history.actions.length !== h.actions.length || lastId(history) !== lastId(h));
+    if (staleHistory.current && connected && history !== staleHistory.current) {
+      staleHistory.current = null;
+      reset = true;
+    }
+    if (reset) {
+      endGesture();
       local.current = history;
       renderer.current?.reset(history);
     }
-  }, [history, canDraw]);
+  }, [history, canDraw, connected]);
 
   useEffect(() => {
     if (canDraw) return;
@@ -120,42 +137,37 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
 
   // --- drawer input ---------------------------------------------------------
 
-  const flush = useCallback(() => {
+  function flush() {
     const g = gesture.current;
     if (!g || g.kind !== 'stroke' || g.pending.length === 0) return;
     const points = g.pending;
     g.pending = [];
     onOpRef.current({ op: 'append', id: g.id, points });
-  }, []);
+  }
 
-  const stopTimer = () => {
+  function stopTimer() {
     clearInterval(flushTimer.current);
     flushTimer.current = undefined;
-  };
+  }
 
-  const clearOverlay = () => {
+  function clearOverlay() {
     const o = overlayRef.current;
     o?.getContext('2d')?.clearRect(0, 0, o.width, o.height);
-  };
+  }
 
-  const shapeAction = (g: Extract<Gesture, { kind: 'shape' }>): DrawAction => ({
-    id: newId(),
-    kind: tools.tool as 'line' | 'rect' | 'ellipse',
-    color: tools.color,
-    size: tools.size,
-    opacity: tools.opacity,
-    filled: tools.tool !== 'line' && tools.filled,
-    from: g.from,
-    to: g.to,
-  });
+  /** Close any open gesture: a stroke sends its pending points, a shape is dropped. */
+  function endGesture() {
+    flush();
+    stopTimer();
+    clearOverlay();
+    gesture.current = null;
+  }
 
-  const startStroke = (pointerId: number, at: Point) => {
+  type StrokeStyle = Pick<Extract<DrawAction, { kind: 'stroke' }>, 'tool' | 'color' | 'size' | 'opacity'>;
+  const startStroke = (pointerId: number, at: Point, style: StrokeStyle) => {
     const id = newId();
     gesture.current = { kind: 'stroke', pointerId, id, count: 1, last: at, pending: [] };
-    commit({
-      op: 'add',
-      action: { id, kind: 'stroke', tool: tools.tool as 'pen' | 'eraser', color: tools.color, size: tools.size, opacity: tools.opacity, points: [at] },
-    }, true);
+    commit({ op: 'add', action: { id, kind: 'stroke', ...style, points: [at] } }, true);
   };
 
   const pos = (e: ReactPointerEvent) => toLogical(e.clientX, e.clientY, canvasRef.current!.getBoundingClientRect());
@@ -171,12 +183,19 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
       case 'pen':
       case 'eraser':
         e.currentTarget.setPointerCapture(e.pointerId);
-        startStroke(e.pointerId, at);
+        startStroke(e.pointerId, at, { tool: tools.tool, color: tools.color, size: tools.size, opacity: tools.opacity });
         flushTimer.current = setInterval(flush, FLUSH_MS);
         return;
       default:
         e.currentTarget.setPointerCapture(e.pointerId);
-        gesture.current = { kind: 'shape', pointerId: e.pointerId, from: at, to: at };
+        gesture.current = {
+          kind: 'shape',
+          pointerId: e.pointerId,
+          action: {
+            id: newId(), kind: tools.tool, color: tools.color, size: tools.size, opacity: tools.opacity,
+            filled: tools.tool !== 'line' && tools.filled, from: at, to: at,
+          },
+        };
     }
   };
 
@@ -185,19 +204,20 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
     if (!g || g.pointerId !== e.pointerId) return;
     const at = pos(e);
     if (g.kind === 'shape') {
-      g.to = at;
+      g.action = { ...g.action, to: at };
       const o = overlayRef.current!;
       const ctx = o.getContext('2d')!;
       ctx.clearRect(0, 0, o.width, o.height);
-      renderAction(ctx, shapeAction(g));
+      renderAction(ctx, g.action);
       return;
     }
     if (at[0] === g.last[0] && at[1] === g.last[1]) return;
     if (g.count >= MAX_STROKE_POINTS) {
-      // Stroke full: continue in a new stroke starting from the last point.
+      // Stroke full: continue in a new stroke, same style, starting from the last point.
+      const full = local.current.actions[local.current.actions.length - 1];
+      if (!full || full.kind !== 'stroke' || full.id !== g.id) return;
       flush();
-      const prev = g.last;
-      startStroke(g.pointerId, prev);
+      startStroke(g.pointerId, g.last, { tool: full.tool, color: full.color, size: full.size, opacity: full.opacity });
     }
     const s = gesture.current as Extract<Gesture, { kind: 'stroke' }>;
     s.count += 1;
@@ -207,23 +227,20 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
     if (s.pending.length >= MAX_APPEND_POINTS) flush();
   };
 
-  const endGesture = (e: ReactPointerEvent<HTMLCanvasElement>) => {
+  const onPointerEnd = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     const g = gesture.current;
     if (!g || g.pointerId !== e.pointerId) return;
-    if (g.kind === 'stroke') {
-      flush();
-      stopTimer();
-    } else {
-      clearOverlay();
-      const same = g.from[0] === g.to[0] && g.from[1] === g.to[1];
-      if (e.type === 'pointerup' && !same) commit({ op: 'add', action: shapeAction(g) }, true);
+    if (g.kind === 'shape') {
+      const { from, to } = g.action;
+      const same = from[0] === to[0] && from[1] === to[1];
+      if (e.type === 'pointerup' && !same) commit({ op: 'add', action: g.action }, true);
     }
-    gesture.current = null;
+    endGesture();
   };
 
   useEffect(() => stopTimer, []);
 
-  // Turn over mid-gesture: drop whatever was in progress.
+  // Turn over mid-gesture: drop whatever was in progress (nothing can be sent any more).
   useEffect(() => {
     if (canDraw) return;
     stopTimer();
@@ -231,9 +248,12 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
     clearOverlay();
   }, [canDraw]);
 
-  const doUndo = useCallback(() => commit({ op: 'undo' }, true), [commit]);
-  const doRedo = useCallback(() => commit({ op: 'redo' }, true), [commit]);
-  const doClear = () => commit({ op: 'add', action: { id: newId(), kind: 'clear' } }, true);
+  // History commands first close the open gesture so its unsent points are flushed.
+  const doUndo = () => { endGesture(); commit({ op: 'undo' }, true); };
+  const doRedo = () => { endGesture(); commit({ op: 'redo' }, true); };
+  const doClear = () => { endGesture(); commit({ op: 'add', action: { id: newId(), kind: 'clear' } }, true); };
+  const keyActions = useRef({ doUndo, doRedo });
+  keyActions.current = { doUndo, doRedo };
 
   useEffect(() => {
     if (!canDraw) return;
@@ -242,13 +262,13 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
       const s = shortcutFor(e);
       if (!s) return;
       e.preventDefault();
-      if (s.kind === 'undo') doUndo();
-      else if (s.kind === 'redo') doRedo();
-      else setTools((t) => ({ ...t, tool: s.tool }));
+      if (s.kind === 'undo') keyActions.current.doUndo();
+      else if (s.kind === 'redo') keyActions.current.doRedo();
+      else if (!gesture.current) setTools((t) => ({ ...t, tool: s.tool }));
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [canDraw, doUndo, doRedo]);
+  }, [canDraw]);
 
   return (
     <div className="drawing">
@@ -261,8 +281,9 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe }: Props) {
           aria-label="Zone de dessin"
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
-          onPointerUp={endGesture}
-          onPointerCancel={endGesture}
+          onPointerUp={onPointerEnd}
+          onPointerCancel={onPointerEnd}
+          onLostPointerCapture={onPointerEnd}
         />
         <canvas ref={overlayRef} className="board-overlay" width={WIDTH} height={HEIGHT} aria-hidden="true" />
       </div>
