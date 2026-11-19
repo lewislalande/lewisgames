@@ -70,4 +70,10 @@ describe('questionKey', () => {
     expect(questionKey('  Qui a réalisé   JAWS ? ')).toBe(questionKey('qui a realise jaws ?'));
     expect(questionKey('Paris')).not.toBe(questionKey('Lyon'));
   });
+
+  it('ignores punctuation and spacing around it', () => {
+    expect(questionKey('Quelle est X ?')).toBe(questionKey('Quelle est X?'));
+    expect(questionKey('Quelle est X ?')).toBe(questionKey('quelle est x'));
+    expect(questionKey("Qu'est-ce que c'est, « ça » ?")).toBe(questionKey('qu est ce que c est ça'));
+  });
 });

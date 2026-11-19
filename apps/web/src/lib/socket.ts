@@ -12,7 +12,8 @@ export type RoomSocket = {
   status: Status;
   playerId: string | null;
   state: StateMsg | null;
-  send(m: ClientMsg): void;
+  /** True if the message went out; false if the socket is not open (the message is dropped). */
+  send(m: ClientMsg): boolean;
   onDraw(cb: (op: DrawOp) => void): () => void;
   onNotice(cb: (n: 'close' | 'correct') => void): () => void;
   /** Errors that leave the socket open (a refused action, e.g. no_questions). */
@@ -122,9 +123,11 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
     };
   }, [code, name]);
 
-  const send = useCallback((m: ClientMsg) => {
+  const send = useCallback((m: ClientMsg): boolean => {
     const ws = wsRef.current;
-    if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(m));
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    ws.send(JSON.stringify(m));
+    return true;
   }, []);
 
   const onDraw = useCallback((cb: (op: DrawOp) => void) => {

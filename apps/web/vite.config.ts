@@ -6,5 +6,5 @@ export default defineConfig({
   server: {
     proxy: { '/api': { target: 'http://localhost:8787', ws: true } },
   },
-  test: { environment: 'jsdom', include: ['test/**/*.test.ts'] },
+  test: { environment: 'jsdom', include: ['test/**/*.test.{ts,tsx}'] },
 });

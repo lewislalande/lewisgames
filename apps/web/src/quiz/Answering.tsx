@@ -6,10 +6,17 @@ const MAX_ANSWER = 100;
 /** Typing pause after which the text is sent without pressing Enter (the server accepts changes until the timer ends). */
 const AUTOSEND_MS = 600;
 
-type Props = { game: QuizView; connectedIds: string[]; send: (m: ClientMsg) => void };
+type Props = {
+  game: QuizView;
+  connectedIds: string[];
+  /** True if the message went out (the socket was open). */
+  send: (m: ClientMsg) => boolean;
+  /** Socket open: when it comes back, the current text is sent again if the server may not have it. */
+  online?: boolean;
+};
 
 /** Mounted once per question (keyed by the question number). */
-export function Answering({ game, connectedIds, send }: Props) {
+export function Answering({ game, connectedIds, send, online = true }: Props) {
   const hasAnswer = !isBlankAnswer(game.myAnswer ?? '');
   const [text, setText] = useState(game.myAnswer ?? '');
   const [editing, setEditing] = useState(!hasAnswer);
@@ -25,20 +32,21 @@ export function Answering({ game, connectedIds, send }: Props) {
   // Text typed but not submitted must not be lost when the timer ends.
   useEffect(() => {
     const clean = text.trim();
-    if (!editing || isBlankAnswer(text) || clean === lastSent.current) return;
+    if (!online || !editing || isBlankAnswer(text) || clean === lastSent.current) return;
     const id = setTimeout(() => {
-      lastSent.current = clean;
-      send({ t: 'answer', text: clean });
+      // A dropped message (socket not open) is retried when the socket comes back (`online`).
+      if (send({ t: 'answer', text: clean })) lastSent.current = clean;
     }, AUTOSEND_MS);
     return () => clearTimeout(id);
-  }, [text, editing, send]);
+  }, [text, editing, send, online]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (isBlankAnswer(text)) return;
     const clean = text.trim();
+    // Offline: stay in the form, the text is sent as soon as the connection is back.
+    if (!send({ t: 'answer', text: clean })) return;
     lastSent.current = clean;
-    send({ t: 'answer', text: clean });
     setSent(clean);
     setEditing(false);
   }

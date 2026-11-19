@@ -6,9 +6,12 @@ export type ImportError = { index: number; reason: string };
 
 export const IMPORT_LIMITS = { theme: 40, question: 300, answer: 100, variants: 10, variant: 100 } as const;
 
-/** Dedupe key of a question: two questions differing only by case, accents or spacing are the same. */
+/**
+ * Dedupe key of a question: two questions differing only by case, accents, punctuation or spacing
+ * are the same ("Quelle est X ?" = "Quelle est X?" = "quelle est x").
+ */
 export function questionKey(q: string): string {
-  return normalize(q);
+  return normalize(q).replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 }
 
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
