@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react';
-import { getSoundSettings, play, setSoundSettings, type SoundSettings } from '../lib/sound';
+import { getSoundSettings, onSoundSettings, play, setSoundSettings, type SoundSettings } from '../lib/sound';
 
 /** Speaker icon: with sound waves (🔊), or crossed out (🔇). */
 function SpeakerIcon({ silent }: { silent: boolean }) {
@@ -20,9 +20,11 @@ export function SoundControl() {
   const slider = useRef<HTMLInputElement>(null);
   const popId = useId();
 
+  // Follows changes made elsewhere (another SoundControl, another tab).
+  useEffect(() => onSoundSettings(setS), []);
+
   function update(next: SoundSettings) {
-    setSoundSettings(next);
-    setS(getSoundSettings());
+    setS(setSoundSettings(next));
   }
 
   function close(refocus: boolean) {
@@ -50,10 +52,6 @@ export function SoundControl() {
           e.stopPropagation();
           close(true);
         }
-      }}
-      onBlur={(e) => {
-        // Tabbing out of the popover closes it.
-        if (open && !root.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
       }}
     >
       <button

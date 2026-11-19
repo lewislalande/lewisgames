@@ -53,7 +53,7 @@ export function Home() {
   return (
     <main className="home">
       <h1 className="logo">
-        <span>K</span>Games
+        <span>L</span>Games
       </h1>
       <p className="tagline">Des jeux à plusieurs, sans compte, directement dans le navigateur.</p>
 

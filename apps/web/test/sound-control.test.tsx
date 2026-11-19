@@ -21,6 +21,27 @@ afterEach(() => {
 });
 
 describe('SoundControl', () => {
+  it('follows a change made in another tab', () => {
+    act(() => root.render(createElement(SoundControl)));
+    const button = host.querySelector<HTMLButtonElement>('button[aria-label="Son"]')!;
+    expect(button.classList.contains('silent')).toBe(false);
+    localStorage.setItem('kg.sound', '{"volume":0.6,"muted":true}');
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'kg.sound' })); });
+    expect(button.classList.contains('silent')).toBe(true);
+    localStorage.setItem('kg.sound', '{"volume":0.6,"muted":false}');
+    act(() => { window.dispatchEvent(new StorageEvent('storage', { key: 'kg.sound' })); });
+  });
+
+  it('closes on a pointerdown outside, not when focus leaves', () => {
+    act(() => root.render(createElement(SoundControl)));
+    const button = host.querySelector<HTMLButtonElement>('button[aria-label="Son"]')!;
+    act(() => button.click());
+    act(() => { (document.activeElement as HTMLElement).blur(); });
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+    act(() => { document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })); });
+    expect(host.querySelector('[role="dialog"]')).toBeNull();
+  });
+
   it('opens a « Son » popover, saves the mute toggle, closes on Escape and refocuses the button', () => {
     act(() => root.render(createElement(SoundControl)));
     const button = host.querySelector<HTMLButtonElement>('button[aria-label="Son"]')!;

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { ErrorCode, QuizPhase, QuizView } from '@kg/shared';
+import type { ErrorCode, QuizPhase } from '@kg/shared';
 import { useRoomSocket } from '../lib/socket';
 import { RoomError, WrongGame } from '../room/RoomError';
 import { RoomPage } from '../room/RoomPage';
@@ -14,6 +14,7 @@ import { QuestionResult } from '../quiz/QuestionResult';
 import { QuizGameOver } from '../quiz/QuizGameOver';
 import { SoundControl } from '../room/SoundControl';
 import { useStateChanges } from '../room/useStateChanges';
+import { quizSound } from '../room/gameSounds';
 import { play } from '../lib/sound';
 
 /** Refusals that leave the socket open, shown as a banner. */
@@ -21,25 +22,6 @@ const NOTICES: Partial<Record<ErrorCode, string>> = {
   no_questions: 'Aucune question dans ces thèmes. Ajoute-en depuis la page admin.',
   internal: 'Oups, le serveur a eu un souci. Réessaie.',
 };
-
-/** A phase change this close to (or past) the deadline was the timer running out. */
-const DEADLINE_SLACK_MS = 250;
-
-/** Sound effects of one state change (own / others' submissions, time up, podium). */
-function quizSounds(a: QuizView, b: QuizView, playerId: string): void {
-  if (b.phase === 'gameOver' && a.phase !== 'gameOver') return play('podium');
-  if (a.phase !== 'answering') return;
-  if (b.phase !== 'answering') {
-    if (a.phaseEndsAt !== null && b.serverNow >= a.phaseEndsAt - DEADLINE_SLACK_MS) play('timeUp');
-    // Ended early: the last submission (whose state never shows in `answered`) completed it.
-    else play(a.answered.includes(playerId) ? 'reveal' : 'submit');
-    return;
-  }
-  if (a.questionNumber !== b.questionNumber) return;
-  const added = b.answered.filter((id) => !a.answered.includes(id));
-  if (added.includes(playerId)) play('submit');
-  else if (added.length > 0) play('reveal');
-}
 
 const title = (phase: QuizPhase, n: number, total: number): string =>
   phase === 'answering' ? 'Réponds !' : `Correction — question ${n}/${total}`;
@@ -66,7 +48,8 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   const settingsKey = state?.kind === 'quiz' ? JSON.stringify(state.game.settings) : '';
   useEffect(() => setNotice(null), [phase, settingsKey]);
   useStateChanges(state?.kind === 'quiz' ? state.game : null, sock.status === 'open', (a, b) => {
-    if (sock.playerId) quizSounds(a, b, sock.playerId);
+    const sound = sock.playerId ? quizSound(a, b, sock.playerId) : null;
+    if (sound) play(sound);
   });
 
   if (error) return <RoomError error={error} onChangeName={onChangeName} />;

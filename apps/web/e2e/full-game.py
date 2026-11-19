@@ -137,11 +137,15 @@ def main():
         guess(g1, word + 'x')
         g1.locator('.chat-close').wait_for()
         check(g1.locator('.chat-close').inner_text() == 'tu chauffes !', 'author sees « tu chauffes ! »')
+        close_line = g1.locator('.chat-list .chat-close-guess')
+        check(close_line.count() == 1 and close_line.inner_text() == f'{word}x — tu chauffes !', 'author sees the greyed « <guess> — tu chauffes ! » line in their chat')
         g1.locator('.chat-close').wait_for(state='detached', timeout=4000)
         check(True, '« tu chauffes ! » disappears')
+        check(close_line.count() == 1, 'the greyed close-guess line stays in the author\'s chat')
         g2.wait_for_timeout(300)
         for pg, who in ((g2, 'other guesser'), (drawer, 'drawer')):
             html = pg.evaluate(HTML_JS)
+            check(pg.locator('.chat-close-guess').count() == 0, f'{who} has no close-guess line')
             check('tu chauffes' not in html and (word + 'x').lower() not in html, f'{who} has no trace of the close guess')
 
         drawer.screenshot(path=f'{args.shots}/task-11-drawer.png', full_page=True)

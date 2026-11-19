@@ -1,6 +1,6 @@
-# kgames
+# LGames
 
-Un petit site de mini-jeux à jouer entre potes, sans compte : on choisit un pseudo, on crée un salon, on envoie le lien sur Discord. Il y a le **Pictionary** (dessin et devinettes en temps réel) et un **quiz** (questions de culture générale, vote des réponses entre joueurs).
+LGames est un petit site de mini-jeux à jouer entre potes, sans compte : on choisit un pseudo, on crée un salon, on envoie le lien sur Discord. Il y a le **Pictionary** (dessin et devinettes en temps réel) et un **quiz** (questions de culture générale, vote des réponses entre joueurs).
 
 Tourne entièrement sur l'offre gratuite de Cloudflare : un Worker, un Durable Object par salon (SQLite) et le front servi en fichiers statiques par le même Worker.
 

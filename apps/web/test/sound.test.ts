@@ -76,10 +76,38 @@ describe('sound settings', () => {
     expect(sound.getSoundSettings().volume).toBe(1);
     sound.setSoundSettings({ volume: -2, muted: false });
     expect(sound.getSoundSettings().volume).toBe(0);
-    localStorage.setItem('kg.sound', '{"volume":"loud","muted":"yes"}');
-    expect(sound.getSoundSettings()).toEqual({ volume: 0.6, muted: false });
-    localStorage.setItem('kg.sound', 'not json');
-    expect(sound.getSoundSettings()).toEqual({ volume: 0.6, muted: false });
+    expect(sound.setSoundSettings({ volume: 0.4, muted: false })).toEqual({ volume: 0.4, muted: false });
+  });
+
+  it('falls back on garbage saved values', async () => {
+    for (const saved of ['{"volume":"loud","muted":"yes"}', 'not json']) {
+      localStorage.setItem('kg.sound', saved);
+      vi.resetModules();
+      sound = await import('../src/lib/sound');
+      expect(sound.getSoundSettings()).toEqual({ volume: 0.6, muted: false });
+    }
+  });
+
+  it('follows a change made in another tab (storage event) and notifies subscribers', () => {
+    const seen: unknown[] = [];
+    const off = sound.onSoundSettings((s) => seen.push(s));
+    localStorage.setItem('kg.sound', '{"volume":0.2,"muted":true}');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'kg.sound' }));
+    expect(sound.getSoundSettings()).toEqual({ volume: 0.2, muted: true });
+    expect(seen).toEqual([{ volume: 0.2, muted: true }]);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'kg.name' }));
+    expect(seen).toHaveLength(1);
+    off();
+  });
+
+  it('a storage event mutes a running context', () => {
+    sound.play('submit');
+    const master = FakeAudioContext.instances[0].gains[0];
+    localStorage.setItem('kg.sound', '{"volume":0.6,"muted":true}');
+    window.dispatchEvent(new StorageEvent('storage', { key: 'kg.sound' }));
+    expect(master.gain.value).toBe(0);
+    sound.play('submit');
+    expect(FakeAudioContext.instances).toHaveLength(1);
   });
 });
 
@@ -110,13 +138,35 @@ describe('play', () => {
     expect(master.gain.value).toBe(0);
   });
 
-  it('resumes the context on the first user gesture', () => {
+  it('resumes the context on user gestures until it runs (click / touchend count, for iOS)', async () => {
     sound.play('tick');
     const ctx = FakeAudioContext.instances[0];
-    window.dispatchEvent(new Event('pointerdown'));
+    window.dispatchEvent(new Event('touchend'));
     expect(ctx.resumed).toBe(1);
+    await Promise.resolve();
+    window.dispatchEvent(new Event('click'));
     window.dispatchEvent(new Event('keydown'));
     expect(ctx.resumed).toBe(1);
+  });
+
+  it('keeps listening while resume() leaves the context suspended', async () => {
+    sound.play('tick');
+    const ctx = FakeAudioContext.instances[0];
+    ctx.resume = function () { this.resumed++; return Promise.resolve(); };
+    window.dispatchEvent(new Event('click'));
+    await Promise.resolve();
+    window.dispatchEvent(new Event('pointerdown'));
+    expect(ctx.resumed).toBe(2);
+  });
+
+  it('retries creating the context when the master gain setup failed', () => {
+    const create = FakeAudioContext.prototype.createGain;
+    FakeAudioContext.prototype.createGain = () => { throw new Error('nope'); };
+    sound.play('submit');
+    FakeAudioContext.prototype.createGain = create;
+    sound.play('submit');
+    expect(FakeAudioContext.instances).toHaveLength(2);
+    expect(FakeAudioContext.instances[1].started).toBeGreaterThan(0);
   });
 });
 

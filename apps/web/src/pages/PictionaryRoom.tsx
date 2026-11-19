@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { PictionaryView } from '@kg/shared';
 import { RoomError, WrongGame } from '../room/RoomError';
 import { RoomPage } from '../room/RoomPage';
 import { useRoomSocket } from '../lib/socket';
@@ -17,18 +16,7 @@ import { GameOver } from '../pictionary/GameOver';
 import { SoundControl } from '../room/SoundControl';
 import { useStateChanges } from '../room/useStateChanges';
 import { play } from '../lib/sound';
-
-/** A turn ending this close to (or past) the deadline was the timer running out. */
-const DEADLINE_SLACK_MS = 250;
-
-/** Sound effects of one state change (turn start, someone found, time up, podium). */
-function pictionarySounds(a: PictionaryView, b: PictionaryView): void {
-  if (b.phase === 'gameOver' && a.phase !== 'gameOver') return play('podium');
-  if (b.phase === 'drawing' && a.phase !== 'drawing') return play('turnStart');
-  if (a.phase !== 'drawing' || (b.phase !== 'drawing' && b.phase !== 'turnEnd')) return;
-  if (b.found.some((id) => !a.found.includes(id))) play('found');
-  else if (b.phase === 'turnEnd' && a.phaseEndsAt !== null && b.serverNow >= a.phaseEndsAt - DEADLINE_SLACK_MS) play('timeUp');
-}
+import { pictionarySound } from '../room/gameSounds';
 
 export function PictionaryRoom({ code }: { code: string }) {
   return (
@@ -46,7 +34,10 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   // Server clock offset, re-measured on every state message.
   const offset = useMemo(() => (state ? state.game.serverNow - Date.now() : 0), [state]);
   const names = useMemo(() => Object.fromEntries((state?.players ?? []).map((p) => [p.id, p.name])), [state]);
-  useStateChanges(state?.kind === 'pictionary' ? state.game : null, sock.status === 'open', pictionarySounds);
+  useStateChanges(state?.kind === 'pictionary' ? state.game : null, sock.status === 'open', (a, b) => {
+    const sound = pictionarySound(a, b);
+    if (sound) play(sound);
+  });
   // Notices are live only (never replayed): « presque ! » for this player's own guess.
   const { onNotice } = sock;
   useEffect(() => onNotice((n) => { if (n === 'close') play('close'); }), [onNotice]);

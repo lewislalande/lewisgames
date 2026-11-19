@@ -12,8 +12,8 @@ const DEFAULTS: SoundSettings = { volume: 0.6, muted: false };
 
 const clampVolume = (v: number) => Math.min(1, Math.max(0, v));
 
-/** The saved setting, the defaults when nothing (or garbage) is saved. */
-export function getSoundSettings(): SoundSettings {
+/** Reads `kg.sound`; the defaults when nothing (or garbage) is saved. */
+function readSettings(): SoundSettings {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(KEY) ?? 'null');
     if (typeof raw !== 'object' || raw === null) return { ...DEFAULTS };
@@ -27,18 +27,38 @@ export function getSoundSettings(): SoundSettings {
   }
 }
 
-export function setSoundSettings(s: SoundSettings): void {
-  const clean: SoundSettings = { volume: clampVolume(Number.isFinite(s.volume) ? s.volume : DEFAULTS.volume), muted: s.muted };
+/** The current setting: kept in sync with `kg.sound`, including changes made in another tab. */
+export function getSoundSettings(): SoundSettings {
+  return { ...settings };
+}
+
+/** Saves and applies the setting; returns the cleaned value (volume clamped to 0..1). */
+export function setSoundSettings(s: SoundSettings): SoundSettings {
+  const clean: SoundSettings = { volume: clampVolume(Number.isFinite(s.volume) ? s.volume : DEFAULTS.volume), muted: s.muted === true };
   try {
     localStorage.setItem(KEY, JSON.stringify(clean));
   } catch {
     // Storage full or blocked: the setting still applies to this page.
   }
-  settings = clean;
-  if (master) master.gain.value = clean.muted ? 0 : clean.volume;
+  apply(clean);
+  return { ...clean };
 }
 
-let settings: SoundSettings = getSoundSettings();
+const listeners = new Set<(s: SoundSettings) => void>();
+
+/** Called with the new setting whenever it changes (in this tab or another). */
+export function onSoundSettings(cb: (s: SoundSettings) => void): () => void {
+  listeners.add(cb);
+  return () => { listeners.delete(cb); };
+}
+
+function apply(next: SoundSettings): void {
+  settings = next;
+  if (master) master.gain.value = next.muted ? 0 : next.volume;
+  listeners.forEach((cb) => cb({ ...next }));
+}
+
+let settings: SoundSettings = readSettings();
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
@@ -48,26 +68,37 @@ function context(): AudioContext | null {
   const Ctor = typeof window === 'undefined' ? undefined : window.AudioContext;
   if (!Ctor) return null;
   try {
-    ctx = new Ctor();
+    const c = new Ctor();
+    const gain = c.createGain();
+    gain.gain.value = settings.muted ? 0 : settings.volume;
+    gain.connect(c.destination);
+    master = gain;
+    ctx = c;
   } catch {
     return null;
   }
-  master = ctx.createGain();
-  master.gain.value = settings.muted ? 0 : settings.volume;
-  master.connect(ctx.destination);
   return ctx;
 }
 
-// Resume on the first gesture anywhere; the listener stays until it has a context to resume.
 if (typeof window !== 'undefined') {
+  // Another tab changed the setting: follow it.
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEY || e.key === null) apply(readSettings());
+  });
+  // Resume on user gestures (iOS only unlocks audio on click / touchend); the listeners go away
+  // once a context is actually running.
+  const GESTURES = ['pointerdown', 'keydown', 'click', 'touchend'] as const;
   const onGesture = () => {
     if (!ctx) return;
-    if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
-    window.removeEventListener('pointerdown', onGesture, true);
-    window.removeEventListener('keydown', onGesture, true);
+    if (ctx.state === 'running') {
+      GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true));
+      return;
+    }
+    void ctx.resume().then(() => {
+      if (ctx?.state === 'running') GESTURES.forEach((g) => window.removeEventListener(g, onGesture, true));
+    }, () => {});
   };
-  window.addEventListener('pointerdown', onGesture, true);
-  window.addEventListener('keydown', onGesture, true);
+  GESTURES.forEach((g) => window.addEventListener(g, onGesture, true));
 }
 
 type Wave = OscillatorType;
