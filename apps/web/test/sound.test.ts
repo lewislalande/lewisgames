@@ -23,9 +23,11 @@ class FakeSource extends FakeNode {
 }
 class FakeAudioContext {
   static instances: FakeAudioContext[] = [];
+  /** Chrome starts a context created during a user gesture running; otherwise it is suspended. */
+  static initialState: 'suspended' | 'running' = 'running';
   currentTime = 0;
   sampleRate = 8000;
-  state: 'suspended' | 'running' = 'suspended';
+  state: 'suspended' | 'running' = FakeAudioContext.initialState;
   destination = new FakeNode();
   started = 0;
   resumed = 0;
@@ -49,6 +51,7 @@ let sound: SoundModule;
 beforeEach(async () => {
   localStorage.clear();
   FakeAudioContext.instances = [];
+  FakeAudioContext.initialState = 'running';
   vi.stubGlobal('AudioContext', FakeAudioContext);
   vi.resetModules();
   sound = await import('../src/lib/sound');
@@ -139,6 +142,7 @@ describe('play', () => {
   });
 
   it('resumes the context on user gestures until it runs (click / touchend count, for iOS)', async () => {
+    FakeAudioContext.initialState = 'suspended';
     sound.play('tick');
     const ctx = FakeAudioContext.instances[0];
     window.dispatchEvent(new Event('touchend'));
@@ -150,6 +154,7 @@ describe('play', () => {
   });
 
   it('keeps listening while resume() leaves the context suspended', async () => {
+    FakeAudioContext.initialState = 'suspended';
     sound.play('tick');
     const ctx = FakeAudioContext.instances[0];
     ctx.resume = function () { this.resumed++; return Promise.resolve(); };
@@ -157,6 +162,18 @@ describe('play', () => {
     await Promise.resolve();
     window.dispatchEvent(new Event('pointerdown'));
     expect(ctx.resumed).toBe(2);
+  });
+
+  it('schedules nothing while the context is suspended, then plays once it runs', async () => {
+    FakeAudioContext.initialState = 'suspended';
+    for (let i = 0; i < 5; i++) sound.play('submit');
+    const ctx = FakeAudioContext.instances[0];
+    expect(ctx.started).toBe(0);
+    window.dispatchEvent(new Event('click'));
+    await Promise.resolve();
+    expect(ctx.started).toBe(0); // nothing queued up meanwhile: no burst on the first gesture
+    sound.play('submit');
+    expect(ctx.started).toBeGreaterThan(0);
   });
 
   it('retries creating the context when the master gain setup failed', () => {
@@ -187,6 +204,14 @@ describe('ticking', () => {
     expect(ctx.started).toBe(3 * perTick);
     vi.advanceTimersByTime(500);
     expect(ctx.started).toBe(4 * perTick);
+  });
+
+  it('does not tick while the context is suspended', () => {
+    vi.useFakeTimers();
+    FakeAudioContext.initialState = 'suspended';
+    sound.startTicking(() => 1);
+    vi.advanceTimersByTime(3000);
+    expect(FakeAudioContext.instances[0].started).toBe(0);
   });
 
   it('stopTicking clears the timer', () => {

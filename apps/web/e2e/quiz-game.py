@@ -196,12 +196,13 @@ def main():
         answer(a, '6')
         answer(b, 'six')
         # Carol stays silent: the timer (sped up to ×2,3) ends the question and the review begins.
-        wait_title(everyone, 'Correction — question 1/2', timeout=30000)
+        wait_title(everyone, 'Correction', timeout=30000)
 
         # ---- Review of question 1: everything at once
         check(c.locator('.qz-notebook').get_attribute('aria-label') == 'Question 1/2', 'review header says question 1/2')
         check(a.locator('.nb-theme').text_content() == THEME, 'review header shows the theme')
         check(a.locator('.timer').count() == 0, 'no timer in the review')
+        check(all(pg.locator('.qz-review-question').inner_text() == question1 for pg in everyone), 'the reviewed question text is shown in the review')
         check(all(cards(pg).count() == 2 for pg in everyone), 'both answer groups shown at once')
         check(c.locator('.qz-pinned .qz-correct-main').inner_text() == f"Bonne réponse : {q1['answer']}", 'correct answer pinned at the top, shown at once')
         check(c.locator('.qz-variants').inner_text() == 'Aussi accepté : ' + ', '.join(q1['variants']), 'variants listed small')
@@ -224,11 +225,12 @@ def main():
         card(a, 'Sydney').get_by_role('button', name='Faux').click()
 
         # tie decided by the host
-        wait_title(everyone, 'Correction — question 1/2')
+        wait_title(everyone, 'Correction')
         a.get_by_text('Égalité — à toi de trancher').wait_for()
         check(b.get_by_text('Alice tranche les égalités…').count() == 1, 'others see « Alice tranche les égalités… »')
         check(cards(a).count() == 1 and card(a, 'Sydney').count() == 1, 'only the tied group is shown')
         check(card(a, 'Sydney').locator('.vote-btn').count() == 3 and card(b, 'Sydney').locator('.vote-btn').count() == 0, 'only the host can decide')
+        check(a.locator('.qz-review-question').inner_text() == question1, 'question text shown while deciding')
         a.screenshot(path=f'{args.shots}/quizv2-deciding.png')
         no_scroll('deciding')
         card(a, 'Sydney').get_by_role('button', name='À moitié').click()
@@ -238,7 +240,7 @@ def main():
             card(pg, 'Canberra').locator('.qz-points').wait_for()
         check(card(c, 'Canberra').locator('.qz-points').inner_text() == '+1' and 'Correct' in card(c, 'Canberra').locator('.qz-outcome').inner_text(), 'Canberra: Correct, +1')
         check(card(c, 'Sydney').locator('.qz-points').inner_text() == '+0,5' and 'À moitié' in card(c, 'Sydney').locator('.qz-outcome').inner_text(), 'Sydney: À moitié, +0,5')
-        check(c.locator('.qz-pinned .qz-correct').count() == 1, 'correct answer still pinned in the result')
+        check(c.locator('.qz-pinned .qz-correct').count() == 1 and c.locator('.qz-review-question').inner_text() == question1, 'question and correct answer still pinned in the result')
         check(scores_of(c) == {'Alice': '1', 'Bob': '1', 'Carol': '0,5'}, f'scores after question 1: {scores_of(c)}')
         check(b.get_by_text('En attente de Alice…').count() == 1, 'others wait for the host')
         a.screenshot(path=f'{args.shots}/quizv2-result.png')
@@ -247,8 +249,9 @@ def main():
         a.get_by_role('button', name='Question suivante').click()
 
         # ---- Review of question 2: Carol gave no answer, the host ends the vote early
-        wait_title(everyone, 'Correction — question 2/2')
+        wait_title(everyone, 'Correction')
         check(c.locator('.qz-notebook').get_attribute('aria-label') == 'Question 2/2', 'review header says question 2/2')
+        check(c.locator('.qz-review-question').inner_text() == q2['question'], 'question 2 text shown in its review')
         check(cards(c).count() == 2 and c.locator('.qz-answer.mine').count() == 0, 'two groups (no blank one); Carol, who did not answer, votes on both')
         check(c.locator('.qz-correct-main').inner_text() == f"Bonne réponse : {q2['answer']}", 'second correct answer shown at once')
         check(c.locator('.qz-variants').inner_text() == 'Aussi accepté : ' + ', '.join(q2['variants']), 'variants listed small (question 2)')

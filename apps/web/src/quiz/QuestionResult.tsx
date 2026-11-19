@@ -1,6 +1,6 @@
 import { QUIZ_POINTS, type ClientMsg, type PlayerInfo, type QuizView } from '@kg/shared';
 import { PlayerRow } from '../room/PlayerRow';
-import { AnswerCard, CorrectCard, QuizFoot, VOTES } from './cards';
+import { AnswerCard, QuizFoot, ReviewHead, VOTES } from './cards';
 import { formatPoints } from './format';
 
 type Props = {
@@ -22,7 +22,7 @@ export function QuestionResult({ game, players, names, playerId, hostId, hostNam
   return (
     <>
       <div className="qz-page">
-        {game.correct && <div className="qz-pinned"><CorrectCard correct={game.correct} /></div>}
+        <ReviewHead game={game} />
         {game.revealed.length === 0 && <p className="qz-empty">Personne n'a répondu.</p>}
         <ul className="qz-answers">
           {game.revealed.map((g, i) => {

@@ -129,23 +129,23 @@ describe('quiz rooms', () => {
   describe('states stored before quiz v2', () => {
     type Stored = { room: Room; game: Record<string, unknown> };
     /** Rewrites the stored game in the previous format, then restarts the instance so it loads it. */
-    async function storeLegacy(code: string, phase: string): Promise<void> {
+    async function storeLegacy(code: string, phase: string, keepAnswers = false): Promise<void> {
       await runInDurableObject(stubFor(code), async (_i, state) => {
         const stored = (await state.storage.get<Stored>('state'))!;
-        const { allAnswers: _a, reviewIndex: _r, timeRate: _t, ...rest } = stored.game as unknown as QuizState;
-        const game = { ...rest, phase, revealedCount: 0, answerShown: false, phaseEndsAt: phase === 'answering' ? rest.phaseEndsAt : null };
+        const { allAnswers, reviewIndex: _r, timeRate: _t, ...rest } = stored.game as unknown as QuizState;
+        const game = { ...rest, ...(keepAnswers ? { allAnswers } : {}), phase, revealedCount: 0, answerShown: false, phaseEndsAt: phase === 'answering' ? rest.phaseEndsAt : null };
         await state.storage.put('state', { ...stored, game });
       });
       await evictDurableObject(stubFor(code), { webSockets: 'hibernate' });
     }
 
-    it('an answering game without timeRate keeps working after a restart', async () => {
+    it('an answering game without timeRate (but with allAnswers) keeps working after a restart', async () => {
       const theme = freshTheme();
       await seed(theme, three('legacy-answering'));
       const { code, a, aId, b } = await quizRoom(theme);
       a.send({ t: 'start' });
       await b.nextQuiz((m) => m.game.phase === 'answering');
-      await storeLegacy(code, 'answering');
+      await storeLegacy(code, 'answering', true);
       a.send({ t: 'answer', text: 'zzlegacy', final: true });
       const s = await b.nextQuiz((m) => m.game.answered.includes(aId));
       expect(s.game.timeRate).toBe(2);

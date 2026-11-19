@@ -98,7 +98,10 @@ const PHASES: readonly string[] = ['lobby', 'answering', 'transition', 'voting',
  */
 export function normalizeQuizState(stored: QuizState): QuizState {
   const s: QuizState = { ...quizInitialState(stored.settings ?? DEFAULT_QUIZ_SETTINGS), ...stored };
-  return PHASES.includes(s.phase) ? s : { ...s, phase: 'gameOver', phaseEndsAt: null };
+  // An unknown phase (the old `revealing`) or a game under way whose per-question answers were not
+  // stored (no `allAnswers`) cannot continue: end it so the host can restart.
+  const lost = stored.allAnswers === undefined && s.phase !== 'lobby' && s.phase !== 'gameOver';
+  return PHASES.includes(s.phase) && !lost ? s : { ...s, phase: 'gameOver', phaseEndsAt: null };
 }
 
 const changed = (state: QuizState): Result => ({ state, effects: [{ type: 'state' }] });

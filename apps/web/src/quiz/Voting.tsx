@@ -1,5 +1,5 @@
 import type { ClientMsg, QuizView, VoteValue } from '@kg/shared';
-import { AnswerCard, CorrectCard, QuizFoot, VOTES, VoteButtons } from './cards';
+import { AnswerCard, QuizFoot, ReviewHead, VOTES, VoteButtons } from './cards';
 
 type Props = {
   game: QuizView;
@@ -19,7 +19,7 @@ export function Voting({ game, names, playerId, isHost, hostName, send }: Props)
   return (
     <>
       <div className="qz-page">
-        {game.correct && <div className="qz-pinned"><CorrectCard correct={game.correct} /></div>}
+        <ReviewHead game={game} />
         {deciding && (
           <p className="qz-banner">{isHost ? 'Égalité — à toi de trancher' : `${hostName} tranche les égalités…`}</p>
         )}

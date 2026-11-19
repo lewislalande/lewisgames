@@ -33,6 +33,16 @@ export function AnswerCard({ text, authors, names, index, className = '', childr
   );
 }
 
+/** The reviewed question (big) above the pinned correct answer; shared by the voting and result pages. */
+export function ReviewHead({ game }: { game: { question: { text: string } | null; correct: { answer: string; variants: string[] } | null } }) {
+  return (
+    <div className="qz-pinned">
+      {game.question && <p className="qz-review-question">{game.question.text}</p>}
+      {game.correct && <CorrectCard correct={game.correct} />}
+    </div>
+  );
+}
+
 /** The big green « Bonne réponse » card, with the accepted variants in small. */
 export function CorrectCard({ correct }: { correct: { answer: string; variants: string[] } }) {
   return (

@@ -799,12 +799,23 @@ describe('normalizeQuizState (states stored before quiz v2)', () => {
     const restarted = run(s, [{ type: 'restart', by: 'A' }]);
     expect(restarted).toEqual(quizInitialState(s.settings));
   });
+  it('a mid-game state without allAnswers (answers of earlier questions lost) becomes gameOver', () => {
+    for (const phase of ['answering', 'voting', 'result']) {
+      const s = normalizeQuizState(legacy(started(), phase) as QuizState);
+      expect(s.phase).toBe('gameOver');
+      expect(s.phaseEndsAt).toBeNull();
+    }
+  });
+  it('a lobby state without allAnswers stays in the lobby', () => {
+    const { allAnswers: _a, ...rest } = quizInitialState();
+    expect(normalizeQuizState(rest as QuizState).phase).toBe('lobby');
+  });
   it('an answering state without timeRate gets rate 1 and keeps working (no NaN)', () => {
-    const s = normalizeQuizState(legacy(started(), 'answering') as QuizState);
+    const { timeRate: _t, ...noRate } = started();
+    const s = normalizeQuizState(noRate as QuizState);
     expect(s.phase).toBe('answering');
     expect(s.timeRate).toBe(1);
     expect(s.allAnswers).toEqual([]);
-    expect(s.reviewIndex).toBe(0);
     let next = run(s, [{ type: 'answer', by: 'A', text: 'a', final: true }]);
     expect(next.timeRate).toBe(1 + 2 / 3);
     expect(Number.isFinite(next.phaseEndsAt)).toBe(true);

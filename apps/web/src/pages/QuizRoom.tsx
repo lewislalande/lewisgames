@@ -23,8 +23,7 @@ const NOTICES: Partial<Record<ErrorCode, string>> = {
   internal: 'Oups, le serveur a eu un souci. Réessaie.',
 };
 
-const title = (phase: QuizPhase, n: number, total: number): string =>
-  phase === 'answering' ? 'Réponds !' : `Correction — question ${n}/${total}`;
+const title = (phase: QuizPhase): string => (phase === 'answering' ? 'Réponds !' : 'Correction');
 
 export function QuizRoom({ code }: { code: string }) {
   return (
@@ -97,7 +96,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
               </div>
               <div className="nb-center">
                 {game.question && <span className="nb-theme">{game.question.theme}</span>}
-                <h1 className="nb-title">{title(game.phase, game.questionNumber, game.questionCount)}</h1>
+                <h1 className="nb-title">{title(game.phase)}</h1>
               </div>
               <div className="nb-timer">
                 {game.phase === 'answering' && (

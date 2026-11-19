@@ -1,7 +1,8 @@
 /**
  * Game sound effects, synthesized with the Web Audio API (no audio files). The AudioContext is
  * created lazily on the first sound played while not muted, and resumed on the first user gesture
- * (browsers keep a context created without one suspended).
+ * (browsers keep a context created without one suspended). Sounds requested while it is not
+ * running are dropped, not queued.
  */
 
 export type SoundName = 'tick' | 'submit' | 'found' | 'close' | 'reveal' | 'timeUp' | 'turnStart' | 'podium';
@@ -205,7 +206,8 @@ const SOUNDS: Record<Exclude<SoundName, 'tick'>, (c: AudioContext, t: number) =>
 function playAt(name: SoundName, urgent = false): void {
   if (settings.muted) return;
   const c = context();
-  if (!c || !master) return;
+  // Nothing is scheduled until the context runs (a first gesture resumes it): no burst of queued sounds.
+  if (!c || !master || c.state !== 'running') return;
   try {
     const t = c.currentTime + 0.005;
     if (name === 'tick') tick(c, t, urgent);
