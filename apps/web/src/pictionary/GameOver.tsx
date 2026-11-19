@@ -1,7 +1,7 @@
 import type { ClientMsg } from '@kg/shared';
-import type { StateMsg } from '../lib/socket';
+import type { PictionaryStateMsg } from '../lib/socket';
 
-type Props = { state: StateMsg; playerId: string; send: (m: ClientMsg) => void };
+type Props = { state: PictionaryStateMsg; playerId: string; send: (m: ClientMsg) => void };
 
 export function GameOver({ state, playerId, send }: Props) {
   const rows = state.players

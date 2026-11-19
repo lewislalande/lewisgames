@@ -2,6 +2,8 @@ import { normalize } from '../text';
 
 export type VoteValue = 'yes' | 'half' | 'no';
 
+export const isVoteValue = (v: unknown): v is VoteValue => v === 'yes' || v === 'half' || v === 'no';
+
 export type AnswerGroup = { id: string; text: string; authors: string[] };
 
 /** Groups identical answers (same normalize()) so each is voted on once; blank answers are excluded. */

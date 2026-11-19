@@ -1,7 +1,10 @@
+export type GameKind = 'pictionary' | 'quiz';
+export const GAME_KINDS: readonly GameKind[] = ['pictionary', 'quiz'];
+
 export type Player = { id: string; name: string; connected: boolean; joinedAt: number };
 export type Room = {
   code: string;
-  game: 'pictionary';
+  game: GameKind;
   hostId: string | null;
   /** The room's creator (first joiner). Takes host back on rejoin; only they see the custom words. */
   ownerId: string | null;
@@ -33,7 +36,7 @@ export function isValidCode(code: string): boolean {
   return code.length === CODE_LENGTH && [...code].every((c) => CODE_ALPHABET.includes(c));
 }
 
-export function createRoom(code: string, game: 'pictionary'): Room {
+export function createRoom(code: string, game: GameKind): Room {
   return { code, game, hostId: null, ownerId: null, players: [], tokens: {} };
 }
 

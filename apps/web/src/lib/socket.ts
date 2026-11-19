@@ -4,6 +4,7 @@ import type { ClientMsg, DrawOp, ServerMsg } from '@kg/shared';
 import { getToken } from './identity';
 
 export type StateMsg = Extract<ServerMsg, { t: 'state' }>;
+export type PictionaryStateMsg = Extract<StateMsg, { kind: 'pictionary' }>;
 type Status = 'connecting' | 'open' | 'closed';
 
 export type RoomSocket = {
@@ -15,6 +16,9 @@ export type RoomSocket = {
   onNotice(cb: (n: 'close' | 'correct') => void): () => void;
   error: string | null;
 };
+
+/** Errors after which the server closed the socket for good; the others (bad_message, no_questions) are not. */
+const FATAL_ERRORS: readonly string[] = ['room_full', 'bad_name', 'bad_token', 'not_found'];
 
 const backoff = (attempt: number) => Math.min(10_000, 1000 * 2 ** attempt);
 /** After this many failed connections in a row with none ever opened, ask the API if the room exists. */
@@ -69,7 +73,7 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
           case 'draw': drawCbs.current.forEach((cb) => cb(m.op)); break;
           case 'notice': noticeCbs.current.forEach((cb) => cb(m.notice)); break;
           case 'error':
-            if (m.code !== 'bad_message') { fatal = true; setError(m.code); }
+            if (FATAL_ERRORS.includes(m.code)) { fatal = true; setError(m.code); }
             break;
         }
       };

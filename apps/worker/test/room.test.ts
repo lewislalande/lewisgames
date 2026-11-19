@@ -1,102 +1,7 @@
 import { SELF, env, evictDurableObject, runDurableObjectAlarm, runInDurableObject } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
-import type { PictionaryState, Room, ServerMsg } from '@kg/shared';
-
-type StateMsg = Extract<ServerMsg, { t: 'state' }>;
-const BASE = 'https://kg.test';
-
-async function createRoom(): Promise<string> {
-  const res = await SELF.fetch(`${BASE}/api/rooms`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ game: 'pictionary' }),
-  });
-  expect(res.status).toBe(201);
-  const { code } = (await res.json()) as { code: string };
-  return code;
-}
-
-/** A test WebSocket client that records every frame and lets the test wait for specific ones. */
-class Client {
-  readonly raw: string[] = [];
-  readonly msgs: ServerMsg[] = [];
-  closed: { code: number; reason: string } | null = null;
-  private cursor = 0;
-  private waiters: (() => void)[] = [];
-
-  constructor(readonly ws: WebSocket) {
-    ws.addEventListener('message', (e) => {
-      const data = e.data as string;
-      this.raw.push(data);
-      this.msgs.push(JSON.parse(data) as ServerMsg);
-      this.wake();
-    });
-    ws.addEventListener('close', (e) => {
-      this.closed = { code: e.code, reason: e.reason };
-      this.wake();
-    });
-  }
-
-  static async open(code: string): Promise<Client> {
-    const res = await SELF.fetch(`${BASE}/api/rooms/${code}/ws`, { headers: { Upgrade: 'websocket' } });
-    expect(res.status).toBe(101);
-    const ws = res.webSocket!;
-    const client = new Client(ws);
-    ws.accept();
-    return client;
-  }
-
-  static async join(code: string, token: string, name: string): Promise<{ c: Client; playerId: string }> {
-    const c = await Client.open(code);
-    c.send({ t: 'hello', token, name });
-    const welcome = await c.next((m) => m.t === 'welcome');
-    return { c, playerId: (welcome as Extract<ServerMsg, { t: 'welcome' }>).playerId };
-  }
-
-  send(msg: unknown): void {
-    this.ws.send(typeof msg === 'string' ? msg : JSON.stringify(msg));
-  }
-
-  private wake(): void {
-    const w = this.waiters;
-    this.waiters = [];
-    for (const f of w) f();
-  }
-
-  /** Next message (after the last one consumed) matching `pred`; earlier non-matching ones are skipped. */
-  async next(pred: (m: ServerMsg) => boolean = () => true, timeoutMs = 3000): Promise<ServerMsg> {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      while (this.cursor < this.msgs.length) {
-        const m = this.msgs[this.cursor++]!;
-        if (pred(m)) return m;
-      }
-      if (this.closed) throw new Error(`socket closed (${this.closed.code} ${this.closed.reason})`);
-      const left = deadline - Date.now();
-      if (left <= 0) throw new Error('timed out waiting for message');
-      await new Promise<void>((resolve) => {
-        const t = setTimeout(resolve, left);
-        this.waiters.push(() => {
-          clearTimeout(t);
-          resolve();
-        });
-      });
-    }
-  }
-
-  nextState(pred: (m: StateMsg) => boolean = () => true): Promise<StateMsg> {
-    return this.next((m) => m.t === 'state' && pred(m)) as Promise<StateMsg>;
-  }
-
-  async waitClosed(timeoutMs = 3000): Promise<{ code: number; reason: string }> {
-    const deadline = Date.now() + timeoutMs;
-    while (!this.closed) {
-      if (Date.now() > deadline) throw new Error('socket not closed');
-      await new Promise((r) => setTimeout(r, 10));
-    }
-    return this.closed;
-  }
-}
+import type { PictionaryState, Room } from '@kg/shared';
+import { BASE, Client, createRoom, until, type StateMsg } from './helpers';
 
 describe('HTTP API', () => {
   it('creates a room with a valid code', async () => {
@@ -274,16 +179,6 @@ const stubFor = (code: string) => env.ROOM.get(env.ROOM.idFromName(code));
 const readStored = (code: string) =>
   runInDurableObject(stubFor(code), async (_i, state) => (await state.storage.get<Stored>('state'))!);
 const readAlarm = (code: string) => runInDurableObject(stubFor(code), (_i, state) => state.storage.getAlarm());
-
-async function until<T>(read: () => Promise<T>, ok: (v: T) => boolean, timeoutMs = 3000): Promise<T> {
-  const deadline = Date.now() + timeoutMs;
-  for (;;) {
-    const v = await read();
-    if (ok(v)) return v;
-    if (Date.now() > deadline) throw new Error('condition not reached');
-    await new Promise((r) => setTimeout(r, 20));
-  }
-}
 
 describe('alarms', () => {
   it('sets the idle alarm when everyone leaves and keeps the room once someone is back', async () => {

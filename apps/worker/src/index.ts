@@ -1,10 +1,16 @@
-import { CODE_ALPHABET, generateCode } from '@kg/shared';
+import { CODE_ALPHABET, GAME_KINDS, generateCode, type GameKind } from '@kg/shared';
+import { listThemes } from './questions';
 
 export { RoomDO } from './room-do';
 
 export type Env = {
   ROOM: DurableObjectNamespace;
   ASSETS: Fetcher;
+  DB: D1Database;
+  /** Secret: the admin page password. */
+  ADMIN_PASSWORD: string;
+  /** Secret: signs the admin session cookie. */
+  ADMIN_SECRET: string;
 };
 
 const CREATE_ATTEMPTS = 5;
@@ -22,7 +28,7 @@ async function createRoom(request: Request, env: Env): Promise<Response> {
     body = null;
   }
   const game = (body as { game?: unknown } | null)?.game;
-  if (game !== 'pictionary') return json({ error: 'bad_game' }, 400);
+  if (!GAME_KINDS.includes(game as GameKind)) return json({ error: 'bad_game' }, 400);
   for (let i = 0; i < CREATE_ATTEMPTS; i++) {
     const code = generateCode(Math.random);
     const res = await roomStub(env, code).fetch('https://room/init', {
@@ -40,6 +46,9 @@ export default {
     const { pathname } = new URL(request.url);
     if (pathname === '/api/rooms') {
       return request.method === 'POST' ? createRoom(request, env) : json({ error: 'method' }, 405);
+    }
+    if (pathname === '/api/themes') {
+      return request.method === 'GET' ? json(await listThemes(env.DB)) : json({ error: 'method' }, 405);
     }
     const match = ROOM_PATH.exec(pathname);
     if (match) {

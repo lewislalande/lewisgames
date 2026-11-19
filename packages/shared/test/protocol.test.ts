@@ -13,6 +13,20 @@ describe('parseClientMsg', () => {
     expect(parseClientMsg('{"t":"draw","op":{"op":"undo"}}')).toEqual({ t: 'draw', op: { op: 'undo' } });
   });
 
+  it('parses the quiz messages', () => {
+    expect(parseClientMsg('{"t":"answer","text":"Paris"}')).toEqual({ t: 'answer', text: 'Paris' });
+    expect(parseClientMsg('{"t":"next"}')).toEqual({ t: 'next' });
+    expect(parseClientMsg('{"t":"closeVote"}')).toEqual({ t: 'closeVote' });
+    expect(parseClientMsg('{"t":"vote","groupId":"paris","vote":"half"}')).toEqual({ t: 'vote', groupId: 'paris', vote: 'half' });
+    expect(parseClientMsg('{"t":"decide","groupId":"paris","vote":"yes"}')).toEqual({ t: 'decide', groupId: 'paris', vote: 'yes' });
+    for (const raw of [
+      '{"t":"answer"}', '{"t":"answer","text":1}', '{"t":"vote","groupId":"g","vote":"maybe"}',
+      '{"t":"vote","vote":"yes"}', '{"t":"decide","groupId":2,"vote":"no"}',
+    ]) {
+      expect(parseClientMsg(raw), raw).toBeNull();
+    }
+  });
+
   it('rejects malformed or mistyped input', () => {
     for (const raw of [
       '{nope', 'null', '[]', '"hello"', '{}', '{"t":"dance"}',

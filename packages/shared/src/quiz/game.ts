@@ -1,6 +1,6 @@
 import { connectedPlayers, type Room } from '../room';
 import { clampQuizSettings, DEFAULT_QUIZ_SETTINGS, type QuizSettings } from './settings';
-import { groupAnswers, resolveVotes, type AnswerGroup, type VoteValue } from './grouping';
+import { groupAnswers, isVoteValue, resolveVotes, type AnswerGroup, type VoteValue } from './grouping';
 
 export type Question = { id: number; theme: string; question: string; answer: string; variants: string[] };
 
@@ -70,7 +70,6 @@ export function quizInitialState(settings: QuizSettings = DEFAULT_QUIZ_SETTINGS)
 const changed = (state: QuizState): Result => ({ state, effects: [{ type: 'state' }] });
 const unchanged = (state: QuizState): Result => ({ state, effects: [] });
 
-const isVoteValue = (v: unknown): v is VoteValue => v === 'yes' || v === 'half' || v === 'no';
 /** An answer with no letter or digit (blank, or punctuation only) counts as no answer. */
 export const isBlankAnswer = (text: string | undefined): boolean => !/[\p{L}\p{N}]/u.test(text ?? '');
 

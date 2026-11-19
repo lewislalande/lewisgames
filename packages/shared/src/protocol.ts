@@ -1,5 +1,7 @@
 import type { DrawOp } from './pictionary/game';
 import type { PictionaryView } from './pictionary/view';
+import { isVoteValue, type VoteValue } from './quiz/grouping';
+import type { QuizView } from './quiz/view';
 
 export type ClientMsg =
   | { t: 'hello'; token: string; name: string }
@@ -9,13 +11,22 @@ export type ClientMsg =
   | { t: 'choose'; index: number }
   | { t: 'guess'; text: string }
   | { t: 'reveal'; index: number }
-  | { t: 'draw'; op: DrawOp };
+  | { t: 'draw'; op: DrawOp }
+  | { t: 'answer'; text: string }
+  | { t: 'next' }
+  | { t: 'vote'; groupId: string; vote: VoteValue }
+  | { t: 'closeVote' }
+  | { t: 'decide'; groupId: string; vote: VoteValue };
 
-export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | 'bad_message';
+/** `bad_message` and `no_questions` leave the socket open; the others close it. */
+export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | 'bad_message' | 'no_questions';
+
+export type PlayerInfo = { id: string; name: string; connected: boolean };
 
 export type ServerMsg =
   | { t: 'welcome'; playerId: string }
-  | { t: 'state'; players: { id: string; name: string; connected: boolean }[]; hostId: string | null; ownerId: string | null; game: PictionaryView }
+  | { t: 'state'; kind: 'pictionary'; players: PlayerInfo[]; hostId: string | null; ownerId: string | null; game: PictionaryView }
+  | { t: 'state'; kind: 'quiz'; players: PlayerInfo[]; hostId: string | null; ownerId: string | null; game: QuizView }
   | { t: 'draw'; op: DrawOp }
   | { t: 'notice'; notice: 'close' | 'correct' }
   | { t: 'error'; code: ErrorCode };
@@ -45,12 +56,18 @@ export function parseClientMsg(raw: string): ClientMsg | null {
       return 'settings' in m ? { t: 'settings', settings: m.settings } : null;
     case 'start':
     case 'restart':
+    case 'next':
+    case 'closeVote':
       return { t: m.t };
     case 'choose':
     case 'reveal':
       return typeof m.index === 'number' ? { t: m.t, index: m.index } : null;
     case 'guess':
-      return typeof m.text === 'string' ? { t: 'guess', text: m.text } : null;
+    case 'answer':
+      return typeof m.text === 'string' ? { t: m.t, text: m.text } : null;
+    case 'vote':
+    case 'decide':
+      return typeof m.groupId === 'string' && isVoteValue(m.vote) ? { t: m.t, groupId: m.groupId, vote: m.vote } : null;
     case 'draw':
       return isObject(m.op) && typeof m.op.op === 'string' ? { t: 'draw', op: m.op as DrawOp } : null;
     default:

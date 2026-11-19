@@ -12,3 +12,4 @@ export * from './quiz/settings';
 export * from './quiz/grouping';
 export * from './quiz/game';
 export * from './quiz/view';
+export * from './quiz/import';

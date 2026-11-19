@@ -1,4 +1,4 @@
-import type { StateMsg } from '../lib/socket';
+import type { PictionaryStateMsg } from '../lib/socket';
 
 const AVATAR_COLORS = ['#ff5f8f', '#ffb020', '#3ee0b0', '#4dc4ff', '#a98bff', '#ff8a4c', '#7ce35f', '#f06bd9'];
 /** Stable colour per player id. */
@@ -8,7 +8,7 @@ export function avatarColor(id: string): string {
   return AVATAR_COLORS[h % AVATAR_COLORS.length]!;
 }
 
-export function Scoreboard({ state, playerId }: { state: StateMsg; playerId: string }) {
+export function Scoreboard({ state, playerId }: { state: PictionaryStateMsg; playerId: string }) {
   const rows = state.players
     .map((p) => ({ ...p, score: state.game.scores[p.id] ?? 0 }))
     .sort((a, b) => b.score - a.score);

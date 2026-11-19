@@ -1,11 +1,14 @@
 import { DurableObject } from 'cloudflare:workers';
 import {
-  connectedPlayers, createRoom, DEFAULT_WORDS, disconnect, initialState, joinRoom, parseClientMsg, reduce, viewFor,
-  type ClientMsg, type Effect, type ErrorCode, type GameEvent, type PictionaryState, type Room, type ServerMsg,
+  connectedPlayers, createRoom, disconnect, GAME_KINDS, joinRoom, parseClientMsg,
+  type ErrorCode, type GameKind, type Room, type ServerMsg,
 } from '@kg/shared';
+import { adapterFor, type AnyGameAdapter, type GameState, type RoomEffect, type RoomEvent } from './games';
 import type { Env } from './index';
 
-type Stored = { room: Room; game: PictionaryState };
+type Stored = { room: Room; game: GameState };
+type AnyEvent = Parameters<AnyGameAdapter['reduce']>[1];
+type Commit = (prev: GameState, next: GameState) => Promise<void>;
 type Attachment = { playerId: string } | null;
 
 const STORAGE_KEY = 'state';
@@ -16,7 +19,6 @@ const IDLE_MS = 10 * 60 * 1000;
  * the free plan allows 100k rows written per day. A restart loses at most this much drawing.
  */
 const DRAW_FLUSH_MS = 2000;
-const WORDS: string[] = [...DEFAULT_WORDS];
 
 const send = (ws: WebSocket, msg: ServerMsg): void => {
   try {
@@ -28,20 +30,12 @@ const send = (ws: WebSocket, msg: ServerMsg): void => {
 
 const playerOf = (ws: WebSocket): string | null => (ws.deserializeAttachment() as Attachment)?.playerId ?? null;
 
-function toEvent(msg: Exclude<ClientMsg, { t: 'hello' }>, by: string): GameEvent {
-  switch (msg.t) {
-    case 'settings': return { type: 'setSettings', by, settings: msg.settings };
-    case 'start': return { type: 'start', by };
-    case 'restart': return { type: 'restart', by };
-    case 'choose': return { type: 'chooseWord', by, index: msg.index };
-    case 'guess': return { type: 'guess', by, text: msg.text };
-    case 'reveal': return { type: 'revealLetter', by, index: msg.index };
-    case 'draw': return { type: 'draw', by, op: msg.op };
-  }
-}
+const isGameKind = (v: unknown): v is GameKind => GAME_KINDS.includes(v as GameKind);
 
 export class RoomDO extends DurableObject<Env> {
   private data: Stored | null = null;
+  /** The game rules of `data.room.game`; set whenever `data` is. */
+  private adapter: AnyGameAdapter | null = null;
   /** Alarm time last written to storage (null: none), so unchanged alarms are not rewritten. */
   private alarmAt: number | null = null;
   /** Pending draw-only changes not yet in storage, flushed by `flushTimer`. */
@@ -55,7 +49,11 @@ export class RoomDO extends DurableObject<Env> {
     ctx.blockConcurrencyWhile(async () => {
       this.data = (await ctx.storage.get<Stored>(STORAGE_KEY)) ?? null;
       this.alarmAt = await ctx.storage.getAlarm();
-      if (this.data) await this.dropGhosts();
+      if (this.data) {
+        this.adapter = adapterFor(this.data.room.game, env.DB);
+        await this.adapter.resume(this.data.game);
+        await this.dropGhosts();
+      }
     });
   }
 
@@ -77,8 +75,10 @@ export class RoomDO extends DurableObject<Env> {
     const { pathname } = new URL(request.url);
     if (pathname === '/init' && request.method === 'POST') {
       if (this.data) return new Response(null, { status: 409 });
-      const { code } = (await request.json()) as { code: string };
-      this.data = { room: createRoom(code, 'pictionary'), game: initialState() };
+      const { code, game } = (await request.json()) as { code: string; game: unknown };
+      if (!isGameKind(game)) return new Response(null, { status: 400 });
+      this.adapter = adapterFor(game, this.env.DB);
+      this.data = { room: createRoom(code, game), game: this.adapter.initial() };
       await this.persist();
       return new Response(null, { status: 201 });
     }
@@ -111,12 +111,18 @@ export class RoomDO extends DurableObject<Env> {
       return this.hello(ws, msg.token, msg.name);
     }
     if (!playerId) return send(ws, { t: 'error', code: 'bad_message' });
-    await this.apply(toEvent(msg, playerId));
+    const event = this.adapter!.toEvent(msg, playerId);
+    if (!event) return send(ws, { t: 'error', code: 'bad_message' });
+    const prepared = await this.adapter!.prepare(this.data.game, event, this.data.room);
+    if (!this.data) return; // deleted while loading
+    // A refusal goes to the sender only and leaves their socket open.
+    if (!prepared.ok) return send(ws, { t: 'error', code: prepared.error });
+    await this.apply(prepared.event, prepared.commit);
   }
 
   private async hello(ws: WebSocket, token: string, name: string): Promise<void> {
     const data = this.data!;
-    const result = joinRoom(data.room, token, name, Date.now(), data.game.settings.maxPlayers);
+    const result = joinRoom(data.room, token, name, Date.now(), this.adapter!.maxPlayers(data.game));
     if (!result.ok) return this.reject(ws, result.error);
     data.room = result.room;
     ws.serializeAttachment({ playerId: result.playerId } satisfies Attachment);
@@ -158,6 +164,7 @@ export class RoomDO extends DurableObject<Env> {
     if (this.livePlayerIds().size === 0) {
       this.cancelFlush();
       this.data = null;
+      this.adapter = null;
       await this.ctx.storage.deleteAll();
       return;
     }
@@ -167,20 +174,24 @@ export class RoomDO extends DurableObject<Env> {
 
   /**
    * Runs one game event against the current room and delivers its effects, then persists:
-   * at once for any non-draw event, batched (≤ DRAW_FLUSH_MS) for draw ops.
+   * at once for most events, batched (≤ DRAW_FLUSH_MS) for the game's frequent ones (draw ops).
+   * `commit` (from the adapter's prepare) runs last.
    */
-  private async apply(event: GameEvent): Promise<void> {
+  private async apply(event: AnyEvent | RoomEvent, commit?: Commit): Promise<void> {
     const data = this.data!;
+    const adapter = this.adapter!;
     const now = Date.now();
-    const { state, effects } = reduce(data.game, event, { now, rng: Math.random, room: data.room, words: WORDS });
+    const prev = data.game;
+    const { state, effects } = adapter.reduce(prev, event, { now, room: data.room });
     data.game = state;
     // Deliver first: a failing storage write must not freeze the game for the players.
     for (const effect of effects) this.deliver(effect, now);
-    if (event.type === 'draw') {
+    if (adapter.batched(event)) {
       if (effects.length > 0) this.scheduleFlush();
-      return;
+    } else {
+      await this.persist();
     }
-    await this.persist();
+    if (commit) await commit(prev, state);
   }
 
   private scheduleFlush(): void {
@@ -205,7 +216,7 @@ export class RoomDO extends DurableObject<Env> {
       this.writes++;
       await this.ctx.storage.put(STORAGE_KEY, { room, game } satisfies Stored);
       const target =
-        connectedPlayers(room).length === 0 ? Date.now() + IDLE_MS : game.phaseEndsAt;
+        connectedPlayers(room).length === 0 ? Date.now() + IDLE_MS : this.adapter!.phaseEndsAt(game);
       if (target === this.alarmAt) return;
       this.alarmWrites++;
       if (target === null) await this.ctx.storage.deleteAlarm();
@@ -227,19 +238,20 @@ export class RoomDO extends DurableObject<Env> {
     });
   }
 
-  private deliver(effect: Effect, now: number): void {
+  private deliver(effect: RoomEffect, now: number): void {
     const { room, game } = this.data!;
     switch (effect.type) {
       case 'state': {
         const players = room.players.map(({ id, name, connected }) => ({ id, name, connected }));
+        const common = { t: 'state', players, hostId: room.hostId, ownerId: room.ownerId ?? null } as const;
         for (const { ws, playerId } of this.sockets()) {
-          send(ws, { t: 'state', players, hostId: room.hostId, ownerId: room.ownerId ?? null, game: viewFor(game, playerId, now, room.ownerId ?? null) });
+          send(ws, { ...common, ...this.adapter!.view(game, playerId, now, room) });
         }
         return;
       }
       case 'draw':
         for (const { ws, playerId } of this.sockets()) {
-          if (playerId !== game.drawerId) send(ws, { t: 'draw', op: effect.op });
+          if (playerId !== effect.except) send(ws, { t: 'draw', op: effect.op });
         }
         return;
       case 'private':

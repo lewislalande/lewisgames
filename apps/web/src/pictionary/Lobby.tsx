@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { DEFAULT_SETTINGS, SETTING_RANGES, clampSettings } from '@kg/shared';
 import type { ClientMsg, NumericSettingKey, PictionarySettings } from '@kg/shared';
-import type { StateMsg } from '../lib/socket';
+import type { PictionaryStateMsg } from '../lib/socket';
 import { avatarColor } from './Scoreboard';
 
 const SETTINGS_KEY = 'kg.pictionarySettings';
@@ -27,7 +27,7 @@ function loadSaved(): PictionarySettings | null {
 
 const splitWords = (text: string) => text.split(/[,\n]/).map((w) => w.trim()).filter(Boolean);
 
-type Props = { code: string; state: StateMsg; playerId: string; send: (m: ClientMsg) => void };
+type Props = { code: string; state: PictionaryStateMsg; playerId: string; send: (m: ClientMsg) => void };
 
 export function Lobby({ code, state, playerId, send }: Props) {
   const isHost = state.hostId === playerId;

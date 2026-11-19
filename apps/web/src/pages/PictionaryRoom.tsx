@@ -93,6 +93,8 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
     );
   }
 
+  // A quiz room opened through a Pictionary link.
+  if (state.kind !== 'pictionary') return <RoomError error="not_found" />;
   const game = state.game;
   const drawerName = game.drawerId ? names[game.drawerId] ?? null : null;
   const playing = game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd';
