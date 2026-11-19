@@ -3,6 +3,7 @@ import { getName, setName } from '../lib/identity';
 import { useRoomSocket } from '../lib/socket';
 import { Lobby } from '../pictionary/Lobby';
 import { Scoreboard } from '../pictionary/Scoreboard';
+import { DrawingCanvas } from '../pictionary/DrawingCanvas';
 
 const ERRORS: Record<string, string> = {
   room_full: 'Cette salle est pleine.',
@@ -77,15 +78,25 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
     );
   }
 
+  const game = state.game;
   return (
     <main className="room">
       {sock.status !== 'open' && <p className="banner">Connexion perdue, nouvelle tentative…</p>}
-      {state.game.phase === 'lobby' ? (
+      {game.phase === 'lobby' ? (
         <Lobby code={code} state={state} playerId={sock.playerId} send={sock.send} />
       ) : (
         <div className="room-grid">
           <section className="card">
             <h1 className="title-sm">Partie en cours…</h1>
+            {(game.phase === 'choosing' || game.phase === 'drawing' || game.phase === 'turnEnd') && (
+              <DrawingCanvas
+                key={`${game.round}:${game.drawerId}`}
+                history={game.history}
+                canDraw={game.isDrawer && game.phase === 'drawing'}
+                onOp={(op) => sock.send({ t: 'draw', op })}
+                subscribe={sock.onDraw}
+              />
+            )}
           </section>
           <Scoreboard state={state} playerId={sock.playerId} />
         </div>

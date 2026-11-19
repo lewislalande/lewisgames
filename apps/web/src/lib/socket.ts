@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { ClientMsg, DrawOp, ServerMsg } from '@kg/shared';
 import { getToken } from './identity';
 
@@ -54,7 +55,9 @@ export function useRoomSocket(code: string, name: string): RoomSocket {
         }
         switch (m.t) {
           case 'welcome': setPlayerId(m.playerId); break;
-          case 'state': setState(m); break;
+          // Commit synchronously so state-driven resyncs (layout effects) run before the
+          // next message, e.g. a draw relay, is handled.
+          case 'state': flushSync(() => setState(m)); break;
           case 'draw': drawCbs.current.forEach((cb) => cb(m.op)); break;
           case 'notice': noticeCbs.current.forEach((cb) => cb(m.notice)); break;
           case 'error':
