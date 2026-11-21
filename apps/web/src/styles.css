@@ -257,10 +257,10 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--mint); }
   transition: transform .06s, box-shadow .06s;
 }
 .chip:hover:not(:disabled) { filter: brightness(1.15); }
-.chip[aria-pressed='true'] { background: var(--sun); color: var(--ink); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.chip[aria-pressed='true'], .chip[aria-checked='true'] { background: var(--sun); color: var(--ink); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
 .chip:disabled { cursor: not-allowed; }
 .chip-count { font-size: .78rem; font-weight: 900; padding: 0 .4rem; border-radius: 999px; background: rgb(27 16 53 / .35); color: inherit; }
-.chip[aria-pressed='true'] .chip-count { background: rgb(27 16 53 / .15); }
+.chip[aria-pressed='true'] .chip-count, .chip[aria-checked='true'] .chip-count { background: rgb(27 16 53 / .15); }
 .available { margin: .2rem 0 0; color: var(--lilac); font-weight: 800; }
 
 /* ---------------------------------------------------------------- Game screen */
@@ -830,7 +830,6 @@ input[type='range']::-moz-range-thumb {
 .stroke-color { display: flex; align-items: center; gap: .5rem; font-weight: 900; white-space: nowrap; }
 .stroke-color .imp-dot { width: 1.9rem; height: 1.9rem; }
 .stroke-hint { flex: 1; min-width: 0; font-weight: 800; color: var(--lilac); }
-.stroke-bar .btn { flex: none; padding: .4rem 1.1rem; }
 
 /* Role card */
 .role-card { padding: 2rem 2.6rem; transform: rotate(-1.5deg); animation: role-pop .45s cubic-bezier(.2, .9, .3, 1.4); }

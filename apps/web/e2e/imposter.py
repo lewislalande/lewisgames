@@ -6,7 +6,8 @@ Usage: python3 apps/web/e2e/imposter.py [--base http://localhost:8787] [--shots 
 Alice (host) switches the lobby to « Imposteur » (1 manche, 1 tour de table, 10 s per stroke),
 « 3 joueurs minimum » until Carol joins. Each page's role card says (data-imposter) who the
 imposter is; the imposter's DOM and received frames never hold the word before the result.
-Each drawer gets one stroke in their colour, seen by everyone; a non-current player cannot draw.
+Each drawer gets one stroke in their colour, seen by everyone (a second one right after is ignored);
+a non-current player cannot draw.
 The host skips the discussion, everyone votes, the unmasked imposter guesses wrong, result,
 game over. Layout: no page scroll at 1280×800.
 """
@@ -75,9 +76,9 @@ def rgb(css):
     return [int(v) for v in css[css.index('(') + 1:css.index(')')].split(',')[:3]]
 
 
-def drag(pg, y, x0=150, x1=650):
+def drag(pg, y, x0=150, x1=650, box=None):
     """A horizontal stroke at logical height y (800×600 board)."""
-    box = pg.locator('canvas.board').bounding_box()
+    box = box or pg.locator('canvas.board').bounding_box()
     at = lambda x: (box['x'] + x / 800 * box['width'], box['y'] + y / 600 * box['height'])
     pg.mouse.move(*at(x0))
     pg.mouse.down()
@@ -181,7 +182,10 @@ def main():
                 no_scroll(pages[watchers[0]], 'watcher')
 
             y = 200 + turn * 120
-            drag(d, y)
+            box = d.locator('canvas.board').bounding_box()
+            drag(d, y, box=box)
+            # a second stroke right after lifting the pen (even once the next turn has arrived) draws nothing
+            drag(d, y + 50, box=box)
             # pointerup ends the turn
             d.locator('.stroke-bar').wait_for(state='detached', timeout=4000)
             check(True, f'turn {turn + 1}: lifting the pen ends the turn')
@@ -189,6 +193,8 @@ def main():
             for n, pg in pages.items():
                 hits = sum(pg.evaluate(PIXEL_JS, [x, y]) == color for x in (250, 350, 450, 550, 600))
                 check(hits >= 3, f'turn {turn + 1}: {n} sees {drawer}\'s stroke in their colour {color} ({hits}/5)')
+                extra = sum(pg.evaluate(PIXEL_JS, [x, y + 50]) == color for x in (250, 350, 450, 550, 600))
+                check(extra == 0, f'turn {turn + 1}: {n} sees no second stroke')
             check(not has_word(imp, word), f'turn {turn + 1}: imposter DOM has no word')
 
         # ---- Discussion → vote

@@ -140,7 +140,9 @@ type ImpProps = {
 /** Imposter mode, during a manche: turn order on the left, the notebook, no chat (players talk on voice). */
 function ImposterGame({ state, game, imp, playerId, names, offset, sock }: ImpProps) {
   const { send } = sock;
-  const canDraw = game.phase === 'impDrawing' && imp.currentDrawer === playerId;
+  const color = imp.colors[playerId];
+  // Without a colour there is no stroke to draw (and never the Classique toolbar).
+  const canDraw = game.phase === 'impDrawing' && imp.currentDrawer === playerId && !!color;
   const drawerName = imp.currentDrawer ? names[imp.currentDrawer] ?? 'Quelqu\'un' : null;
   const accusedName = imp.accused ? names[imp.accused] ?? '?' : '?';
   const title =
@@ -151,7 +153,6 @@ function ImposterGame({ state, game, imp, playerId, names, offset, sock }: ImpPr
             : game.phase === 'impGuess' ? (imp.isImposter ? 'Dernière chance !' : `${accusedName} tente sa chance…`)
               : 'Résultat';
   const ticking = game.phase === 'impVote' || (game.phase === 'impDrawing' && canDraw) || (game.phase === 'impGuess' && imp.isImposter);
-  const color = imp.colors[playerId];
   return (
     <div className={`game-grid imp-view${canDraw ? ' drawer-view' : ''}`}>
       <div className="imp-side">
@@ -169,7 +170,7 @@ function ImposterGame({ state, game, imp, playerId, names, offset, sock }: ImpPr
         connected={sock.status === 'open'}
         tools={DEFAULT_TOOL_STATE}
         onTools={() => {}}
-        single={canDraw && color ? { color, size: IMP_STROKE_SIZE, onDone: () => send({ t: 'impDone' }) } : undefined}
+        single={canDraw ? { color, size: IMP_STROKE_SIZE, onDone: () => send({ t: 'impDone' }) } : undefined}
         header={
           <header className="nb-head">
             <div className="nb-side">

@@ -141,16 +141,15 @@ export function Toolbar({ value, onChange, onUndo, onRedo, onClear }: Props) {
   );
 }
 
-/** Imposter mode: the drawer's only control, under the notebook (their colour and « J'ai fini »). */
-export function StrokeBar({ color, canFinish, onDone }: { color: string; canFinish: boolean; onDone: () => void }) {
+/** Imposter mode: under the notebook, the drawer's colour and how the turn ends (no tools). */
+export function StrokeBar({ color }: { color: string }) {
   return (
-    <div className="panel tb-bottom stroke-bar" role="toolbar" aria-label="Ton trait">
+    <div className="panel tb-bottom stroke-bar" role="note" aria-label="Ton trait">
       <span className="stroke-color">
         <span className="imp-dot" style={{ background: color }} aria-hidden="true" />
         Ta couleur
       </span>
       <span className="stroke-hint">Un seul trait : lève le crayon pour finir.</span>
-      <button type="button" className="btn btn-primary" disabled={!canFinish} onClick={onDone}>J'ai fini</button>
     </div>
   );
 }

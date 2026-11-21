@@ -16,7 +16,7 @@ export function ImpResult({ game, imp, names }: Props) {
         <h2>
           <Dot color={imp.colors[r.imposterId]} /> {name(r.imposterId)} était l'imposteur !
         </h2>
-        <p className="imp-result-word">Le mot : <strong>{imp.word}</strong></p>
+        {imp.word !== null && <p className="imp-result-word">Le mot : <strong>{imp.word}</strong></p>}
         <p className="imp-result-line">
           {r.accused === null
             ? 'Égalité : personne n\'est désigné.'

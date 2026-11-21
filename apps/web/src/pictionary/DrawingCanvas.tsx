@@ -82,7 +82,7 @@ type Props = {
   children?: ReactNode;
   /**
    * Imposter mode: the drawer gets one pen stroke in a fixed colour and size, no toolbar or shortcuts.
-   * Lifting the pen (or « J'ai fini ») sends the last points then calls `onDone`.
+   * Lifting the pen sends the last points then calls `onDone`.
    */
   single?: SingleStroke;
 };
@@ -108,10 +108,9 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
   onOpRef.current = onOp;
   const singleRef = useRef(single);
   singleRef.current = single;
-  /** Single-stroke mode: the stroke has started (a second one is refused); the turn was ended; the pen is down. */
+  /** Single-stroke mode: the stroke has started (a second one is refused); the turn was ended. */
   const strokeUsed = useRef(false);
   const strokeDone = useRef(false);
-  const [stroking, setStroking] = useState(false);
 
   useLayoutEffect(() => {
     renderer.current = new Renderer(canvasRef.current!);
@@ -193,12 +192,17 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
 
   const pos = (e: ReactPointerEvent) => toLogical(e.clientX, e.clientY, canvasRef.current!.getBoundingClientRect());
 
-  /** Single-stroke mode: close the stroke (sending its last points) and end the turn. */
-  function finishSingle() {
-    if (!strokeUsed.current || strokeDone.current || !singleRef.current) return;
-    strokeDone.current = true;
+  /**
+   * Single-stroke mode: close the stroke, sending its last points. Lifting the pen ends the turn; a
+   * cancelled pointer (or lost capture) only does once the stroke has moved, otherwise the turn stays
+   * open (no second stroke) until the timer runs out.
+   */
+  function finishSingle(lifted: boolean) {
+    const g = gesture.current;
+    const moved = g?.kind === 'stroke' && g.count > 1;
     endGesture();
-    setStroking(false);
+    if (strokeDone.current || !singleRef.current || (!lifted && !moved)) return;
+    strokeDone.current = true;
     singleRef.current.onDone();
   }
 
@@ -209,7 +213,6 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
     if (single) {
       if (strokeUsed.current) return;
       strokeUsed.current = true;
-      setStroking(true);
       e.currentTarget.setPointerCapture(e.pointerId);
       startStroke(e.pointerId, at, { tool: 'pen', color: single.color, size: single.size, opacity: 1 });
       flushTimer.current = setInterval(flush, FLUSH_MS);
@@ -276,7 +279,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
       const same = from[0] === to[0] && from[1] === to[1];
       if (e.type === 'pointerup' && !same) commit({ op: 'add', action: g.action }, true);
     }
-    if (singleRef.current) finishSingle();
+    if (singleRef.current) finishSingle(e.type === 'pointerup');
     else endGesture();
   };
 
@@ -336,7 +339,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
         </div>
       </div>
       {canDraw && !single && <Toolbar value={tools} onChange={onTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
-      {canDraw && single && <StrokeBar color={single.color} canFinish={stroking} onDone={finishSingle} />}
+      {canDraw && single && <StrokeBar color={single.color} />}
     </div>
   );
 }

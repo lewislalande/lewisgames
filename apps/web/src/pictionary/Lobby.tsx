@@ -160,7 +160,6 @@ export function Lobby({ code, state, playerId, send }: Props) {
                   role="radio"
                   className="chip"
                   aria-checked={server.mode === m.mode}
-                  aria-pressed={server.mode === m.mode}
                   onClick={() => server.mode !== m.mode && patch({ mode: m.mode })}
                 >
                   {m.label}

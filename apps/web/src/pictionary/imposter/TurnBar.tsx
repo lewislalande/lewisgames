@@ -41,7 +41,7 @@ export function TurnBar({ game, imp, players, hostId, playerId, offset }: Props)
                 {id === playerId && <span className="you"> (toi)</span>}
                 {!p.connected && <span className="you"> (absent)</span>}
               </span>
-              {current && <span className="turn-left" aria-label={`${left} secondes`}>{left}s</span>}
+              {current && <span className="turn-left" aria-hidden="true">{left}s</span>}
               <span className="score">{game.scores[id] ?? 0}</span>
             </li>
           );
