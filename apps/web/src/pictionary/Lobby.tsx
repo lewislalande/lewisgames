@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { DEFAULT_SETTINGS, SETTING_RANGES, clampSettings } from '@kg/shared';
+import { DEFAULT_SETTINGS, IMP_MIN_PLAYERS, SETTING_RANGES, clampSettings } from '@kg/shared';
 import type { ClientMsg, NumericSettingKey, PictionarySettings } from '@kg/shared';
 import type { PictionaryStateMsg } from '../lib/socket';
 import { CodeHeader } from '../room/CodeHeader';
@@ -16,6 +16,19 @@ const NUMERIC_FIELDS: { key: NumericSettingKey; label: string; unit?: string }[]
   { key: 'maxHints', label: 'Indices maximum' },
   { key: 'hintUnlockPct', label: 'Premier indice après', unit: '% du temps' },
   { key: 'maxPlayers', label: 'Joueurs maximum' },
+];
+
+const IMPOSTER_FIELDS: { key: NumericSettingKey; label: string; unit?: string }[] = [
+  { key: 'impRounds', label: 'Manches' },
+  { key: 'impTableRounds', label: 'Tours de table' },
+  { key: 'impStrokeSeconds', label: 'Secondes par trait', unit: 's' },
+  { key: 'impDiscussSeconds', label: 'Discussion', unit: 's' },
+  { key: 'maxPlayers', label: 'Joueurs maximum' },
+];
+
+const MODES: { mode: PictionarySettings['mode']; label: string }[] = [
+  { mode: 'classique', label: 'Classique' },
+  { mode: 'imposteur', label: 'Imposteur' },
 ];
 
 function loadSaved(): PictionarySettings | null {
@@ -111,7 +124,8 @@ export function Lobby({ code, state, playerId, send }: Props) {
   const connected = state.players.filter((p) => p.connected).length;
   // Mirrors pickChoices: 'only' with fewer words than choices falls back to the default list.
   const tooFewCustom = server.customWordsMode === 'only' && state.game.customWordsCount < server.wordChoices;
-  const canStart = isHost && connected >= 2;
+  const imposter = server.mode === 'imposteur';
+  const canStart = isHost && connected >= (imposter ? IMP_MIN_PLAYERS : 2);
 
   return (
     <div className="lobby">
@@ -126,7 +140,7 @@ export function Lobby({ code, state, playerId, send }: Props) {
                 <button className="btn btn-primary btn-big" disabled={!canStart} onClick={() => send({ t: 'start' })}>
                   Lancer la partie
                 </button>
-                {!canStart && <p className="muted">Il faut au moins 2 joueurs.</p>}
+                {!canStart && <p className="muted">{imposter ? '3 joueurs minimum' : 'Il faut au moins 2 joueurs.'}</p>}
               </>
             ) : (
               <p className="muted">En attente du lancement par l'hôte…</p>
@@ -138,68 +152,106 @@ export function Lobby({ code, state, playerId, send }: Props) {
           <h2>Réglages</h2>
           {!isHost && <p className="muted">Seul l'hôte peut modifier les réglages.</p>}
           <fieldset disabled={!isHost}>
-            {NUMERIC_FIELDS.map((f) => (
-              <NumberField
-                key={f.key}
-                label={f.label}
-                unit={f.unit}
-                range={SETTING_RANGES[f.key]}
-                value={server[f.key]}
-                onCommit={(v) => patch({ [f.key]: v })}
-              />
-            ))}
-            <label className="row check">
-              <input type="checkbox" checked={server.closeDetection} onChange={(e) => patch({ closeDetection: e.target.checked })} />
-              <span>Prévenir quand on chauffe</span>
-            </label>
-
-            <div className="words">
-              <span className="field-label">Mots personnalisés</span>
-              {isHost && isOwner ? (
-                <textarea
-                  value={wordsText}
-                  onChange={(e) => onWords(e.target.value)}
-                  rows={4}
-                  placeholder="Un mot par ligne, ou séparés par des virgules"
-                />
-              ) : (
-                <p>
-                  {state.game.customWordsCount} mots perso
-                  {state.game.customWordsCount > 0 && (server.customWordsMode === 'only' ? ' (uniquement ceux-là)' : ' (mélangés aux mots du jeu)')}
-                </p>
-              )}
-              {isHost && !isOwner && (
-                <>
-                  <label className="field-label" htmlFor="replace-words">Remplacer les mots perso</label>
-                  <textarea
-                    id="replace-words"
-                    value={replaceText}
-                    onChange={(e) => setReplaceText(e.target.value)}
-                    rows={4}
-                    placeholder="Nouvelle liste : un mot par ligne, ou séparés par des virgules"
-                  />
-                  <button type="button" className="btn" onClick={replaceWords}>Remplacer les mots perso</button>
-                </>
-              )}
-              {isHost && (
-                <div className="radios" role="radiogroup" aria-label="Utilisation des mots personnalisés">
-                  <label>
-                    <input type="radio" name="mode" checked={server.customWordsMode === 'mixed'} onChange={() => patch({ customWordsMode: 'mixed' })} />
-                    Mélangés aux mots du jeu
-                  </label>
-                  <label>
-                    <input type="radio" name="mode" checked={server.customWordsMode === 'only'} onChange={() => patch({ customWordsMode: 'only' })} />
-                    Uniquement mes mots
-                  </label>
-                </div>
-              )}
-              {tooFewCustom && (
-                <p className="muted" role="note">Pas assez de mots perso : la liste par défaut sera utilisée</p>
-              )}
+            <div className="mode-switch" role="radiogroup" aria-label="Mode de jeu">
+              {MODES.map((m) => (
+                <button
+                  key={m.mode}
+                  type="button"
+                  role="radio"
+                  className="chip"
+                  aria-checked={server.mode === m.mode}
+                  aria-pressed={server.mode === m.mode}
+                  onClick={() => server.mode !== m.mode && patch({ mode: m.mode })}
+                >
+                  {m.label}
+                </button>
+              ))}
             </div>
+            {imposter && (
+              <>
+                <p className="muted mode-note">Tout le monde dessine le même mot, sauf l'imposteur qui ne connaît que la catégorie · 3 joueurs minimum</p>
+                {IMPOSTER_FIELDS.map((f) => (
+                  <NumberField
+                    key={f.key}
+                    label={f.label}
+                    unit={f.unit}
+                    range={SETTING_RANGES[f.key]}
+                    value={server[f.key]}
+                    onCommit={(v) => patch({ [f.key]: v })}
+                  />
+                ))}
+                <label className="row check">
+                  <input type="checkbox" checked={server.impScribble} onChange={(e) => patch({ impScribble: e.target.checked })} />
+                  <span>Gribouillis de départ</span>
+                </label>
+              </>
+            )}
+            {!imposter && (
+              <>
+                {NUMERIC_FIELDS.map((f) => (
+                  <NumberField
+                    key={f.key}
+                    label={f.label}
+                    unit={f.unit}
+                    range={SETTING_RANGES[f.key]}
+                    value={server[f.key]}
+                    onCommit={(v) => patch({ [f.key]: v })}
+                  />
+                ))}
+                <label className="row check">
+                  <input type="checkbox" checked={server.closeDetection} onChange={(e) => patch({ closeDetection: e.target.checked })} />
+                  <span>Prévenir quand on chauffe</span>
+                </label>
+
+                <div className="words">
+                  <span className="field-label">Mots personnalisés</span>
+                  {isHost && isOwner ? (
+                    <textarea
+                      value={wordsText}
+                      onChange={(e) => onWords(e.target.value)}
+                      rows={4}
+                      placeholder="Un mot par ligne, ou séparés par des virgules"
+                    />
+                  ) : (
+                    <p>
+                      {state.game.customWordsCount} mots perso
+                      {state.game.customWordsCount > 0 && (server.customWordsMode === 'only' ? ' (uniquement ceux-là)' : ' (mélangés aux mots du jeu)')}
+                    </p>
+                  )}
+                  {isHost && !isOwner && (
+                    <>
+                      <label className="field-label" htmlFor="replace-words">Remplacer les mots perso</label>
+                      <textarea
+                        id="replace-words"
+                        value={replaceText}
+                        onChange={(e) => setReplaceText(e.target.value)}
+                        rows={4}
+                        placeholder="Nouvelle liste : un mot par ligne, ou séparés par des virgules"
+                      />
+                      <button type="button" className="btn" onClick={replaceWords}>Remplacer les mots perso</button>
+                    </>
+                  )}
+                  {isHost && (
+                    <div className="radios" role="radiogroup" aria-label="Utilisation des mots personnalisés">
+                      <label>
+                        <input type="radio" name="mode" checked={server.customWordsMode === 'mixed'} onChange={() => patch({ customWordsMode: 'mixed' })} />
+                        Mélangés aux mots du jeu
+                      </label>
+                      <label>
+                        <input type="radio" name="mode" checked={server.customWordsMode === 'only'} onChange={() => patch({ customWordsMode: 'only' })} />
+                        Uniquement mes mots
+                      </label>
+                    </div>
+                  )}
+                  {tooFewCustom && (
+                    <p className="muted" role="note">Pas assez de mots perso : la liste par défaut sera utilisée</p>
+                  )}
+                </div>
+              </>
+            )}
           </fieldset>
           {isHost && (
-            <button className="btn btn-link" onClick={() => { setWordsText(''); wordsTouched.current = true; commit({ ...DEFAULT_SETTINGS, customWords: [] }); }}>
+            <button className="btn btn-link" onClick={() => { setWordsText(''); wordsTouched.current = true; commit({ ...DEFAULT_SETTINGS, mode: server.mode, customWords: [] }); }}>
               Réglages par défaut
             </button>
           )}

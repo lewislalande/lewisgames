@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 import { addAction, appendPoints, isValidAction, MAX_STROKE_POINTS, redo, undo } from '@kg/shared';
 import type { DrawAction, DrawingHistory, DrawOp, Point } from '@kg/shared';
 import { Renderer, renderAction } from './renderer';
-import { TOOLS, Toolbar } from './Toolbar';
+import { StrokeBar, TOOLS, Toolbar } from './Toolbar';
 import type { Tool, ToolState } from './Toolbar';
 
 export const WIDTH = 800;
@@ -80,7 +80,14 @@ type Props = {
   header?: ReactNode;
   /** Rendered over the canvas (word choice, turn end). */
   children?: ReactNode;
+  /**
+   * Imposter mode: the drawer gets one pen stroke in a fixed colour and size, no toolbar or shortcuts.
+   * Lifting the pen (or « J'ai fini ») sends the last points then calls `onDone`.
+   */
+  single?: SingleStroke;
 };
+
+export type SingleStroke = { color: string; size: number; onDone: () => void };
 
 /**
  * Canvas shared by everyone. The drawer applies ops locally at once and sends
@@ -88,7 +95,7 @@ type Props = {
  * Mount one instance per turn (React `key`): the drawer's copy is authoritative
  * for the whole turn.
  */
-export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, tools, onTools, header, children }: Props) {
+export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, tools, onTools, header, children, single }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<Renderer | null>(null);
@@ -99,6 +106,12 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
   toolsRef.current = tools;
   const onOpRef = useRef(onOp);
   onOpRef.current = onOp;
+  const singleRef = useRef(single);
+  singleRef.current = single;
+  /** Single-stroke mode: the stroke has started (a second one is refused); the turn was ended; the pen is down. */
+  const strokeUsed = useRef(false);
+  const strokeDone = useRef(false);
+  const [stroking, setStroking] = useState(false);
 
   useLayoutEffect(() => {
     renderer.current = new Renderer(canvasRef.current!);
@@ -180,10 +193,28 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
 
   const pos = (e: ReactPointerEvent) => toLogical(e.clientX, e.clientY, canvasRef.current!.getBoundingClientRect());
 
+  /** Single-stroke mode: close the stroke (sending its last points) and end the turn. */
+  function finishSingle() {
+    if (!strokeUsed.current || strokeDone.current || !singleRef.current) return;
+    strokeDone.current = true;
+    endGesture();
+    setStroking(false);
+    singleRef.current.onDone();
+  }
+
   const onPointerDown = (e: ReactPointerEvent<HTMLCanvasElement>) => {
     if (!canDraw || gesture.current || (e.pointerType === 'mouse' && e.button !== 0)) return;
     e.preventDefault();
     const at = pos(e);
+    if (single) {
+      if (strokeUsed.current) return;
+      strokeUsed.current = true;
+      setStroking(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+      startStroke(e.pointerId, at, { tool: 'pen', color: single.color, size: single.size, opacity: 1 });
+      flushTimer.current = setInterval(flush, FLUSH_MS);
+      return;
+    }
     switch (tools.tool) {
       case 'fill':
         commit({ op: 'add', action: { id: newId(), kind: 'fill', color: tools.color, opacity: tools.opacity, at } }, true);
@@ -221,6 +252,8 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
     }
     if (at[0] === g.last[0] && at[1] === g.last[1]) return;
     if (g.count >= MAX_STROKE_POINTS) {
+      // A single stroke cannot continue in a new one.
+      if (singleRef.current) return;
       // Stroke full: continue in a new stroke, same style, starting from the last point.
       const full = local.current.actions[local.current.actions.length - 1];
       if (!full || full.kind !== 'stroke' || full.id !== g.id) return;
@@ -243,7 +276,8 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
       const same = from[0] === to[0] && from[1] === to[1];
       if (e.type === 'pointerup' && !same) commit({ op: 'add', action: g.action }, true);
     }
-    endGesture();
+    if (singleRef.current) finishSingle();
+    else endGesture();
   };
 
   useEffect(() => stopTimer, []);
@@ -264,7 +298,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
   keyActions.current = { doUndo, doRedo };
 
   useEffect(() => {
-    if (!canDraw) return;
+    if (!canDraw || singleRef.current) return;
     const onKey = (e: KeyboardEvent) => {
       if (isTyping(e.target)) return;
       const s = shortcutFor(e);
@@ -284,7 +318,7 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
         <span className="ring ring-l" aria-hidden="true" />
         <span className="ring ring-r" aria-hidden="true" />
         {header}
-        <div className={`canvas-wrap${canDraw ? ` can-draw tool-${tools.tool}` : ''}`}>
+        <div className={`canvas-wrap${canDraw ? ` can-draw tool-${single ? 'pen' : tools.tool}` : ''}`}>
           <canvas
             ref={canvasRef}
             className="board"
@@ -301,7 +335,8 @@ export function DrawingCanvas({ history, canDraw, onOp, subscribe, connected, to
           {children}
         </div>
       </div>
-      {canDraw && <Toolbar value={tools} onChange={onTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
+      {canDraw && !single && <Toolbar value={tools} onChange={onTools} onUndo={doUndo} onRedo={doRedo} onClear={doClear} />}
+      {canDraw && single && <StrokeBar color={single.color} canFinish={stroking} onDone={finishSingle} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { PictionaryView, QuizView } from '@kg/shared';
+import type { ImposterView, PictionaryView, QuizView } from '@kg/shared';
 import { pictionarySound, quizSound } from '../src/room/gameSounds';
 
 const q = (p: Partial<QuizView>) => ({ phase: 'answering', questionNumber: 1, answered: [], phaseEndsAt: 10_000, serverNow: 5_000, ...p }) as QuizView;
@@ -43,5 +43,27 @@ describe('pictionarySound', () => {
     expect(pictionarySound(pv({}), pv({ phase: 'turnEnd', serverNow: 6_000 }))).toBeNull(); // drawer left
     expect(pictionarySound(pv({ phase: 'turnEnd' }), pv({ phase: 'choosing' }))).toBeNull();
     expect(pictionarySound(pv({ phase: 'lobby' }), pv({ phase: 'choosing' }))).toBeNull();
+  });
+});
+
+describe('pictionarySound, imposter mode', () => {
+  const imp = (p: Partial<ImposterView> = {}) => ({ myVote: null, result: null, ...p }) as ImposterView;
+  const iv = (p: Partial<PictionaryView>) => pv({ phase: 'impDrawing', isDrawer: false, imp: imp(), ...p });
+  it('own turn → turnStart; someone else turn → none', () => {
+    expect(pictionarySound(iv({ phase: 'impReveal' }), iv({ isDrawer: true }))).toBe('turnStart');
+    expect(pictionarySound(iv({}), iv({ isDrawer: true }))).toBe('turnStart');
+    expect(pictionarySound(iv({ isDrawer: true }), iv({}))).toBeNull();
+    expect(pictionarySound(iv({ phase: 'impReveal' }), iv({}))).toBeNull();
+  });
+  it('vote opens → reveal; own vote → submit; others vote → none', () => {
+    expect(pictionarySound(iv({ phase: 'impDiscuss' }), iv({ phase: 'impVote' }))).toBe('reveal');
+    expect(pictionarySound(iv({ phase: 'impVote' }), iv({ phase: 'impVote', imp: imp({ myVote: 'bob' }) }))).toBe('submit');
+    expect(pictionarySound(iv({ phase: 'impVote', imp: imp({ myVote: 'bob' }) }), iv({ phase: 'impVote', imp: imp({ myVote: 'bob' }) }))).toBeNull();
+  });
+  it('result: imposter caught → found; imposter won → timeUp; game over → podium', () => {
+    const result = (imposterWon: boolean) => imp({ result: { imposterId: 'x', accused: 'x', guess: null, imposterWon, votes: {} } });
+    expect(pictionarySound(iv({ phase: 'impVote' }), iv({ phase: 'impResult', imp: result(false) }))).toBe('found');
+    expect(pictionarySound(iv({ phase: 'impGuess' }), iv({ phase: 'impResult', imp: result(true) }))).toBe('timeUp');
+    expect(pictionarySound(iv({ phase: 'impResult' }), pv({ phase: 'gameOver', imp: null }))).toBe('podium');
   });
 });

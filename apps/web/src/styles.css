@@ -769,6 +769,101 @@ input[type='range']::-moz-range-thumb {
 .lobby-head-actions .sound-pop { left: auto; right: 0; }
 .gameover-actions .sound-pop { left: auto; right: 0; }
 
+/* ---------------------------------------------------------------- Pictionary imposter mode */
+.mode-switch { display: flex; gap: .5rem; margin-bottom: .6rem; }
+.mode-switch .chip { font-size: 1.05rem; padding: .4rem 1.1rem; }
+.mode-note { margin: 0 0 .4rem; }
+
+/* No chat: one wider side column (turn order + phase card) beside the notebook. */
+.game-grid.imp-view {
+  --side-l: clamp(250px, 21vw, 330px);
+  --nb-w: min(
+    calc(100vw - var(--side-l) - var(--gap) - 2 * var(--pad)),
+    calc((100dvh - var(--chrome-y)) * 4 / 3 + var(--frame-x))
+  );
+  grid-template-columns: var(--side-l) var(--nb-w);
+  grid-template-areas: 'side notebook';
+}
+.game-grid.imp-view.drawer-view {
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: 'side notebook' 'side bottom';
+}
+.imp-side { grid-area: side; contain: size; display: flex; flex-direction: column; gap: var(--gap); min-height: 0; }
+.imp-side > .card { padding: .9rem; }
+.turn-bar { flex: 1 1 0; min-height: 9rem; overflow-y: auto; }
+.turn-bar > h2 { margin-bottom: .3rem; }
+.turn-round { margin: 0 0 .6rem; font-size: .85rem; font-weight: 900; color: var(--lilac); text-transform: uppercase; letter-spacing: .06em; }
+.turn-bar li.current { background: var(--sun); color: var(--ink); box-shadow: 0 0 0 2px var(--ink), var(--drop-sm); }
+.turn-bar li.current .score, .turn-bar li.current .you { color: var(--ink); }
+.turn-left {
+  flex: none; font: 900 .9rem/1 var(--font); font-variant-numeric: tabular-nums;
+  color: #fff; background: var(--ink); border-radius: 999px; padding: .2rem .5rem;
+}
+.imp-dot {
+  flex: none; display: inline-block; vertical-align: -.15em;
+  width: 1.35rem; height: 1.35rem; border-radius: 50%;
+  border: 2.5px solid var(--ink); box-shadow: inset 0 0 0 2px rgb(255 255 255 / .35);
+}
+.imp-phase { flex: 0 1 auto; min-height: 0; overflow-y: auto; }
+.imp-phase > p { margin-bottom: .7rem; font-weight: 800; }
+.imp-phase .btn { width: 100%; }
+.imp-phase .muted { margin: .3rem 0 0; }
+.vote-list { display: flex; flex-direction: column; gap: .5rem; }
+.vote-player { display: flex; align-items: center; gap: .6rem; text-align: left; padding: .5rem .8rem; }
+.vote-player span:last-child { min-width: 0; overflow-wrap: anywhere; }
+.vote-player.on { background: var(--sun); color: var(--ink); transform: translateY(4px); box-shadow: 0 0 0 var(--ink); }
+.vote-waiting { overflow-wrap: anywhere; }
+.imp-accused { font-size: 1.15rem; color: var(--sun); }
+.guess-form { display: flex; flex-direction: column; gap: .55rem; }
+.guess-form label { font-size: 1.1rem; }
+
+/* Header: category chip + the word (or ???) */
+.secret-line { display: flex; align-items: center; gap: .6rem; min-width: 0; max-width: 100%; }
+.secret-word {
+  font: 900 1.3rem/1.1 var(--font); color: #fff; text-transform: uppercase; letter-spacing: .06em;
+  text-shadow: 0 2px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.secret-word.unknown { color: var(--rose); letter-spacing: .2em; }
+
+/* Drawer's bar under the notebook */
+.stroke-bar { justify-content: flex-start; gap: 1.2rem; }
+.stroke-color { display: flex; align-items: center; gap: .5rem; font-weight: 900; white-space: nowrap; }
+.stroke-color .imp-dot { width: 1.9rem; height: 1.9rem; }
+.stroke-hint { flex: 1; min-width: 0; font-weight: 800; color: var(--lilac); }
+.stroke-bar .btn { flex: none; padding: .4rem 1.1rem; }
+
+/* Role card */
+.role-card { padding: 2rem 2.6rem; transform: rotate(-1.5deg); animation: role-pop .45s cubic-bezier(.2, .9, .3, 1.4); }
+.role-cat { font-size: 1.2rem; font-weight: 900; color: var(--lilac); margin-bottom: .9rem; }
+.role-cat strong { color: #fff; }
+.role-word { font-size: 1.6rem; font-weight: 900; margin: 0; }
+.role-word strong {
+  display: inline-block; margin-left: .3rem; padding: .1rem .9rem;
+  color: var(--ink); background: var(--mint); border: var(--line); border-radius: var(--r-md); box-shadow: var(--drop-sm);
+  font-size: 2.2rem; text-transform: uppercase; letter-spacing: .04em;
+}
+.role-card.is-imposter { background: var(--ink); border-color: var(--rose); box-shadow: 0 5px 0 var(--rose); }
+.role-imposter { margin: 0; font-size: clamp(2rem, 3.6vw, 3rem); font-weight: 900; line-height: 1.1; color: var(--rose); text-transform: uppercase; text-shadow: 0 4px 0 #000; }
+@keyframes role-pop { from { transform: rotate(-1.5deg) scale(.6); opacity: 0; } to { transform: rotate(-1.5deg) scale(1); opacity: 1; } }
+
+/* Result */
+.imp-result { text-align: left; padding: 1.2rem 1.6rem; width: min(40rem, 100%); }
+.imp-result h2 { display: flex; align-items: center; gap: .6rem; font-size: 1.55rem; margin-bottom: .6rem; }
+.imp-result h2 .imp-dot { width: 1.7rem; height: 1.7rem; }
+.imp-result h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--lilac); margin-bottom: .4rem; }
+.imp-result-word { font-size: 1.15rem; font-weight: 800; margin-bottom: .3rem; }
+.imp-result-word strong { color: var(--ink); background: var(--mint); border: 2.5px solid var(--ink); border-radius: var(--r-sm); padding: 0 .55rem; text-transform: uppercase; }
+.imp-result-line { margin-bottom: .3rem; font-weight: 800; overflow-wrap: anywhere; }
+.imp-outcome {
+  display: inline-block; margin: .2rem 0 .9rem; padding: .2rem .9rem;
+  font-weight: 900; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--ink); background: var(--mint); border: var(--line); border-radius: 999px; box-shadow: var(--drop-sm);
+}
+.imposter-won .imp-outcome { background: var(--rose); color: #fff; }
+.imp-result-cols { display: grid; grid-template-columns: 3fr 2fr; gap: 1rem; }
+.imp-result .player-list li { padding-block: .25rem; }
+.imp-votes .you { white-space: nowrap; }
+
 /* ---------------------------------------------------------------- Narrow screens */
 @media (max-width: 900px) {
   .game-grid, .game-grid.drawer-view {
@@ -779,6 +874,9 @@ input[type='range']::-moz-range-thumb {
     height: auto; min-height: 0;
   }
   .game-grid:not(.drawer-view) { grid-template-areas: 'notebook' 'chat' 'players'; }
+  .game-grid.imp-view, .game-grid.imp-view.drawer-view { grid-template-areas: 'notebook' 'bottom' 'side'; }
+  .imp-side { contain: none; }
+  .turn-bar { flex: none; }
   .tb-palette, .tb-tools { margin-top: 0; }
   .tb-bottom { height: auto; flex-wrap: wrap; padding: .6rem .9rem; border-radius: var(--r-lg); }
   .game-grid > .chat { height: 22rem; }
