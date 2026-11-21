@@ -26,11 +26,12 @@ describe('pictionary imposter mode', () => {
     for (const c of all) await c.nextState((m) => m.game.phase === 'impReveal');
 
     // Fix the secret word and end the reveal.
-    const imposterId = await runInDurableObject(stubFor(code), (instance) => {
+    const { imposterId, original } = await runInDurableObject(stubFor(code), (instance) => {
       const data = (instance as unknown as { data: Stored }).data;
+      const original = data.game.imp!.word;
       data.game.imp!.word = SECRET;
       data.game.phaseEndsAt = Date.now() - 1;
-      return data.game.imp!.imposterId;
+      return { imposterId: data.game.imp!.imposterId, original };
     });
     expect(await runDurableObjectAlarm(stubFor(code))).toBe(true);
     let latest = await a.nextState((m) => m.game.phase === 'impDrawing');
@@ -78,7 +79,16 @@ describe('pictionary imposter mode', () => {
     expect(res.game.scores[imposterId]).toBe(2);
 
     // Every frame the imposter got before the result is free of the word.
-    for (const raw of imposter.raw.slice(0, beforeResult)) expect(raw.toLowerCase()).not.toContain(SECRET);
+    // Neither the word in play nor the one first drawn appears as a string value (a bare substring
+    // check would trip on short words such as "chat", which is also a view key).
+    const escaped = JSON.stringify(original).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const originalValue = new RegExp(`${escaped}(?!\\s*:)`, 'i');
+    expect(JSON.stringify({ word: original })).toMatch(originalValue);
+    expect(JSON.stringify({ [original]: 1 })).not.toMatch(originalValue);
+    for (const raw of imposter.raw.slice(0, beforeResult)) {
+      expect(raw.toLowerCase()).not.toContain(SECRET);
+      expect(raw).not.toMatch(originalValue);
+    }
     const otherState = (await others[0]!.c.nextState((m) => m.game.phase === 'impResult')) as StateMsg;
     expect(otherState.game.imp!.result!.votes[imposterId]).toBe(others[0]!.playerId);
   });

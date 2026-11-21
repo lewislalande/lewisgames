@@ -1,4 +1,4 @@
-import { connectedPlayers, type Room } from '../room';
+import { connectedPlayers } from '../room';
 import { classifyGuess } from '../text';
 import {
   addAction, appendPoints, emptyHistory, isValidAction, MAX_STROKE_POINTS,
@@ -6,6 +6,7 @@ import {
 } from './drawing';
 import type { Ctx, DrawOp, GameEvent, Phase, PictionaryState, Result } from './game';
 import bank from './imposter-words-fr.json';
+import { changed, gameOver, isConnected, isPoint, unchanged } from './results';
 
 /**
  * Imposter mode ("L'imposteur"): every player but one knows a secret word; each draws one stroke
@@ -39,7 +40,7 @@ export type ImposterView = {
   manches: number;
   category: string;
   isImposter: boolean;
-  /** null for the imposter until impResult. */
+  /** Only players of this manche's order who are not the imposter, until impResult. */
   word: string | null;
   order: string[];
   colors: Record<string, string>;
@@ -49,6 +50,8 @@ export type ImposterView = {
   /** Who has voted (ids only). */
   voted: string[];
   myVote: string | null;
+  /** The player the vote designated, during impGuess and impResult. */
+  accused: string | null;
   /** impResult only. */
   result: {
     imposterId: string; accused: string | null; guess: string | null; imposterWon: boolean; votes: Record<string, string>;
@@ -70,15 +73,15 @@ export const IMP_PALETTE: readonly string[] = [
   '#dc2626', // red
   '#2563eb', // blue
   '#16a34a', // green
-  '#ea580c', // orange
+  '#f97316', // orange
   '#7c3aed', // violet
   '#111827', // black
-  '#ca8a04', // gold
-  '#0d9488', // teal
-  '#c026d3', // magenta
-  '#92400e', // brown
-  '#0ea5e9', // sky
-  '#db2777', // pink
+  '#ca8a04', // ochre yellow
+  '#ec4899', // pink
+  '#06b6d4', // cyan
+  '#78350f', // brown
+  '#84cc16', // lime
+  '#0f766e', // dark teal
 ];
 
 const IMP_PHASES: ReadonlySet<Phase> = new Set<Phase>(['impReveal', 'impDrawing', 'impDiscuss', 'impVote', 'impGuess', 'impResult']);
@@ -130,18 +133,9 @@ export function makeScribble(rng: () => number, id: string): DrawAction {
   return { id, kind: 'stroke', tool: 'pen', color: SCRIBBLE_COLOR, size: IMP_STROKE_SIZE, opacity: 1, points };
 }
 
-const changed = (state: PictionaryState): Result => ({ state, effects: [{ type: 'state' }] });
-const unchanged = (state: PictionaryState): Result => ({ state, effects: [] });
-
-const isConnected = (room: Room, id: string): boolean => room.players.some((p) => p.id === id && p.connected);
-
 const withImp = (s: PictionaryState, patch: Partial<ImposterState>): PictionaryState => ({ ...s, imp: { ...s.imp!, ...patch } });
 
 const totalTurns = (s: PictionaryState): number => s.imp!.order.length * s.settings.impTableRounds;
-
-function gameOver(s: PictionaryState): Result {
-  return changed({ ...s, phase: 'gameOver', drawerId: null, wordChoices: [], word: null, phaseEndsAt: null, drawStartedAt: null });
-}
 
 /** Starts manche `manche` with the players connected now, or ends the game if there are too few. */
 export function beginManche(s: PictionaryState, manche: number, ctx: Ctx): Result {
@@ -265,9 +259,6 @@ function onPlayerLeft(s: PictionaryState, playerId: string, ctx: Ctx): Result {
   return changed(s);
 }
 
-const isPoint = (p: unknown): p is Point =>
-  Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n));
-
 /**
  * The current drawer may start one stroke per turn (pen, their colour, size 6) and extend it;
  * nothing else (no shapes, fills, clears, undo or redo).
@@ -348,7 +339,10 @@ export function reduceImposter(s: PictionaryState, event: GameEvent, ctx: Ctx): 
   }
 }
 
-/** The word is hidden from the imposter, and votes and the imposter's identity from everyone, until the result. */
+/**
+ * Until the result, the word goes only to players of the manche who are not the imposter (a player who
+ * joined mid-manche could be the imposter's second session), and votes and the imposter's identity to nobody.
+ */
 export function imposterViewFor(s: PictionaryState, viewerId: string): ImposterView | null {
   const imp = s.imp ?? null;
   if (!imp || !isImposterPhase(s.phase)) return null;
@@ -360,7 +354,7 @@ export function imposterViewFor(s: PictionaryState, viewerId: string): ImposterV
     manches: s.settings.impRounds,
     category: imp.category,
     isImposter,
-    word: isImposter && !ended ? null : imp.word,
+    word: ended || (!isImposter && imp.order.includes(viewerId)) ? imp.word : null,
     order: imp.order,
     colors: imp.colors,
     currentDrawer: s.phase === 'impDrawing' ? s.drawerId : null,
@@ -368,6 +362,7 @@ export function imposterViewFor(s: PictionaryState, viewerId: string): ImposterV
     tableRounds: s.settings.impTableRounds,
     voted: Object.keys(imp.votes),
     myVote: imp.votes[viewerId] ?? null,
+    accused: s.phase === 'impGuess' || ended ? imp.accused : null,
     result: ended
       ? { imposterId: imp.imposterId, accused: imp.accused, guess: imp.guess, imposterWon: imp.imposterWon === true, votes: imp.votes }
       : null,

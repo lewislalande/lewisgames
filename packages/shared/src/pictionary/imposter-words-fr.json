@@ -52,18 +52,18 @@
     "baguette",
     "gâteau",
     "glace",
-    "sucette",
     "bonbon",
     "omelette",
     "saucisse",
     "sushi",
-    "hot-dog",
+    "kebab",
     "crêpe",
     "donut",
     "raisin",
     "citron",
     "poire",
-    "maïs"
+    "maïs",
+    "brochette"
   ],
   "Objets de la maison": [
     "lampe",
@@ -71,7 +71,6 @@
     "table",
     "canapé",
     "lit",
-    "réveil",
     "téléphone",
     "télévision",
     "ordinateur",
@@ -83,7 +82,6 @@
     "frigo",
     "four",
     "casserole",
-    "poêle",
     "fourchette",
     "cuillère",
     "couteau",
@@ -95,7 +93,9 @@
     "parapluie",
     "horloge",
     "bougie",
-    "coussin"
+    "coussin",
+    "arrosoir",
+    "cintre"
   ],
   "Métiers": [
     "pompier",
@@ -118,14 +118,14 @@
     "mécanicien",
     "pêcheur",
     "agriculteur",
-    "chirurgien",
     "serveur",
     "magicien",
     "clown",
     "juge",
     "plongeur",
     "architecte",
-    "électricien"
+    "électricien",
+    "maçon"
   ],
   "Sports": [
     "football",
@@ -146,9 +146,8 @@
     "escalade",
     "patinage",
     "bowling",
-    "ping-pong",
+    "fléchettes",
     "badminton",
-    "haltérophilie",
     "tir à l'arc",
     "baseball",
     "hockey",
@@ -157,7 +156,8 @@
     "marathon",
     "skateboard",
     "aviron",
-    "curling"
+    "curling",
+    "lancer de poids"
   ],
   "Lieux": [
     "école",
@@ -179,8 +179,6 @@
     "stade",
     "restaurant",
     "pharmacie",
-    "banque",
-    "mairie",
     "parking",
     "cimetière",
     "gratte-ciel",
@@ -188,7 +186,9 @@
     "station-service",
     "pont",
     "usine",
-    "camping"
+    "camping",
+    "fontaine",
+    "chapiteau"
   ],
   "Moyens de transport": [
     "voiture",
@@ -207,29 +207,27 @@
     "tramway",
     "sous-marin",
     "montgolfière",
-    "voilier",
     "taxi",
     "ambulance",
     "calèche",
     "téléphérique",
     "kayak",
     "scooter",
-    "péniche",
     "planeur",
     "monocycle",
-    "paquebot",
-    "jet-ski",
+    "hydravion",
     "dirigeable",
-    "traîneau"
+    "traîneau",
+    "bulldozer",
+    "camping-car",
+    "charrette"
   ],
   "Vêtements & accessoires": [
     "chapeau",
-    "casquette",
     "écharpe",
     "gants",
     "chaussette",
     "chaussure",
-    "botte",
     "pantalon",
     "jupe",
     "robe",
@@ -246,12 +244,13 @@
     "short",
     "pull",
     "manteau",
-    "sandales",
-    "bonnet",
     "bretelles",
     "boucles d'oreilles",
     "couronne",
-    "tablier"
+    "tablier",
+    "sac à dos",
+    "éventail",
+    "gilet"
   ],
   "Instruments de musique": [
     "guitare",
@@ -266,10 +265,7 @@
     "tambour",
     "triangle",
     "xylophone",
-    "violoncelle",
-    "contrebasse",
     "clarinette",
-    "trombone",
     "banjo",
     "ukulélé",
     "harmonica",
@@ -277,16 +273,17 @@
     "maracas",
     "synthétiseur",
     "orgue",
-    "tuba",
     "castagnettes",
     "cymbales",
     "djembé",
-    "hautbois"
+    "hautbois",
+    "gong",
+    "cloche",
+    "lyre"
   ],
   "Personnages de fiction": [
     "mickey",
     "batman",
-    "spiderman",
     "pikachu",
     "mario",
     "harry potter",
@@ -304,13 +301,14 @@
     "sherlock holmes",
     "frankenstein",
     "dracula",
-    "le petit prince",
     "hulk",
     "zorro",
     "robin des bois",
     "gollum",
     "père noël",
-    "capitaine crochet"
+    "capitaine crochet",
+    "petit prince",
+    "dumbo"
   ],
   "Nature & météo": [
     "soleil",
@@ -334,15 +332,14 @@
     "île",
     "désert",
     "forêt",
-    "palmier",
     "rocher",
-    "brouillard",
     "grêle",
     "lac",
     "colline",
-    "sapin",
-    "tournesol",
-    "vent"
+    "coquillage",
+    "nid",
+    "météorite",
+    "flaque"
   ],
   "Fête & loisirs": [
     "guirlande",
@@ -351,8 +348,6 @@
     "feu d'artifice",
     "piñata",
     "masque",
-    "déguisement",
-    "karaoké",
     "jeu de cartes",
     "dés",
     "échecs",
@@ -373,6 +368,8 @@
     "citrouille",
     "œuf de pâques",
     "cotillons",
-    "grande roue"
+    "grande roue",
+    "chamboule-tout",
+    "jeu de l'oie"
   ]
 }

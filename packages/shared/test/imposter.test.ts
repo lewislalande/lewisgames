@@ -543,6 +543,45 @@ describe('imposter views', () => {
     expect(v(t, x).imp!.result).toEqual(res.result);
   });
 
+  it('a mid-manche joiner gets the category only, and the word from the next manche', () => {
+    const t = begin({ impRounds: 2 });
+    const SECRET = 'zorglubium';
+    t.s = { ...t.s, imp: { ...imp(t), word: SECRET } };
+    t.room = { ...t.room, players: [...t.room.players, { id: 'D', name: 'D', connected: true, joinedAt: 9 }] };
+    send(t, { type: 'playerJoined', playerId: 'D' });
+    const check = () => {
+      const dv = v(t, 'D');
+      expect(dv.imp!.isImposter).toBe(false);
+      expect(dv.imp!.word).toBeNull();
+      expect(dv.imp!.category).toBe(imp(t).category);
+      expect(JSON.stringify(dv)).not.toContain(SECRET);
+    };
+    check();
+    toVote(t);
+    check();
+    expire(t); // nobody votes → result
+    expect(v(t, 'D').imp!.word).toBe(SECRET);
+    expire(t);
+    expect(imp(t).manche).toBe(2);
+    expect(imp(t).order).toContain('D');
+    if (imp(t).imposterId !== 'D') expect(v(t, 'D').imp!.word).toBe(imp(t).word);
+  });
+
+  it('shows who is accused during the guess and the result, not before', () => {
+    const t = begin();
+    toVote(t);
+    const { imposterId } = imp(t);
+    const [x, y] = nonImposters(t) as [string, string];
+    send(t, { type: 'impVote', by: x, target: imposterId });
+    expect(v(t, y).imp!.accused).toBeNull();
+    send(t, { type: 'impVote', by: y, target: imposterId });
+    send(t, { type: 'impVote', by: imposterId, target: x });
+    expect(t.s.phase).toBe('impGuess');
+    for (const id of [x, y, imposterId]) expect(v(t, id).imp!.accused).toBe(imposterId);
+    send(t, { type: 'impGuess', by: imposterId, text: 'ballon' });
+    expect(v(t, x).imp!.accused).toBe(imposterId);
+  });
+
   it('classique views have no imposter data', () => {
     const s = reduce(initialState(), { type: 'start', by: 'A' }, { now: 1, rng: seeded(), room: mkRoom(), words }).state;
     const view = viewFor(s, 'B', 1, 'A');

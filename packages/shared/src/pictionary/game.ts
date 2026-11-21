@@ -7,6 +7,7 @@ import {
   addAction, appendPoints, emptyHistory, isValidAction, MAX_STROKE_POINTS, redo, undo,
   type DrawAction, type DrawingHistory, type Point,
 } from './drawing';
+import { changed, gameOver, isConnected, isPoint, unchanged } from './results';
 import { beginManche, IMP_MIN_PLAYERS, reduceImposter, type ImposterState } from './imposter';
 
 export type Phase =
@@ -94,11 +95,6 @@ export function initialState(settings: PictionarySettings = DEFAULT_SETTINGS): P
   };
 }
 
-const changed = (state: PictionaryState): Result => ({ state, effects: [{ type: 'state' }] });
-const unchanged = (state: PictionaryState): Result => ({ state, effects: [] });
-
-const isConnected = (room: Room, id: string): boolean =>
-  room.players.some((p) => p.id === id && p.connected);
 
 const MAX_CHAT = 100;
 const MAX_GUESS_LENGTH = 100;
@@ -156,18 +152,6 @@ function pickChoices(s: PictionaryState, ctx: Ctx): { choices: string[]; usedWor
     available = pool;
   }
   return { choices: sample(available, wordChoices, ctx.rng), usedWords };
-}
-
-function gameOver(s: PictionaryState): Result {
-  return changed({
-    ...s,
-    phase: 'gameOver',
-    drawerId: null,
-    wordChoices: [],
-    word: null,
-    phaseEndsAt: null,
-    drawStartedAt: null,
-  });
 }
 
 /**
@@ -318,9 +302,6 @@ function onRevealLetter(s: PictionaryState, by: string, index: unknown, ctx: Ctx
   }
   return changed({ ...s, revealed: [...s.revealed, i] });
 }
-
-const isPoint = (p: unknown): p is Point =>
-  Array.isArray(p) && p.length === 2 && p.every((n) => typeof n === 'number' && Number.isFinite(n));
 
 /** Rebuild a validated action from known fields only. */
 function sanitizeAction(a: DrawAction): DrawAction {
