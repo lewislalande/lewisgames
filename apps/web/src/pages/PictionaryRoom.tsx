@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { IMP_STROKE_SIZE, isImposterPhase } from '@kg/shared';
 import type { ImposterView, PictionaryView } from '@kg/shared';
+import type { ReactNode } from 'react';
 import { RoomError, WrongGame } from '../room/RoomError';
 import { RoomPage } from '../room/RoomPage';
 import { useRoomSocket } from '../lib/socket';
@@ -19,6 +20,9 @@ import { GameOver } from '../pictionary/GameOver';
 import { SoundControl } from '../room/SoundControl';
 import { useStateChanges } from '../room/useStateChanges';
 import { play } from '../lib/sound';
+import { turnPopup } from '../room/turnPopup';
+import type { TurnPopupData } from '../room/turnPopup';
+import { TurnPopup } from '../room/TurnPopup';
 import { pictionarySound } from '../room/gameSounds';
 import { RoleCard, SecretLine } from '../pictionary/imposter/RoleCard';
 import { TurnBar } from '../pictionary/imposter/TurnBar';
@@ -46,7 +50,12 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
   useStateChanges(state?.kind === 'pictionary' ? state.game : null, sock.status === 'open', (a, b) => {
     const sound = pictionarySound(a, b);
     if (sound) play(sound);
+    const p = turnPopup(a, b, sock.playerId);
+    if (p) setPopup({ ...p, id: ++popupId.current });
   });
+  const [popup, setPopup] = useState<TurnPopupData | null>(null);
+  const popupId = useRef(0);
+  const popupNode = popup && <TurnPopup key={popup.id} popup={popup} onDone={() => setPopup(null)} />;
   // Notices are live only (never replayed): « presque ! » for this player's own guess.
   const { onNotice } = sock;
   useEffect(() => onNotice((n) => { if (n === 'close') play('close'); }), [onNotice]);
@@ -68,7 +77,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
     return (
       <main className="room wide play">
         {sock.status !== 'open' && <p className="banner" role="status">Connexion perdue, nouvelle tentative…</p>}
-        <ImposterGame state={state} game={game} imp={game.imp} playerId={sock.playerId} names={names} offset={offset} sock={sock} />
+        <ImposterGame state={state} game={game} imp={game.imp} playerId={sock.playerId} names={names} offset={offset} sock={sock} popup={popupNode} />
       </main>
     );
   }
@@ -119,6 +128,7 @@ function Connected({ code, name, onChangeName }: { code: string; name: string; o
           >
             {game.phase === 'choosing' && <WordChoice game={game} drawerName={drawerName} send={sock.send} />}
             {game.phase === 'turnEnd' && <TurnEnd game={game} names={names} />}
+            {popupNode}
           </DrawingCanvas>
           <Chat game={game} names={names} send={sock.send} onNotice={sock.onNotice} />
         </div>
@@ -135,10 +145,11 @@ type ImpProps = {
   names: Record<string, string>;
   offset: number;
   sock: RoomSocket;
+  popup: ReactNode;
 };
 
 /** Imposter mode, during a manche: turn order on the left, the notebook, no chat (players talk on voice). */
-function ImposterGame({ state, game, imp, playerId, names, offset, sock }: ImpProps) {
+function ImposterGame({ state, game, imp, playerId, names, offset, sock, popup }: ImpProps) {
   const { send } = sock;
   const color = imp.colors[playerId];
   // Without a colour there is no stroke to draw (and never the Classique toolbar).
@@ -192,6 +203,7 @@ function ImposterGame({ state, game, imp, playerId, names, offset, sock }: ImpPr
       >
         {game.phase === 'impReveal' && <RoleCard imp={imp} />}
         {game.phase === 'impResult' && <ImpResult game={game} imp={imp} names={names} />}
+        {popup}
       </DrawingCanvas>
     </div>
   );

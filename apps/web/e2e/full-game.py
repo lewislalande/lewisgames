@@ -99,6 +99,10 @@ def main():
         print('word:', word)
         for pg in everyone:
             pg.locator('.overlay').wait_for(state='detached')
+        tp = drawer.locator('[data-turn-popup]')
+        check(tp.count() == 1 and 'À toi de dessiner !' in tp.inner_text() and word.lower() in tp.inner_text().lower(), 'drawer sees the turn popup with the word')
+        check(all(pg.locator('[data-turn-popup]').count() == 0 for pg in guessers), 'guessers see no turn popup')
+        tp.wait_for(state='detached', timeout=2500)
         check(drawer.locator('.chat-input').is_disabled(), 'drawer chat input disabled')
         check(drawer.locator('.toolbar').count() == 1 and g1.locator('.toolbar').count() == 0, 'toolbar for drawer only')
         check('Indices restants : 2' in drawer.locator('.wordbar').inner_text(), 'drawer sees "Indices restants : 2"')

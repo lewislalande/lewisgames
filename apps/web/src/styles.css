@@ -959,3 +959,35 @@ input[type='range']::-moz-range-thumb {
   font: 900 .9rem var(--font); color: #fff; background: var(--violet-hi); border: var(--line);
   border-radius: var(--r-sm); padding: .3rem .8rem; margin-right: .75rem; cursor: pointer; box-shadow: var(--drop-sm);
 }
+
+/* « À toi ! » popup: light veil over the canvas, never intercepts the pointer */
+.turn-popup-backdrop {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  display: grid; place-items: center; padding: 1rem;
+  background: rgb(44 15 99 / .22);
+  animation: tp-veil 1.4s ease-out both;
+}
+.turn-popup {
+  background: var(--violet);
+  border: var(--line-thick); border-radius: var(--r-lg); box-shadow: var(--drop);
+  padding: 1.5rem 2.4rem; max-width: 100%; text-align: center;
+  animation: tp-card 1.4s cubic-bezier(.2, .9, .3, 1.2) both;
+}
+.turn-popup-title { margin: 0 0 .6rem; font-size: clamp(2rem, 3.6vw, 2.8rem); font-weight: 900; line-height: 1.1; color: var(--mint); text-shadow: 0 4px 0 var(--ink); }
+.turn-popup-sub { margin: 0; display: flex; align-items: center; justify-content: center; gap: .6rem; font-size: 1.2rem; font-weight: 800; color: var(--lilac); overflow-wrap: anywhere; }
+.turn-popup-sub .imp-dot { width: 1.9rem; height: 1.9rem; }
+.turn-popup-word {
+  padding: .05rem .8rem; color: var(--ink); background: var(--mint); border: var(--line); border-radius: var(--r-md);
+  box-shadow: var(--drop-sm); font-size: 1.7rem; text-transform: uppercase; letter-spacing: .04em;
+}
+/* pop in over the first 200 ms, hold, fade out over the last 200 ms */
+@keyframes tp-card {
+  0% { opacity: 0; transform: scale(.9); }
+  14%, 86% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes tp-veil { 0% { opacity: 0; } 14%, 86% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tp-fade { 0% { opacity: 0; } 14%, 86% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .turn-popup, .turn-popup-backdrop { animation: tp-fade 1.4s linear both !important; }
+}

@@ -76,12 +76,14 @@ def rgb(css):
     return [int(v) for v in css[css.index('(') + 1:css.index(')')].split(',')[:3]]
 
 
-def drag(pg, y, x0=150, x1=650, box=None):
-    """A horizontal stroke at logical height y (800×600 board)."""
+def drag(pg, y, x0=150, x1=650, box=None, on_down=None):
+    """A horizontal stroke at logical height y (800×600 board); `on_down` runs right after the pointerdown."""
     box = box or pg.locator('canvas.board').bounding_box()
     at = lambda x: (box['x'] + x / 800 * box['width'], box['y'] + y / 600 * box['height'])
     pg.mouse.move(*at(x0))
     pg.mouse.down()
+    if on_down:
+        on_down()
     pg.mouse.move(*at(x1), steps=20)
     pg.mouse.up()
 
@@ -161,6 +163,17 @@ def main():
             check(drawer is not None, f'turn {turn + 1}: someone draws')
             d = pages[drawer]
             watchers = [n for n in NAMES if n != drawer]
+            # « À toi de jouer ! » popup: the current drawer only, over the canvas, never blocking it
+            popup = d.locator('[data-turn-popup]')
+            popup.wait_for(timeout=1500)
+            check('À toi de jouer !' in popup.inner_text() and 'Un seul trait, dans ta couleur' in popup.inner_text(), f'turn {turn + 1}: drawer sees the turn popup')
+            check(all(pages[n].locator('[data-turn-popup]').count() == 0 for n in watchers), f'turn {turn + 1}: watchers see no turn popup')
+            check(d.evaluate("() => getComputedStyle(document.querySelector('.turn-popup-backdrop')).pointerEvents") == 'none', f'turn {turn + 1}: popup ignores the pointer')
+            if turn == 0:
+                d.wait_for_timeout(500)  # past the pop-in
+                d.screenshot(path=f'{args.shots}/turn-popup.png')
+                popup.wait_for(state='detached', timeout=2500)
+                check(True, 'turn 1: popup dismisses itself')
             check(all(pages[n].locator('.stroke-bar').count() == 0 and pages[n].locator('.toolbar').count() == 0 for n in watchers), f'turn {turn + 1}: no controls for the others')
             check(d.locator('.toolbar').count() == 0, f'turn {turn + 1}: drawer has no toolbar')
             check(d.locator('.secret-word').inner_text().lower() == ('???' if drawer == imp_name else word), f'turn {turn + 1}: header shows the word or ???')
@@ -169,11 +182,12 @@ def main():
             for n in watchers:
                 check(rgb(pages[n].evaluate(DOT_COLOR_JS)) == color, f'turn {turn + 1}: {n} highlights the same drawer')
 
-            # a watcher tries to draw: nothing changes anywhere
+            # a watcher tries to draw: nothing changes anywhere (turn 3 instead checks the popup vs. pointerdown)
             before = {n: pg.evaluate(NONWHITE_JS) for n, pg in pages.items()}
-            drag(pages[watchers[0]], 80 + turn * 30)
-            a.wait_for_timeout(400)
-            check(all(pg.evaluate(NONWHITE_JS) == before[n] for n, pg in pages.items()), f'turn {turn + 1}: non-current player cannot draw')
+            if turn != 2:
+                drag(pages[watchers[0]], 80 + turn * 30)
+                a.wait_for_timeout(400)
+                check(all(pg.evaluate(NONWHITE_JS) == before[n] for n, pg in pages.items()), f'turn {turn + 1}: non-current player cannot draw')
 
             if turn == 1:
                 d.screenshot(path=f'{args.shots}/imp-drawing.png')
@@ -183,7 +197,11 @@ def main():
 
             y = 200 + turn * 120
             box = d.locator('canvas.board').bounding_box()
-            drag(d, y, box=box)
+            if turn == 2:
+                check(popup.count() == 1, 'turn 3: popup still up before the pointerdown')
+                drag(d, y, box=box, on_down=lambda: check(popup.count() == 0, 'turn 3: popup vanishes on pointerdown'))
+            else:
+                drag(d, y, box=box)
             # a second stroke right after lifting the pen (even once the next turn has arrived) draws nothing
             drag(d, y + 50, box=box)
             # pointerup ends the turn
