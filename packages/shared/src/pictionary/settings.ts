@@ -11,11 +11,22 @@ export type PictionarySettings = {
   maxPlayers: number;
   customWords: string[];
   customWordsMode: 'mixed' | 'only';
+  mode: 'classique' | 'imposteur';
+  /** Imposter mode: number of manches. */
+  impRounds: number;
+  /** Imposter mode: strokes per player in a manche. */
+  impTableRounds: number;
+  impStrokeSeconds: number;
+  /** 0: straight to the vote. */
+  impDiscussSeconds: number;
+  /** Start each manche's drawing with a random grey curve. */
+  impScribble: boolean;
 };
 
 export type NumericSettingKey =
   | 'rounds' | 'drawSeconds' | 'chooseSeconds' | 'wordChoices'
-  | 'maxHints' | 'hintUnlockPct' | 'maxPlayers';
+  | 'maxHints' | 'hintUnlockPct' | 'maxPlayers'
+  | 'impRounds' | 'impTableRounds' | 'impStrokeSeconds' | 'impDiscussSeconds';
 
 export const DEFAULT_SETTINGS: PictionarySettings = {
   rounds: 3,
@@ -28,6 +39,12 @@ export const DEFAULT_SETTINGS: PictionarySettings = {
   maxPlayers: 8,
   customWords: [],
   customWordsMode: 'mixed',
+  mode: 'classique',
+  impRounds: 3,
+  impTableRounds: 2,
+  impStrokeSeconds: 20,
+  impDiscussSeconds: 60,
+  impScribble: true,
 };
 
 export const SETTING_RANGES: Record<NumericSettingKey, [number, number]> = {
@@ -38,6 +55,10 @@ export const SETTING_RANGES: Record<NumericSettingKey, [number, number]> = {
   maxHints: [0, 5],
   hintUnlockPct: [0, 100],
   maxPlayers: [2, 12],
+  impRounds: [1, 10],
+  impTableRounds: [1, 4],
+  impStrokeSeconds: [10, 60],
+  impDiscussSeconds: [0, 180],
 };
 
 const MAX_CUSTOM_WORDS = 500;
@@ -73,6 +94,8 @@ export function clampSettings(input: unknown): PictionarySettings {
   }
   if (typeof src.closeDetection === 'boolean') out.closeDetection = src.closeDetection;
   out.customWordsMode = src.customWordsMode === 'only' ? 'only' : 'mixed';
+  out.mode = src.mode === 'imposteur' ? 'imposteur' : 'classique';
+  if (typeof src.impScribble === 'boolean') out.impScribble = src.impScribble;
   out.customWords = cleanWords(src.customWords);
   return out;
 }

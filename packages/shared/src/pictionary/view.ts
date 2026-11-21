@@ -2,6 +2,7 @@ import { maskWord } from './hints';
 import type { DrawingHistory } from './drawing';
 import type { ChatEntry, Phase, PictionaryState } from './game';
 import type { PictionarySettings } from './settings';
+import { imposterViewFor, type ImposterView } from './imposter';
 
 export type PictionaryView = {
   phase: Phase;
@@ -28,6 +29,9 @@ export type PictionaryView = {
   history: DrawingHistory;
   chat: ChatEntry[];
   turnOrder: string[];
+  mode: PictionarySettings['mode'];
+  /** Imposter mode, during a manche only. */
+  imp: ImposterView | null;
 };
 
 /** `ownerId` is the room creator: the only player allowed to read the custom word list. */
@@ -59,5 +63,7 @@ export function viewFor(state: PictionaryState, viewerId: string, now: number, o
     history: state.history,
     chat: state.chat,
     turnOrder: state.turnOrder,
+    mode: state.settings.mode === 'imposteur' ? 'imposteur' : 'classique',
+    imp: imposterViewFor(state, viewerId),
   };
 }

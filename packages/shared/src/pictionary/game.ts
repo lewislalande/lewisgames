@@ -7,8 +7,11 @@ import {
   addAction, appendPoints, emptyHistory, isValidAction, MAX_STROKE_POINTS, redo, undo,
   type DrawAction, type DrawingHistory, type Point,
 } from './drawing';
+import { beginManche, IMP_MIN_PLAYERS, reduceImposter, type ImposterState } from './imposter';
 
-export type Phase = 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameOver';
+export type Phase =
+  | 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameOver'
+  | 'impReveal' | 'impDrawing' | 'impDiscuss' | 'impVote' | 'impGuess' | 'impResult';
 export type ChatEntry = { id: number; kind: 'guess' | 'system'; playerId?: string; text: string };
 export type PictionaryState = {
   phase: Phase;
@@ -30,6 +33,8 @@ export type PictionaryState = {
   chat: ChatEntry[];
   nextChatId: number;
   usedWords: string[];
+  /** Imposter mode only: the current manche. */
+  imp: ImposterState | null;
 };
 
 export type DrawOp =
@@ -48,7 +53,12 @@ export type GameEvent =
   | { type: 'timeout' }
   | { type: 'playerJoined'; playerId: string }
   | { type: 'playerLeft'; playerId: string }
-  | { type: 'restart'; by: string };
+  | { type: 'restart'; by: string }
+  | { type: 'impStrokeDone'; by: string }
+  | { type: 'impVote'; by: string; target: string }
+  | { type: 'impGuess'; by: string; text: string }
+  /** Host: end the discussion early. */
+  | { type: 'impSkip'; by: string };
 
 export type Effect =
   | { type: 'state' }
@@ -80,6 +90,7 @@ export function initialState(settings: PictionarySettings = DEFAULT_SETTINGS): P
     chat: [],
     nextChatId: 1,
     usedWords: [],
+    imp: null,
   };
 }
 
@@ -236,7 +247,7 @@ function start(s: PictionaryState, ctx: Ctx): Result {
     turnOrder: order,
     scores: Object.fromEntries(order.map((id) => [id, 0])),
   };
-  return advance(fresh, 0, ctx);
+  return isImposterMode(s) ? beginManche(fresh, 1, ctx) : advance(fresh, 0, ctx);
 }
 
 function onTimeout(s: PictionaryState, ctx: Ctx): Result {
@@ -372,6 +383,8 @@ function applySettings(current: PictionarySettings, input: unknown): PictionaryS
   return hasWords ? next : { ...next, customWords: current.customWords };
 }
 
+const isImposterMode = (s: PictionaryState): boolean => s.settings.mode === 'imposteur';
+
 export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Result {
   const isHost = 'by' in event && event.by === ctx.room.hostId;
   switch (event.type) {
@@ -379,11 +392,17 @@ export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Resu
       if (!isHost || (state.phase !== 'lobby' && state.phase !== 'gameOver')) return unchanged(state);
       return changed({ ...state, settings: applySettings(state.settings, event.settings) });
     case 'start':
-      if (!isHost || state.phase !== 'lobby' || connectedPlayers(ctx.room).length < 2) return unchanged(state);
+      if (!isHost || state.phase !== 'lobby') return unchanged(state);
+      if (connectedPlayers(ctx.room).length < (isImposterMode(state) ? IMP_MIN_PLAYERS : 2)) return unchanged(state);
       return start(state, ctx);
     case 'restart':
       if (!isHost || state.phase !== 'gameOver') return unchanged(state);
       return changed(initialState(state.settings));
+    case 'playerJoined':
+      return onPlayerJoined(state, event.playerId);
+  }
+  if (isImposterMode(state)) return reduceImposter(state, event, ctx);
+  switch (event.type) {
     case 'chooseWord':
       if (state.phase !== 'choosing' || event.by !== state.drawerId) return unchanged(state);
       if (!Number.isInteger(event.index) || event.index < 0 || event.index >= state.wordChoices.length) {
@@ -392,8 +411,6 @@ export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Resu
       return startDrawing(state, event.index, ctx);
     case 'timeout':
       return onTimeout(state, ctx);
-    case 'playerJoined':
-      return onPlayerJoined(state, event.playerId);
     case 'playerLeft':
       return onPlayerLeft(state, event.playerId, ctx);
     case 'guess':

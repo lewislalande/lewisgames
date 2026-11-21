@@ -17,7 +17,12 @@ export type ClientMsg =
   | { t: 'next' }
   | { t: 'vote'; groupId: string; vote: VoteValue }
   | { t: 'closeVote' }
-  | { t: 'decide'; groupId: string; vote: VoteValue };
+  | { t: 'decide'; groupId: string; vote: VoteValue }
+  /** Pictionary imposter mode. */
+  | { t: 'impDone' }
+  | { t: 'impVote'; target: string }
+  | { t: 'impGuess'; text: string }
+  | { t: 'impSkip' };
 
 /** `bad_message`, `no_questions` and `internal` leave the socket open; the others close it. */
 export type ErrorCode = 'room_full' | 'bad_name' | 'bad_token' | 'not_found' | 'bad_message' | 'no_questions' | 'internal';
@@ -59,7 +64,13 @@ export function parseClientMsg(raw: string): ClientMsg | null {
     case 'restart':
     case 'next':
     case 'closeVote':
+    case 'impDone':
+    case 'impSkip':
       return { t: m.t };
+    case 'impVote':
+      return typeof m.target === 'string' ? { t: 'impVote', target: m.target } : null;
+    case 'impGuess':
+      return typeof m.text === 'string' ? { t: 'impGuess', text: m.text } : null;
     case 'choose':
     case 'reveal':
       return typeof m.index === 'number' ? { t: m.t, index: m.index } : null;

@@ -74,6 +74,10 @@ function pictionaryAdapter(db: D1Database): GameAdapter<PictionaryState, Piction
         case 'guess': return { type: 'guess', by, text: msg.text };
         case 'reveal': return { type: 'revealLetter', by, index: msg.index };
         case 'draw': return { type: 'draw', by, op: msg.op };
+        case 'impDone': return { type: 'impStrokeDone', by };
+        case 'impVote': return { type: 'impVote', by, target: msg.target };
+        case 'impGuess': return { type: 'impGuess', by, text: msg.text };
+        case 'impSkip': return { type: 'impSkip', by };
         default: return null;
       }
     },
@@ -87,6 +91,7 @@ function pictionaryAdapter(db: D1Database): GameAdapter<PictionaryState, Piction
     },
     reduce(state, event, ctx) {
       const r = reduce(state, event, { ...ctx, rng: Math.random, words: words ?? FALLBACK_WORDS });
+      // Draw ops go to everyone but the drawer (in imposter mode, the current turn's drawer).
       const effects = r.effects.map((e): RoomEffect => (e.type === 'draw' ? { ...e, except: r.state.drawerId } : e));
       return { state: r.state, effects };
     },
