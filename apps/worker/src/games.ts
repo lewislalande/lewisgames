@@ -3,6 +3,7 @@ import {
   type ClientMsg, type DrawOp, type ErrorCode, type GameEvent as PictionaryEvent, type GameKind, type PictionaryState,
   type PictionaryView, type QuizEvent, type QuizState, type QuizView, type Room,
 } from '@kg/shared';
+import { IMPOSTER_WORDS } from '@kg/shared/server';
 import { loadWords, markUsed, pickQuestions } from './questions';
 
 /** Every client message but `hello`, which the room handles itself. */
@@ -90,7 +91,7 @@ function pictionaryAdapter(db: D1Database): GameAdapter<PictionaryState, Piction
       return state;
     },
     reduce(state, event, ctx) {
-      const r = reduce(state, event, { ...ctx, rng: Math.random, words: words ?? FALLBACK_WORDS });
+      const r = reduce(state, event, { ...ctx, rng: Math.random, words: words ?? FALLBACK_WORDS, imposterWords: IMPOSTER_WORDS });
       // Draw ops go to everyone but the drawer (in imposter mode, the current turn's drawer).
       const effects = r.effects.map((e): RoomEffect => (e.type === 'draw' ? { ...e, except: r.state.drawerId } : e));
       return { state: r.state, effects };

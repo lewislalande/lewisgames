@@ -1,7 +1,7 @@
 import { maskWord } from './hints';
 import type { DrawingHistory } from './drawing';
 import type { ChatEntry, Phase, PictionaryState } from './game';
-import type { PictionarySettings } from './settings';
+import { DEFAULT_SETTINGS, type PictionarySettings } from './settings';
 import { imposterViewFor, type ImposterView } from './imposter';
 
 export type PictionaryView = {
@@ -40,10 +40,12 @@ export function viewFor(state: PictionaryState, viewerId: string, now: number, o
   const hasFound = state.found.some((f) => f.playerId === viewerId);
   const ended = state.phase === 'turnEnd' || state.phase === 'gameOver';
   const canSeeWord = ended || (state.phase === 'drawing' && (isDrawer || hasFound));
+  // Rooms stored before a setting existed lack it: the client always gets a full set.
+  const settings: PictionarySettings = { ...DEFAULT_SETTINGS, ...state.settings };
   const showMask = (state.phase === 'drawing' || state.phase === 'turnEnd') && state.word !== null;
   return {
     phase: state.phase,
-    settings: ownerId !== null && viewerId === ownerId ? state.settings : { ...state.settings, customWords: [] },
+    settings: ownerId !== null && viewerId === ownerId ? settings : { ...settings, customWords: [] },
     customWordsCount: state.settings.customWords.length,
     round: state.round,
     drawerId: state.drawerId,
@@ -63,7 +65,7 @@ export function viewFor(state: PictionaryState, viewerId: string, now: number, o
     history: state.history,
     chat: state.chat,
     turnOrder: state.turnOrder,
-    mode: state.settings.mode === 'imposteur' ? 'imposteur' : 'classique',
+    mode: settings.mode === 'imposteur' ? 'imposteur' : 'classique',
     imp: imposterViewFor(state, viewerId),
   };
 }

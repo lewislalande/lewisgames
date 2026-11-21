@@ -8,7 +8,9 @@ import {
   type DrawAction, type DrawingHistory, type Point,
 } from './drawing';
 import { changed, gameOver, isConnected, isPoint, unchanged } from './results';
-import { beginManche, IMP_MIN_PLAYERS, reduceImposter, type ImposterState } from './imposter';
+import {
+  beginManche, IMP_MIN_PLAYERS, isUsableBank, reduceImposter, type ImposterState, type ImposterWordBank,
+} from './imposter';
 
 export type Phase =
   | 'lobby' | 'choosing' | 'drawing' | 'turnEnd' | 'gameOver'
@@ -66,7 +68,14 @@ export type Effect =
   | { type: 'draw'; op: DrawOp }
   | { type: 'private'; to: string; notice: 'close' | 'correct' };
 
-export type Ctx = { now: number; rng: () => number; room: Room; words: string[] };
+export type Ctx = {
+  now: number;
+  rng: () => number;
+  room: Room;
+  words: string[];
+  /** Imposter mode only (server-side, see `@kg/shared/server`); an imposter game cannot start without it. */
+  imposterWords?: ImposterWordBank;
+};
 export type Result = { state: PictionaryState; effects: Effect[] };
 
 export const TURN_END_MS = 5000;
@@ -374,7 +383,11 @@ export function reduce(state: PictionaryState, event: GameEvent, ctx: Ctx): Resu
       return changed({ ...state, settings: applySettings(state.settings, event.settings) });
     case 'start':
       if (!isHost || state.phase !== 'lobby') return unchanged(state);
-      if (connectedPlayers(ctx.room).length < (isImposterMode(state) ? IMP_MIN_PLAYERS : 2)) return unchanged(state);
+      if (isImposterMode(state)) {
+        if (connectedPlayers(ctx.room).length < IMP_MIN_PLAYERS || !isUsableBank(ctx.imposterWords)) return unchanged(state);
+      } else if (connectedPlayers(ctx.room).length < 2) {
+        return unchanged(state);
+      }
       return start(state, ctx);
     case 'restart':
       if (!isHost || state.phase !== 'gameOver') return unchanged(state);

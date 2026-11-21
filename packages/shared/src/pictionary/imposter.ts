@@ -5,7 +5,6 @@ import {
   type DrawAction, type DrawingHistory, type Point,
 } from './drawing';
 import type { Ctx, DrawOp, GameEvent, Phase, PictionaryState, Result } from './game';
-import bank from './imposter-words-fr.json';
 import { changed, gameOver, isConnected, isPoint, unchanged } from './results';
 
 /**
@@ -58,7 +57,11 @@ export type ImposterView = {
   } | null;
 };
 
-export const IMPOSTER_WORDS: Readonly<Record<string, readonly string[]>> = bank;
+/**
+ * category → words. The bundled bank lives in `@kg/shared/server` and reaches the rules through
+ * `Ctx.imposterWords`, so it never ships in the web bundle (the imposter could read it there).
+ */
+export type ImposterWordBank = Readonly<Record<string, readonly string[]>>;
 
 export const IMP_REVEAL_MS = 4000;
 export const IMP_VOTE_MS = 30_000;
@@ -101,15 +104,18 @@ function shuffle<T>(items: readonly T[], rng: () => number): T[] {
   return a;
 }
 
-const ALL_PAIRS: { category: string; word: string }[] = Object.entries(IMPOSTER_WORDS).flatMap(
-  ([category, words]) => words.map((word) => ({ category, word })),
-);
+const pairsOf = (bank: ImposterWordBank): { category: string; word: string }[] =>
+  Object.entries(bank).flatMap(([category, words]) => words.map((word) => ({ category, word })));
 
-/** A random unused word of the bank (any word once all are used). */
-export function pickImposterWord(rng: () => number, used: string[]): { category: string; word: string } {
+export const isUsableBank = (bank: ImposterWordBank | undefined): bank is ImposterWordBank =>
+  bank !== undefined && pairsOf(bank).length > 0;
+
+/** A random unused word of `bank` (any word once all are used). */
+export function pickWordFrom(bank: ImposterWordBank, rng: () => number, used: string[]): { category: string; word: string } {
+  const all = pairsOf(bank);
   const usedSet = new Set(used);
-  const fresh = ALL_PAIRS.filter((p) => !usedSet.has(p.word));
-  const pool = fresh.length > 0 ? fresh : ALL_PAIRS;
+  const fresh = all.filter((p) => !usedSet.has(p.word));
+  const pool = fresh.length > 0 ? fresh : all;
   return { ...pool[pick(pool.length, rng)]! };
 }
 
@@ -140,12 +146,13 @@ const totalTurns = (s: PictionaryState): number => s.imp!.order.length * s.setti
 /** Starts manche `manche` with the players connected now, or ends the game if there are too few. */
 export function beginManche(s: PictionaryState, manche: number, ctx: Ctx): Result {
   const ids = connectedPlayers(ctx.room).map((p) => p.id);
-  if (ids.length < IMP_MIN_PLAYERS) return gameOver(s);
+  const bank = ctx.imposterWords;
+  if (ids.length < IMP_MIN_PLAYERS || !isUsableBank(bank)) return gameOver(s);
   const order = shuffle(ids, ctx.rng);
   const imposterId = ids[pick(ids.length, ctx.rng)]!;
-  const exhausted = ALL_PAIRS.every((p) => s.usedWords.includes(p.word));
+  const exhausted = pairsOf(bank).every((p) => s.usedWords.includes(p.word));
   const used = exhausted ? [] : s.usedWords;
-  const { category, word } = pickImposterWord(ctx.rng, used);
+  const { category, word } = pickWordFrom(bank, ctx.rng, used);
   const scribble = s.settings.impScribble ? makeScribble(ctx.rng, `scribble-${manche}`) : null;
   const history: DrawingHistory = scribble ? addAction(emptyHistory(), scribble) : emptyHistory();
   return changed({
@@ -256,6 +263,8 @@ function onTimeout(s: PictionaryState, ctx: Ctx): Result {
 function onPlayerLeft(s: PictionaryState, playerId: string, ctx: Ctx): Result {
   if (s.phase === 'impDrawing' && playerId === s.drawerId) return startTurn(s, s.imp!.turn + 1, ctx);
   if (s.phase === 'impVote' && allVoted(s, ctx)) return resolveVote(s, ctx);
+  // The unmasked imposter left: their one guess is lost.
+  if (s.phase === 'impGuess' && playerId === s.imp!.imposterId) return toResult(s, false, ctx);
   return changed(s);
 }
 

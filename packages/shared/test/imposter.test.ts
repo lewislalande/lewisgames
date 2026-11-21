@@ -4,9 +4,9 @@ import { DEFAULT_SETTINGS, clampSettings, type PictionarySettings } from '../src
 import { viewFor } from '../src/pictionary/view';
 import { isValidAction, type DrawAction } from '../src/pictionary/drawing';
 import {
-  IMP_PALETTE, IMP_RESULT_MS, IMP_REVEAL_MS, IMP_GUESS_MS, IMP_VOTE_MS, IMPOSTER_WORDS,
-  makeScribble, pickImposterWord,
+  IMP_PALETTE, IMP_RESULT_MS, IMP_REVEAL_MS, IMP_GUESS_MS, IMP_VOTE_MS, makeScribble,
 } from '../src/pictionary/imposter';
+import { IMPOSTER_WORDS, pickImposterWord } from '../src/server';
 import { parseClientMsg } from '../src/protocol';
 import { disconnect, type Room } from '../src/room';
 import words from '../src/pictionary/words-fr.json';
@@ -24,7 +24,7 @@ function seeded(seed = 1) {
 const IMP: PictionarySettings = { ...DEFAULT_SETTINGS, mode: 'imposteur' };
 
 type T = { s: PictionaryState; room: Room; now: number; rng: () => number };
-const ctxOf = (t: T): Ctx => ({ now: t.now, rng: t.rng, room: t.room, words });
+const ctxOf = (t: T): Ctx => ({ now: t.now, rng: t.rng, room: t.room, words, imposterWords: IMPOSTER_WORDS });
 const send = (t: T, ev: GameEvent) => {
   const r = reduce(t.s, ev, ctxOf(t));
   t.s = r.state;
@@ -156,6 +156,11 @@ describe('protocol', () => {
 });
 
 describe('imposter start', () => {
+  it('needs the server word bank', () => {
+    const r = reduce(initialState(IMP), { type: 'start', by: 'A' }, { now: 1, rng: seeded(), room: mkRoom(), words });
+    expect(r.state.phase).toBe('lobby');
+    expect(r.effects).toEqual([]);
+  });
   it('needs 3 connected players', () => {
     const t = begin({}, ['A', 'B']);
     expect(t.s.phase).toBe('lobby');
@@ -409,6 +414,27 @@ describe('imposter vote and guess', () => {
     expect(t.s.scores).toEqual({ [imposterId]: 0, [x]: 1, [y]: 1 });
   });
 
+  it('the accused imposter leaving during the guess fails it at once', () => {
+    const t = begin();
+    toVote(t);
+    const { imposterId } = imp(t);
+    const [x, y] = nonImposters(t) as [string, string];
+    send(t, { type: 'impVote', by: x, target: imposterId });
+    send(t, { type: 'impVote', by: y, target: imposterId });
+    send(t, { type: 'impVote', by: imposterId, target: x });
+    expect(t.s.phase).toBe('impGuess');
+    // Someone else leaving changes nothing.
+    t.room = disconnect(t.room, x);
+    send(t, { type: 'playerLeft', playerId: x });
+    expect(t.s.phase).toBe('impGuess');
+    t.room = disconnect(t.room, imposterId);
+    send(t, { type: 'playerLeft', playerId: imposterId });
+    expect(t.s.phase).toBe('impResult');
+    expect(imp(t).guess).toBeNull();
+    expect(imp(t).imposterWon).toBe(false);
+    expect(t.s.scores).toEqual({ [imposterId]: 0, [x]: 1, [y]: 1 });
+  });
+
   it('tie → imposter escapes without a guess phase', () => {
     const t = begin();
     toVote(t);
@@ -582,10 +608,53 @@ describe('imposter views', () => {
     expect(v(t, x).imp!.accused).toBe(imposterId);
   });
 
+  it('fills settings stored before imposter mode existed', () => {
+    const { mode: _m, impRounds: _r, impScribble: _s, ...old } = DEFAULT_SETTINGS;
+    const s = { ...initialState(), settings: old as PictionarySettings };
+    for (const viewer of ['A', 'B']) {
+      const view = viewFor(s, viewer, 1, 'A');
+      expect(view.mode).toBe('classique');
+      expect(view.settings).toMatchObject({ mode: 'classique', impRounds: 3, impScribble: true });
+    }
+  });
+
   it('classique views have no imposter data', () => {
     const s = reduce(initialState(), { type: 'start', by: 'A' }, { now: 1, rng: seeded(), room: mkRoom(), words }).state;
     const view = viewFor(s, 'B', 1, 'A');
     expect(view.imp).toBeNull();
     expect(view.mode).toBe('classique');
+  });
+});
+
+describe('bundle secrecy', () => {
+  it('the public entry never reaches the imposter word bank', () => {
+    // Vite inlines every source file as text; walk the value imports from src/index.ts.
+    const sources = import.meta.glob<string>('../src/**/*.ts', { query: '?raw', import: 'default', eager: true });
+    const resolve = (from: string, rel: string): string => {
+      const parts = from.split('/').slice(0, -1);
+      for (const seg of rel.split('/')) {
+        if (seg === '..') parts.pop();
+        else if (seg !== '.') parts.push(seg);
+      }
+      return parts.join('/');
+    };
+    const seen = new Set<string>();
+    const visit = (file: string) => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      const src = sources[file];
+      expect(src, file).toBeDefined();
+      for (const m of src!.matchAll(/^(import|export)(\s+type)?\b[^;]*?from\s+'(\.[^']+)'/gms)) {
+        if (m[2]) continue; // type-only: erased
+        const target = resolve(file, m[3]!);
+        if (target.endsWith('.json')) seen.add(target);
+        else visit(`${target}.ts`);
+      }
+    };
+    visit('../src/index.ts');
+    expect([...seen].filter((f) => f.includes('imposter-words'))).toEqual([]);
+    expect(seen).toContain('../src/pictionary/imposter.ts');
+    // The check does see JSON imports (the Classique list is public by design).
+    expect(seen).toContain('../src/pictionary/words-fr.json');
   });
 });
